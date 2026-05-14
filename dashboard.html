@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver's Room - ESTACUP</title>
+
+  <!-- Styles globaux -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Drapeaux (flag-icons) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
+
+  <!-- App -->
+  <script type="module" src="dashboard.js" defer></script>
+
+  <style>
+    /* Petits styles inline pour l’affichage déroulant des classements de course */
+    .race-item { margin-bottom:10px; }
+    .race-btn {
+      background:#0b1220; border:1px solid #1e293b; color:#e2e8f0;
+      padding:8px 10px; border-radius:8px; width:100%; text-align:left; cursor:pointer;
+    }
+    .race-btn:hover { border-color:#38bdf8; }
+    .race-classification {
+      margin:8px 0 0 0; padding:10px; border:1px dashed #334155; border-radius:8px; background:#0a1020;
+    }
+    .race-table { width:100%; border-collapse:collapse; }
+    .race-table th, .race-table td { padding:6px 8px; border-bottom:1px solid #1e293b; }
+    .muted-note { color:#94a3b8; font-size:.9rem; }
+    .impact-bad { color:#f87171; font-weight:600; }
+    .impact-good { color:#34d399; font-weight:600; }
+
+    /* Tableaux classements */
+    .table-standings{width:100%;border-collapse:collapse;background:rgba(15,23,42,.6);border:1px solid #334155;border-radius:12px;overflow:hidden}
+    .table-standings th,.table-standings td{padding:.75rem .9rem;border-bottom:1px solid #233047}
+    .table-standings thead th{background:rgba(51,65,85,.5);text-align:left}
+    .rank-badge{display:inline-block;min-width:2rem;text-align:center;background:#0b1220;border:1px solid #334155;border-radius:999px;padding:.2rem .5rem}
+
+    /* Loader animé (spinner) */
+    .loading-inline{display:flex;align-items:center;gap:.6rem;color:#cbd5e1}
+    .loading-inline .spinner{width:28px;height:28px;border:3px solid #334155;border-top-color:#38bdf8;border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Toggle "course joker" */
+    .joker-toggle{
+      display:flex;
+      align-items:center;
+      gap:0.6rem;
+      margin-bottom:12px;
+      padding:0.6rem 0.9rem;
+      border-radius:999px;
+      background:rgba(15,23,42,0.95);
+      border:1px solid #38bdf8;
+      color:#e2e8f0;
+      font-size:0.95rem;
+      box-shadow:0 0 0 1px rgba(15,23,42,0.8),0 8px 20px rgba(15,23,42,0.8);
+    }
+    .joker-toggle label{
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+      cursor:pointer;
+      margin:0;
+      width:100%;
+    }
+    .joker-toggle input[type="checkbox"]{
+      width:20px;
+      height:20px;
+      transform:scale(1.15);
+      accent-color:#38bdf8;
+      cursor:pointer;
+      flex-shrink:0;
+    }
+    .joker-toggle strong{
+      font-weight:600;
+      color:#e0f2fe;
+    }
+    
+    .compare-wrapper{
+      margin-top:18px;
+      padding:12px 14px;
+      border-radius:12px;
+      background:rgba(15,23,42,0.85);
+      border:1px solid #334155;
+    }
+    .compare-wrapper h4{
+      margin-top:0;
+      margin-bottom:6px;
+    }
+    #compareSelect{
+      width:100%;
+      min-height:120px;
+      background:#020617;
+      color:#e2e8f0;
+      border-radius:8px;
+      border:1px solid #1e293b;
+      padding:6px;
+      font-size:0.9rem;
+    }
+    .compare-wrapper .muted-note.small{
+      font-size:0.8rem;
+    }
+    .compare-table th,
+    .compare-table td{
+      font-size:0.85rem;
+      white-space:nowrap;
+    }
+    .compare-self{
+      background:rgba(56,189,248,0.08);
+    }
+    .compare-best{
+      color:#bbf7d0;
+      font-weight:600;
+    }
+    .compare-worst{
+      color:#fecaca;
+    }
+
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <img src="meka.svg" alt="Logo MEKA" class="site-logo" />
+  </header>
+
+  <div class="container">
+    <h2>Driver's Room</h2>
+
+    <!-- Menu principal -->
+    <nav class="menu">
+      <button data-section="infos">Infos</button>
+      <button data-section="results">Résultats</button>
+      <button data-section="erating">M-Rating</button>
+      <button data-section="esafety">M-Safety</button>
+      <button data-section="estacup">ESTACUP</button>
+      <button id="goToAdmin" class="hidden">Espace admin</button>
+      <button id="logout" class="logout">Déconnexion</button>
+    </nav>
+
+    <!-- Section Infos -->
+    <section id="section-infos" class="section">
+      <h3>Informations du pilote</h3>
+      <p><strong>Nom :</strong> <span id="fullName">—</span></p>
+      <p><strong>Date de naissance :</strong> <span id="dob">—</span></p>
+      <p><strong>Licence ID :</strong> <span id="licenseId">—</span></p>
+      <p><strong>Classe de licence :</strong> <span id="licenseClass">—</span></p>
+      <p><strong>Steam ID :</strong> <span id="steamIdLine">—</span></p>
+
+      <h4 style="margin-top:16px">Stats</h4>
+      <ul class="pilot-stats">
+        <li><strong>Départs :</strong> <span id="statStarts">0</span></li>
+        <li><strong>Meilleur résultat :</strong> <span id="statBest">—</span></li>
+        <li><strong>Victoires :</strong> <span id="statWins">0</span></li>
+        <li><strong>Podiums (Top 3) :</strong> <span id="statTop3">0</span></li>
+        <li><strong>Top 5 :</strong> <span id="statTop5">0</span></li>
+        <li><strong>Top 10 :</strong> <span id="statTop10">0</span></li>
+        <li><strong>Position moyenne :</strong> <span id="statAvg">—</span></li>
+      </ul>
+            <div id="compareWrapper" class="compare-wrapper">
+        <h4>Comparer avec d'autres pilotes</h4>
+        <p class="muted-note">
+          Sélectionne un ou plusieurs pilotes pour te comparer sur les stats globales.
+        </p>
+        <select id="compareSelect" multiple size="5">
+          <option disabled>Chargement des pilotes…</option>
+        </select>
+        <p class="muted-note small">
+          Astuce : Ctrl/Cmd + clic pour sélectionner ou désélectionner plusieurs pilotes.
+        </p>
+        <div id="compareResults" style="margin-top:10px;"></div>
+      </div>
+
+    </section>
+
+    <!-- Section Résultats -->
+    <section id="section-results" class="section hidden">
+      <h3>Résultats</h3>
+      <p class="muted-note">Clique sur une course pour afficher le <strong>classement complet</strong>.</p>
+      <ul id="raceHistory"><li>Chargement…</li></ul>
+    </section>
+
+    <!-- Section M-Rating -->
+    <section id="section-erating" class="section hidden">
+      <h3>M-Rating</h3>
+      <p><strong>M-Rating actuel :</strong> <span id="eloRating">—</span></p>
+
+      <div id="eratingSummary" class="course-box" style="margin-top:12px">
+        <p><strong> Classement M-Rating global </strong><br><span id="eloRankLine">—</span></p>
+        <p style="margin-top:10px"><strong> Record personnel </strong><br><span id="eloBest">—</span></p>
+        <p style="margin-top:10px"><strong> Plus faible valeur </strong><br><span id="eloWorst">—</span></p>
+      </div>
+    </section>
+
+    <!-- Section M-Safety -->
+    <section id="section-esafety" class="section hidden">
+      <h3>M-Safety</h3>
+      <p><strong>Points de licence (M-Safety) :</strong> <span id="licensePoints">—</span></p>
+      <div id="esafetyIncidents"></div>
+    </section>
+
+    <!-- Section ESTACUP -->
+    <section id="section-estacup" class="section hidden">
+      <h3>ESTACUP</h3>
+
+      <!-- Sous-menu ESTACUP -->
+      <nav class="menu" id="estacupSubnav" style="margin-top:-10px;margin-bottom:20px;">
+        <button data-sub="inscription" class="estc-sub-btn">Inscription</button>
+        <button data-sub="engages" class="estc-sub-btn">Liste des engagés</button>
+        <button data-sub="votecircuit" class="estc-sub-btn">Vote Circuit</button>
+        <button data-sub="reclam" class="estc-sub-btn">Réclamation</button>
+        <button data-sub="rankpilots" class="estc-sub-btn">Classement Pilotes</button>
+        <button data-sub="rankteams" class="estc-sub-btn">Classement Équipes</button>
+      </nav>
+
+      <!-- Inscription -->
+      <div id="estacup-sub-inscription" class="estacup-subsection">
+        <h4>Inscription ESTACUP</h4>
+
+        <div id="mekaQuestionnaire">
+          <p style="margin-bottom:10px;">
+            ℹ️ L’inscription est <strong>gratuite</strong> pour les membres MEKA.<br>
+            Pour les non-membres, une participation de <strong>5 €</strong> est demandée.
+          </p>
+
+          <label for="mekaPaid">Êtes-vous membre MEKA ou avez-vous déjà payé les 5 € d’inscription ?</label>
+          <select id="mekaPaid">
+            <option value="">-- Choisir --</option>
+            <option value="yes">Oui</option>
+            <option value="no">Non</option>
+          </select>
+
+          <div id="mekaNextStep" style="margin-top:15px;"></div>
+        </div>
+
+        <div id="estacupFormContainer" class="hidden"></div>
+      </div>
+
+      <!-- Engagés -->
+      <div id="estacup-sub-engages" class="estacup-subsection hidden">
+        <h4>Liste des engagés</h4>
+        <div id="estacupEngages"></div>
+      </div>
+
+      <!-- Vote Circuit -->
+      <div id="estacup-sub-votecircuit" class="estacup-subsection hidden">
+        <h4>Vote Circuit</h4>
+        <div id="voteCircuitHost"></div>
+      </div>
+
+      <!-- Réclamation -->
+      <div id="estacup-sub-reclam" class="estacup-subsection hidden">
+        <h4>Réclamation</h4>
+
+        <p class="muted-note" style="margin-bottom:10px;">
+          Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
+        </p>
+
+        <label for="reclamDate">Date de la course :</label>
+        <input id="reclamDate" type="date" />
+
+        <label for="reclamSplit">Split :</label>
+        <select id="reclamSplit">
+          <option value="">-- Choisir un split --</option>
+          <option value="1">Split 1</option>
+          <option value="2">Split 2</option>
+        </select>
+
+        <label for="reclamDesc">Description de l'incident :</label>
+        <textarea id="reclamDesc" placeholder="Décrivez précisément l'incident (tour, virage, pilotes impliqués, etc.)" rows="5"></textarea>
+
+        <label for="reclamVideo">Lien de la vidéo YouTube (obligatoire) :</label>
+        <input id="reclamVideo" type="url" placeholder="https://youtu.be/..." />
+
+        <button id="submitReclam">📨 Envoyer la réclamation</button>
+
+        <p class="livery-intro" style="margin-top:12px;">
+          ℹ️ <strong>Note :</strong> la décision des commissaires sera visible dans <strong>M-Safety</strong>.
+        </p>
+
+        <div id="reclamHistory" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- Classement Pilotes -->
+      <div id="estacup-sub-rankpilots" class="estacup-subsection hidden">
+        <h4>Classement Pilotes</h4>
+        <div class="joker-toggle">
+          <label for="jokerTogglePilots">
+            <input type="checkbox" id="jokerTogglePilots">
+            <span>
+              Classement avec la <strong>course joker</strong>
+              (retrait du <strong>pire total sprint + principale du même round</strong> pour les pilotes ayant disputé toutes les courses)
+            </span>
+          </label>
+        </div>
+        <div id="estacupPilotStandings" class="course-box">
+          <p>Chargement…</p>
+        </div>
+      </div>
+
+      <!-- Classement Équipes -->
+      <div id="estacup-sub-rankteams" class="estacup-subsection hidden">
+        <h4>Classement Équipes</h4>
+        <div class="joker-toggle">
+          <label for="jokerToggleTeams">
+            <input type="checkbox" id="jokerToggleTeams">
+            <span>
+              Classement avec la <strong>course joker</strong>
+              (retrait du <strong>pire total d'un round</strong> pour les équipes présentes à tous les rounds)
+            </span>
+          </label>
+        </div>
+        <div id="estacupTeamStandings" class="course-box">
+          <p>Chargement…</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
