@@ -4,7 +4,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  onAuthStateChanged, // 🔄 Ajout de l'écouteur d'état de connexion
+  onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
@@ -15,12 +15,12 @@ import {
   collection
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔧 Config Firebase
+// 🔧 Config Firebase (Harmonisée à 100% avec le reste de ton site)
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
   projectId: "estacupbymeka",
-  storageBucket: "estacupbymeka.firebasestorage.app",
+  storageBucket: "estacupbymeka.appspot.com", // 👈 Corrigé ici pour éviter la perte de session
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
