@@ -121,6 +121,9 @@ $("profileForm").addEventListener("submit", async (e) => {
 
     showMsg("Profil mis à jour avec succès !");
     $("profSteamId").value = cleanSteamId64; // Affiche la version propre
+    
+    // Relancer le calcul des stats après modification du prénom/nom ou SteamID
+    await calculatePilotStats();
   } catch (err) {
     console.error("Erreur sauvegarde:", err);
     showMsg("Impossible de sauvegarder les modifications.", "error");
@@ -139,53 +142,68 @@ async function calculatePilotStats() {
     let polesCount = 0;
     let registeredChampionships = new Set();
 
-    // Analyse de l'historique des courses (Collection raceHistory de la S9)
-    const raceHistorySnap = await getDocs(collection(db, "raceHistory"));
-    
-    // Pour l'analyse nominative (au cas où le SteamID ne soit pas encore lié)
+    // 1. Récupération des infos du pilote connecté
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
-    const fullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim().toUpperCase();
+    
+    // Normalisation des chaînes pour comparaison textuelle
+    const firstName = (userData.firstName || "").trim().toUpperCase();
+    const lastName = (userData.lastName || "").trim().toUpperCase();
+    const fullName = `${firstName} ${lastName}`.trim();
+    const cleanSteamId = (userData.steamId || userData.steamID64 || "").trim();
+
+    // Crée une version du prénom sans les caractères spéciaux/tirets pour matcher avec les vieux pseudos S9 (ex: K_Z_A_H -> KZAH)
+    const simplifiedFirstName = firstName.replace(/[^A-Z0-9]/g, "");
+
+    // 2. Analyse de l'historique des courses (Collection raceHistory de la S9)
+    const raceHistorySnap = await getDocs(collection(db, "raceHistory"));
 
     raceHistorySnap.forEach((docSnap) => {
       const raceData = docSnap.data() || {};
       const participants = raceData.participants || [];
-      
-      // On sait que raceHistory S9 fait partie de l'EstaCup S9
       let pilotInThisRace = false;
 
       participants.forEach((p) => {
-        const pName = `${p.firstName || ""} ${p.lastName || ""}`.trim().toUpperCase();
-        const matchesName = (fullName && pName === fullName);
-        const matchesSteam = (userData.steamId && p.steamId === userData.steamId);
+        const pFirstName = (p.firstName || "").trim().toUpperCase();
+        const pLastName = (p.lastName || "").trim().toUpperCase();
+        const pFullName = `${pFirstName} ${pLastName}`.trim();
+        const pSteamId = (p.steamId || p.steamID64 || "").trim();
 
-        if (matchesName || matchesSteam) {
+        // Version simplifiée du pseudo de course pour tolérer les tirets bas (ex: K_Z_A_H -> KZAH)
+        const simplifiedPFullName = pFullName.replace(/[^A-Z0-9]/g, "");
+
+        // 🔍 VÉRIFICATION MULTI-CRITÈRES RADICALE
+        const matchesName = (fullName && pFullName === fullName);
+        const matchesSteam = (cleanSteamId && pSteamId === cleanSteamId);
+        
+        // Match si le prénom du profil se retrouve nettoyé dans le pseudo de course (ex: "KZAH" est inclus dans "K_Z_A_H")
+        const matchesPseudoS9 = (simplifiedFirstName && simplifiedPFullName.includes(simplifiedFirstName));
+
+        if (matchesName || matchesSteam || matchesUsername || matchesPseudoS9) {
           pilotInThisRace = true;
           racesCount++;
           
-          // Vérification de la position en course (Sprints ou Principales)
-          // Si le classement contient une propriété position numérique
-          if (p.position === 1 || p.pos === 1) winsCount++;
-          if (p.position <= 3 || p.pos <= 3) podiumsCount++;
-          if (p.isPole || p.pole === true) polesCount++;
+          // Récupération de la position numérique de fin de course
+          const finalPos = parseInt(p.position || p.pos || 0, 10);
+          
+          if (finalPos === 1) winsCount++;
+          if (finalPos >= 1 && finalPos <= 3) podiumsCount++;
+          if (p.isPole || p.pole === true || p.qualifyingPosition === 1) polesCount++;
         }
       });
 
-      if (pilotInThisRace && raceData.championship) {
-        registeredChampionships.add(raceData.championship);
-      } else if (pilotInThisRace) {
-        // Fallback par défaut pour la saison passée si le tag n'existait pas
-        registeredChampionships.add("EstaCup - Saison 9");
+      if (pilotInThisRace) {
+        registeredChampionships.add(raceData.championship || "EstaCup - Saison 9");
       }
     });
 
-    // Vérification additionnelle si la personne s'était inscrite mais n'a pas encore couru
+    // 3. Vérification additionnelle si inscrit en S9 mais n'a pas encore de fichier de course
     const s9Signup = await getDoc(doc(db, "estacup_signups", currentUser.uid));
     if (s9Signup.exists()) {
       registeredChampionships.add("EstaCup - Saison 9");
     }
 
-    // Mise à jour de l'affichage HTML
+    // 4. Mise à jour dynamique de l'affichage HTML
     $("statRaces").textContent = racesCount;
     $("statWins").textContent = winsCount;
     $("statPodiums").textContent = podiumsCount;
