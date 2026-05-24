@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -12,7 +12,8 @@ const firebaseConfig = {
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 
-const app = initializeApp(firebaseConfig);
+// 🛡️ Sécurité : On initialise Firebase SEULEMENT s'il n'existe pas déjà sur la page
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -52,7 +53,7 @@ function injectNavbar() {
         </div>
     </nav>`;
 
-    // Ciblage intelligent de l'élément cible
+    // Ciblage intelligent de l'élément de réception ou repli sur le haut du body
     const targetDiv = document.getElementById("global-navbar");
     if (targetDiv) {
         targetDiv.innerHTML = navbarHTML;
@@ -102,7 +103,7 @@ function injectNavbar() {
     });
 }
 
-// Lancement immédiat si le DOM est déjà prêt, sinon écoute de l'événement
+// Lancement de l'injection
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", injectNavbar);
 } else {
