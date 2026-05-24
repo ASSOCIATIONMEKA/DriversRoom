@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔧 Configuration Firebase (Identique à ton projet)
+// 🔧 Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
@@ -17,7 +17,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Structure de base de la barre de navigation
+    // ⚡ Vérification instantanée du stockage local pour éviter l'effet de clignotement
+    const fastCheckLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
     const navbarHTML = `
     <nav class="top-navbar">
         <a href="index.html">
@@ -29,10 +31,10 @@ document.addEventListener("DOMContentLoaded", function() {
           <a href="index.html#presentation">PRÉSENTATION</a>
           
           <div class="dropdown">
-            <a href="index.html#competitions" class="dropbtn">NOS COMPÉTITIONS ▾</a>
+            <a href="login.html" class="dropbtn">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-              <a href="estacups10.html">🟢 EstaCup S10</a>
-              <a href="login.html">⚪ EstaCup S9</a>
+              <a href="login.html">🟢 EstaCup S9 (Saison Actuelle)</a>
+              <a href="#" style="opacity: 0.5; cursor: not-allowed;" onclick="return false;">⚪ EstaCup S10 (Prochainement)</a>
             </div>
           </div>
           
@@ -41,20 +43,22 @@ document.addEventListener("DOMContentLoaded", function() {
           <a href="https://twitch.tv/asso_meka" target="_blank">TWITCH</a>
           
           <div id="nav-auth-zone" style="display: inline-block; margin-left: 1rem;">
-             <span class="muted-note">Vérification...</span>
+             ${fastCheckLoggedIn 
+               ? `<span style="color: #10B981; font-weight: 600; font-size: 0.9rem;">⏳ CHARGEMENT...</span>` 
+               : `<a href="login.html" class="nav-btn-login">CONNEXION</a>`}
           </div>
         </div>
     </nav>`;
 
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
 
-    // 2. Écouteur Firebase pour modifier dynamiquement la zone de droite
     const authZone = document.getElementById("nav-auth-zone");
 
+    // Écouteur de session Firebase en arrière-plan
     onAuthStateChanged(auth, async (user) => {
         if (user) {
+            localStorage.setItem("isLoggedIn", "true"); // Sécurité de synchronisation
             try {
-                // Récupération du prénom du pilote pour l'afficher
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 const userData = userDoc.data();
                 const firstName = userData ? userData.firstName : "Pilote";
@@ -71,9 +75,9 @@ document.addEventListener("DOMContentLoaded", function() {
                   </div>
                 `;
 
-                // Écouteur pour le bouton déconnexion du menu
                 document.getElementById("nav-logout-btn").addEventListener("click", (e) => {
                     e.preventDefault();
+                    localStorage.removeItem("isLoggedIn"); // Nettoyage local
                     signOut(auth).then(() => {
                         window.location.href = "index.html";
                     });
@@ -83,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.error("Erreur navbar:", error);
             }
         } else {
-            // Si pas connecté : on affiche un bouton de connexion universel épuré
+            localStorage.removeItem("isLoggedIn"); // Nettoyage local si déconnecté de force
             authZone.innerHTML = `<a href="login.html" class="nav-btn-login">CONNEXION</a>`;
         }
     });
