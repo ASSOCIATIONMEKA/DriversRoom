@@ -251,13 +251,15 @@ ul li:hover::before{transform:scaleY(1)}
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  width: 100vw; /* 👈 Force la navbar à faire 100% de la largeur de l'écran visible */
+  max-width: 100%; /* Évite les bugs de défilement horizontal */
   padding: 1rem 2rem;
   background: rgba(10, 14, 26, 0.95);
   border-bottom: 2px solid var(--accent-primary);
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-sizing: border-box; /* 👈 Assure que le padding ne fait pas déborder la barre */
 }
 
 .nav-logo { 
