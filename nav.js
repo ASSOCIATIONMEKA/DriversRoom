@@ -31,7 +31,7 @@ function injectNavbar() {
         
         <div class="nav-links">
           <a href="index.html">ACCUEIL</a>
-          <a href="index.html#presentation">PRÉSENTATION</a>
+          <a href="https://www.helloasso.com/associations/meka">L'ASSOCATION</a>
           
           <div class="dropdown">
             <a href="login.html" class="dropbtn">NOS COMPÉTITIONS ▾</a>
