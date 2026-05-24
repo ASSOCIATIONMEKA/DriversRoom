@@ -36,8 +36,8 @@ function injectNavbar() {
           <div class="dropdown">
             <a href="login.html" class="dropbtn">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-              <a href="login.html">🟢 EstaCup S10 (Saison Actuelle)</a>
-              <a href="login.html">⚪ EstaCup S9 (Archives)</a>
+              <a href="login.html">🟢 EstaCup S10</a>
+              <a href="login.html">⚪ EstaCup S9</a>
             </div>
           </div>
           
@@ -77,7 +77,7 @@ function injectNavbar() {
                   <div class="dropdown">
                     <a href="#" class="dropbtn" style="color: #10B981; font-weight: 700;">👤 ${firstName.toUpperCase()} ▾</a>
                     <div class="dropdown-content" style="min-width: 160px;">
-                      <a href="profile.html" style="font-weight: 600; color: #6366F1;">👤 Mon Profil V10</a>
+                      <a href="profile.html" style="font-weight: 600; color: #6366F1;">👤 Mon Profil</a>
                       <a href="dashboard.html">🎛️ Espace Écurie S9</a>
                       ${isAdmin ? '<a href="admin.html">🛠️ Panel Admin</a>' : ''}
                       <a href="#" id="nav-logout-btn" style="color: #EF4444;">✖ Déconnexion</a>
