@@ -8,14 +8,29 @@
   <script type="module" src="login.js" defer></script>
 </head>
 <body>
-  <header class="site-header">
-    <img src="meka.svg" alt="Logo MEKA" class="site-logo" />
-  </header>
+  <nav class="top-navbar">
+    <a href="index.html">
+      <img src="meka.svg" alt="Logo MEKA" class="nav-logo" />
+    </a>
+    <div class="nav-links">
+      <a href="index.html">ACCUEIL</a>
+      <a href="index.html#presentation">PRÉSENTATION</a>
+      <div class="dropdown">
+        <a href="index.html#competitions" class="dropbtn">NOS COMPÉTITIONS ▾</a>
+        <div class="dropdown-content">
+          <a href="login.html">🟢 Portail ESTACUP</a>
+        </div>
+      </div>
+      <a href="esport.html">ÉQUIPE ESPORT</a>
+      <a href="https://discord.gg/jB6yDhQFyw" target="_blank">DISCORD</a>
+      <a href="https://twitch.tv/asso_meka" target="_blank">TWITCH</a>
+    </div>
+    <a href="login.html" class="nav-btn-login">CONNEXION</a>
+  </nav>
 
   <div class="container">
     <h2>Connexion pilote</h2>
 
-    <!-- Connexion -->
     <form id="loginForm" autocomplete="on">
       <input type="email" id="loginEmail" placeholder="Email" autocomplete="email" required />
       <input type="password" id="loginPassword" placeholder="Mot de passe" autocomplete="current-password" required />
@@ -31,7 +46,6 @@
     <p class="muted">Pas encore de compte ?</p>
     <button id="showRegister">Créer un compte</button>
 
-    <!-- Inscription -->
     <div id="registerSection" class="hidden">
       <h3>Inscription</h3>
       <form id="registerForm" autocomplete="on">
