@@ -31,7 +31,6 @@ function showMsg(text, type = "success") {
 // Sécurité : Vérification de l'état connecté
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    // Si pas connecté, redirection immédiate vers login
     window.location.href = "login.html";
     return;
   }
@@ -66,7 +65,7 @@ async function loadUserProfile() {
   }
 }
 
-// 2. Sauvegarde du profil (Prénom, Nom, Extraction propre du SteamID)
+// 2. Sauvegarde du profil
 $("profileForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentUser) return;
@@ -78,21 +77,17 @@ $("profileForm").addEventListener("submit", async (e) => {
   let rawSteam = $("profSteamId").value.trim();
   let cleanSteamId64 = "";
 
-  // Logique d'extraction du SteamID64 (Ramenée depuis ton dashboard.js)
   if (rawSteam) {
     if (rawSteam.includes("steamcommunity.com/profiles/")) {
       const parts = rawSteam.split("profiles/");
       if (parts[1]) cleanSteamId64 = parts[1].replace(/\//g, "").trim();
     } else if (rawSteam.includes("steamcommunity.com/id/")) {
-      // Si c'est un vanity URL personnalisé, on stocke la chaîne brute pour l'admin
       cleanSteamId64 = rawSteam.trim();
     } else {
-      // ID64 numérique pur ou pseudonyme direct
       cleanSteamId64 = rawSteam.replace(/[^0-9]/g, "").trim() || rawSteam;
     }
   }
 
-  // Nettoyage casse Prénom / Nom
   const p = $("profFirstName").value.trim();
   const n = $("profLastName").value.trim();
   const formattedFirstName = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
@@ -100,16 +95,14 @@ $("profileForm").addEventListener("submit", async (e) => {
 
   try {
     const userDocRef = doc(db, "users", currentUser.uid);
-    // On fusionne (merge) pour ne pas écraser la licence existante créée par l'admin
     await setDoc(userDocRef, {
       firstName: formattedFirstName,
       lastName: formattedLastName,
       steamId: cleanSteamId64,
-      steamID64: cleanSteamId64, // Double compatibilité
+      steamID64: cleanSteamId64,
       lastUpdate: new Date().toISOString()
     }, { merge: true });
 
-    // Si le pilote a un profil d'inscription EstaCup S9 actif, on met à jour son SteamID là-bas aussi
     const signupRef = doc(db, "estacup_signups", currentUser.uid);
     const signupSnap = await getDoc(signupRef);
     if (signupSnap.exists()) {
@@ -120,9 +113,8 @@ $("profileForm").addEventListener("submit", async (e) => {
     }
 
     showMsg("Profil mis à jour avec succès !");
-    $("profSteamId").value = cleanSteamId64; // Affiche la version propre
+    $("profSteamId").value = cleanSteamId64;
     
-    // Relancer le calcul des stats après modification du prénom/nom ou SteamID
     await calculatePilotStats();
   } catch (err) {
     console.error("Erreur sauvegarde:", err);
@@ -133,7 +125,7 @@ $("profileForm").addEventListener("submit", async (e) => {
   }
 });
 
-// 3. Calcul dynamique des Statistiques globales & Championnats depuis les résultats passés
+// 3. Calcul dynamique des Statistiques globales (Version robuste et universelle)
 async function calculatePilotStats() {
   try {
     let racesCount = 0;
@@ -142,20 +134,19 @@ async function calculatePilotStats() {
     let polesCount = 0;
     let registeredChampionships = new Set();
 
-    // 1. Récupération des infos du pilote connecté
+    // Récupération des infos saisies dans le profil par le pilote connecté
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
     
-    // Normalisation des chaînes pour comparaison textuelle
     const firstName = (userData.firstName || "").trim().toUpperCase();
     const lastName = (userData.lastName || "").trim().toUpperCase();
     const fullName = `${firstName} ${lastName}`.trim();
     const cleanSteamId = (userData.steamId || userData.steamID64 || "").trim();
 
-    // Crée une version du prénom sans les caractères spéciaux/tirets pour matcher avec les vieux pseudos S9 (ex: K_Z_A_H -> KZAH)
+    // Versions simplifiées (sans espaces ni symboles) pour maximiser les correspondances
     const simplifiedFirstName = firstName.replace(/[^A-Z0-9]/g, "");
 
-    // 2. Analyse de l'historique des courses (Collection raceHistory de la S9)
+    // Récupération de tous les rapports de course
     const raceHistorySnap = await getDocs(collection(db, "raceHistory"));
 
     raceHistorySnap.forEach((docSnap) => {
@@ -164,31 +155,46 @@ async function calculatePilotStats() {
       let pilotInThisRace = false;
 
       participants.forEach((p) => {
-        const pFirstName = (p.firstName || "").trim().toUpperCase();
-        const pLastName = (p.lastName || "").trim().toUpperCase();
-        const pFullName = `${pFirstName} ${pLastName}`.trim();
-        const pSteamId = (p.steamId || p.steamID64 || "").trim();
+        // 1. Extraction de toutes les valeurs textes de l'objet participant pour chercher le pseudo
+        const allParticipantStrings = Object.values(p)
+          .filter(val => typeof val === 'string')
+          .map(val => val.trim().toUpperCase());
 
-        // Version simplifiée du pseudo de course pour tolérer les tirets bas (ex: K_Z_A_H -> KZAH)
-        const simplifiedPFullName = pFullName.replace(/[^A-Z0-9]/g, "");
+        const participantFullText = soccerCombineText(p).toUpperCase();
+        const pSteamId = (p.steamId || p.steamID64 || p.guid || "").trim();
 
-        // 🔍 VÉRIFICATION MULTI-CRITÈRES (LIGNE CORRIGÉE SANS VARIABLE ABSENTE)
-        const matchesName = (fullName && pFullName === fullName);
+        // 2. Tests de correspondance
         const matchesSteam = (cleanSteamId && pSteamId === cleanSteamId);
         
-        // Match si le prénom (ou pseudo) nettoyé correspond à celui présent dans le rapport de course
-        const matchesPseudoS9 = (simplifiedFirstName && simplifiedPFullName.includes(simplifiedFirstName));
+        // On regarde si le nom complet ou le prénom simplifié (ex: KZAH) se trouve n'importe où dans l'objet du participant
+        let matchesName = false;
+        if (fullName && participantFullText.includes(fullName)) {
+          matchesName = true;
+        }
+        
+        let matchesPseudo = false;
+        if (simplifiedFirstName) {
+          const cleanParticipantText = participantFullText.replace(/[^A-Z0-9]/g, "");
+          if (cleanParticipantText.includes(simplifiedFirstName)) {
+            matchesPseudo = true;
+          }
+        }
 
-        if (matchesName || matchesSteam || matchesPseudoS9) {
+        if (matchesSteam || matchesName || matchesPseudo) {
           pilotInThisRace = true;
           racesCount++;
           
-          // Récupération de la position numérique de fin de course
-          const finalPos = parseInt(p.position || p.pos || 0, 10);
+          // Extraction flexible de la position (gère les chaînes ou les nombres, et plusieurs noms de propriétés)
+          const posRaw = p.position || p.pos || p.finishPosition || p.placement || 0;
+          const finalPos = parseInt(posRaw, 10);
           
           if (finalPos === 1) winsCount++;
           if (finalPos >= 1 && finalPos <= 3) podiumsCount++;
-          if (p.isPole || p.pole === true || p.qualifyingPosition === 1) polesCount++;
+          
+          // Extraction de la pole position
+          if (p.isPole === true || p.pole === true || parseInt(p.qualifyingPosition || p.qualifyingPos, 10) === 1) {
+            polesCount++;
+          }
         }
       });
 
@@ -197,19 +203,18 @@ async function calculatePilotStats() {
       }
     });
 
-    // 3. Vérification additionnelle si inscrit en S9 mais n'a pas encore de fichier de course
+    // Sauvegarde de secours s'il y a une inscription active
     const s9Signup = await getDoc(doc(db, "estacup_signups", currentUser.uid));
     if (s9Signup.exists()) {
       registeredChampionships.add("EstaCup - Saison 9");
     }
 
-    // 4. Mise à jour dynamique de l'affichage HTML
+    // Mise à jour de l'affichage HTML
     $("statRaces").textContent = racesCount;
     $("statWins").textContent = winsCount;
     $("statPodiums").textContent = podiumsCount;
     $("statPoles").textContent = polesCount;
 
-    // Rendu de la liste des championnats
     const listEl = $("championshipList");
     listEl.innerHTML = "";
 
@@ -225,6 +230,15 @@ async function calculatePilotStats() {
     console.error("Erreur calcul stats:", err);
     $("championshipList").innerHTML = `<li>Erreur au chargement de l'historique</li>`;
   }
+}
+
+// Fonction utilitaire pour fusionner les textes d'un objet de course
+function soccerCombineText(obj) {
+  let str = "";
+  for (let key in obj) {
+    if (typeof obj[key] === 'string') str += " " + obj[key];
+  }
+  return str;
 }
 
 // Déconnexion
