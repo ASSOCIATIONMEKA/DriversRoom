@@ -1,5 +1,5 @@
 /* === MODERN ESTACUP CSS === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* === GLOBAL RESET === */
 * { box-sizing: border-box; margin:0; padding:0; }
@@ -24,32 +24,65 @@ html,body{
   color:var(--text-primary);
   font-size:16px;line-height:1.6;overflow-x:hidden;
   
-  /* Configuration de l'animation du diaporama */
+  /* Configuration de l'animation globale */
   background-color: #0A0E1A;
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
   
-  /* Lance l'animation : 24 secondes au total (8s par image), en boucle infinie */
-  animation: backgroundSlideshow 24s infinite ease-in-out;
+  /* Durée totale de 88 secondes pour les 11 photos en boucle */
+  animation: backgroundSlideshow 88s infinite ease-in-out;
+  transition: background-image 1s ease-in-out; /* Adoucit la transition de l'image */
 }
 
-/* === ANIMATION DIAPORAMA DE FOND COMPLET (Avec les chemins vers ton dossier bg) === */
+/* === DIAPORAMA GEANT FLUIDE (11 Photos - Cycles de 9% environ) === */
 @keyframes backgroundSlideshow {
-  /* Image 1 : bg/bg_ec_1.jpg (Reste fixe de 0% à 25%) */
-  0%, 25% {
+  /* Photo 1 : bg_ec_1.jpg */
+  0%, 7.5% {
     background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_1.jpg');
   }
-  /* Image 2 : bg/bg_ec_2.jpg (Reste fixe de 33% à 58%) */
-  33%, 58% {
+  /* Photo 2 : bg_ec_2.jpg */
+  9%, 16.5% {
     background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_2.jpg');
   }
-  /* Image 3 : bg/bg_es_2.png (Reste fixe de 66% à 92%) */
-  66%, 92% {
+  /* Photo 3 : bg_ec_3.jpg */
+  18%, 25.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_3.jpg');
+  }
+  /* Photo 4 : bg_ec_4.png */
+  27%, 34.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_4.png');
+  }
+  /* Photo 5 : bg_ec_6.jpg */
+  36%, 43.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_6.jpg');
+  }
+  /* Photo 6 : bg_ec_7.jpg */
+  45%, 52.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_7.jpg');
+  }
+  /* Photo 7 : bg_es_1.jpg */
+  54%, 61.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_es_1.jpg');
+  }
+  /* Photo 8 : bg_es_2.png */
+  63%, 70.5% {
     background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_es_2.png');
   }
-  /* Retour fluide vers la première image de 92% à 100% */
+  /* Photo 9 : bg_es_3.png */
+  72%, 79.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_es_3.png');
+  }
+  /* Photo 10 : bg_es_4.png */
+  81%, 88.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_es_4.png');
+  }
+  /* Photo 11 : bg_es_5.png */
+  90%, 97.5% {
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_es_5.png');
+  }
+  /* Boucle de fin et retour au départ */
   100% {
     background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_1.jpg');
   }
