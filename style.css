@@ -1,5 +1,5 @@
 /* === MODERN ESTACUP CSS === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.gstatic.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* === GLOBAL RESET === */
 * { box-sizing: border-box; margin:0; padding:0; }
@@ -19,84 +19,88 @@
   --transition-fast:150ms ease-in-out;--transition-normal:250ms ease-in-out;--transition-slow:350ms ease-in-out
 }
 
-html,body{
-  width:100%;min-height:100vh;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  color:var(--text-primary);
-  font-size:16px;line-height:1.6;overflow-x:hidden;
-  background-color: #0A0E1A; /* Fond sombre permanent */
-}
-
-/* === LE FIX DU DIAPORAMA FLUIDE SANS ÉCRAN NOIR === */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  z-index: -1;
-  pointer-events: none;
+/* =======================================================================
+   🔥 LE SECRET DU DIAPORAMA FLUIDE SANS COUPURE (FUSION DE COULEUR)
+   =======================================================================
+*/
+html {
+  min-height: 100vh;
+  /* Teinte sombre globale de sécurité pour assombrir les photos */
+  background-color: rgba(10, 14, 26, 0.85); 
+  
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
   
-  /* Lissage et interpolation de l'image par le navigateur */
-  transition: background-image 1.5s ease-in-out;
+  /* Permet de fusionner l'image de fond et la couleur sombre de manière fluide */
+  background-blend-mode: overlay; 
   
-  /* Diaporama sur 88 secondes (11 images x 8 secondes) */
-  animation: backgroundSlideshow 88s infinite ease-in-out;
+  /* Diaporama sur 66 secondes (6s par image : 4s fixe + 2s de transition fluide) */
+  animation: globalSlideshow 66s infinite ease-in-out;
 }
 
-@keyframes backgroundSlideshow {
+body {
+  width:100%;
+  min-height:100vh;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  color:var(--text-primary);
+  font-size:16px;
+  line-height:1.6;
+  overflow-x:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:0;
+  position:relative;
+  background: transparent; /* Laisse transparaître le diaporama du HTML */
+}
+
+/* === CHEMINS ET EXTENSIONS DES 11 IMAGES AVEC TRANSITIONS FLUIDES INTERNES === */
+@keyframes globalSlideshow {
   /* Photo 1 : bg_ec_1.jpg */
-  0%, 7% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_1.jpg');
-  }
-  /* Transition vers 2 (7% à 9%) - Photo 2 : bg_ec_2.jpg */
-  9%, 16% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_2.jpg');
-  }
-  /* Transition vers 3 (16% à 18%) - Photo 3 : bg_ec_3.jpg */
-  18%, 25% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_3.jpg');
-  }
-  /* Transition vers 4 (25% à 27%) - Photo 4 : bg_ec_4.png */
-  27%, 34% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_4.png');
-  }
-  /* Transition vers 5 (34% à 36%) - Photo 5 : bg_ec_6.jpg */
-  36%, 43% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_6.jpg');
-  }
-  /* Transition vers 6 (43% à 45%) - Photo 6 : bg_ec_7.jpg */
-  45%, 52% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_7.jpg');
-  }
-  /* Transition vers 7 (52% à 54%) - Photo 7 : bg_es_1.jpg */
-  54%, 61% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_es_1.jpg');
-  }
-  /* Transition vers 8 (61% à 63%) - Photo 8 : bg_es_2.png */
-  63%, 70% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_es_2.png');
-  }
-  /* Transition vers 9 (70% à 72%) - Photo 9 : bg_es_3.png */
-  72%, 79% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_es_3.png');
-  }
-  /* Transition vers 10 (79% à 81%) - Photo 10 : bg_es_4.png */
-  81%, 88% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_es_4.png');
-  }
-  /* Transition vers 11 (88% à 90%) - Photo 11 : bg_es_5.png */
-  90%, 97% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_es_5.png');
-  }
-  /* Boucle fluide pour revenir à l'image 1 */
-  100% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.82), rgba(10, 14, 26, 0.82)), url('bg/bg_ec_1.jpg');
-  }
+  0%, 6% { background-image: url('bg/bg_ec_1.jpg'); }
+  
+  /* Photo 2 : bg_ec_2.jpg */
+  9%, 15% { background-image: url('bg/bg_ec_2.jpg'); }
+  
+  /* Photo 3 : bg_ec_3.jpg */
+  18%, 24% { background-image: url('bg/bg_ec_3.jpg'); }
+  
+  /* Photo 4 : bg_ec_4.png */
+  27%, 33% { background-image: url('bg/bg_ec_4.png'); }
+  
+  /* Photo 5 : bg_ec_6.jpg */
+  36%, 42% { background-image: url('bg/bg_ec_6.jpg'); }
+  
+  /* Photo 6 : bg_ec_7.jpg */
+  45%, 51% { background-image: url('bg/bg_ec_7.jpg'); }
+  
+  /* Photo 7 : bg_es_1.jpg */
+  54%, 60% { background-image: url('bg/bg_es_1.jpg'); }
+  
+  /* Photo 8 : bg_es_2.png */
+  63%, 69% { background-image: url('bg/bg_es_2.png'); }
+  
+  /* Photo 9 : bg_es_3.png */
+  72%, 78% { background-image: url('bg/bg_es_3.png'); }
+  
+  /* Photo 10 : bg_es_4.png */
+  81%, 87% { background-image: url('bg/bg_es_4.png'); }
+  
+  /* Photo 11 : bg_es_5.png */
+  90%, 96% { background-image: url('bg/bg_es_5.png'); }
+  
+  /* Rebouclage propre */
+  100% { background-image: url('bg/bg_ec_1.jpg'); }
 }
 
-body{display:flex;flex-direction:column;align-items:center;padding:0;position:relative}
+/* Leds néons décoratives de fond */
+body::before{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background-image:radial-gradient(circle at 25% 25%,rgba(99,102,241,.06) 0%,transparent 50%),radial-gradient(circle at 75% 75%,rgba(236,72,153,.04) 0%,transparent 50%);
+  pointer-events:none;z-index:-1;
+}
 
 /* Header */
 .site-header{width:100%;text-align:center;padding:2rem 0 1.5rem;position:relative}
@@ -105,9 +109,9 @@ body{display:flex;flex-direction:column;align-items:center;padding:0;position:re
 
 /* Container */
 .container{
-  width:100%;max-width:1200px;background:rgba(35,43,57,.8);backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,.1);padding:3rem;border-radius:var(--radius-2xl);
-  box-shadow:var(--shadow-xl),inset 0 1px 0 rgba(255,255,255,.1);
+  width:100%;max-width:1200px;background:rgba(22, 27, 38, 0.85);backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.08);padding:3rem;border-radius:var(--radius-2xl);
+  box-shadow:var(--shadow-xl),inset 0 1px 0 rgba(255,255,255,.05);
   margin:1rem 1.5rem 3rem;position:relative;overflow:hidden
 }
 .container::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.6),transparent)}
