@@ -33,8 +33,8 @@ document.addEventListener("DOMContentLoaded", function() {
           <div class="dropdown">
             <a href="login.html" class="dropbtn">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-              <a href="login.html">🟢 EstaCup S9 (Saison Actuelle)</a>
-              <a href="#" style="opacity: 0.5; cursor: not-allowed;" onclick="return false;">⚪ EstaCup S10 (Prochainement)</a>
+              <a href="#" style="opacity: 0.5; cursor: not-allowed;" onclick="return false;">🟢 EstaCup S10</a>
+              <a href="login.html">⚪ EstaCup S9</a>
             </div>
           </div>
           
