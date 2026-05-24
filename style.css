@@ -1,5 +1,5 @@
 /* === MODERN ESTACUP CSS === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap');
 
 /* === GLOBAL RESET === */
 * { box-sizing: border-box; margin:0; padding:0; }
@@ -35,23 +35,23 @@ html,body{
   animation: backgroundSlideshow 24s infinite ease-in-out;
 }
 
-/* === ANIMATION DIAPORAMA DE FOND COMPLET (Avec tes noms et extensions d'origine) === */
+/* === ANIMATION DIAPORAMA DE FOND COMPLET (Avec les chemins vers ton dossier bg) === */
 @keyframes backgroundSlideshow {
-  /* Image 1 : bg_ec_1.jpg (Reste fixe de 0% à 25%) */
+  /* Image 1 : bg/bg_ec_1.jpg (Reste fixe de 0% à 25%) */
   0%, 25% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg_ec_1.jpg');
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_1.jpg');
   }
-  /* Image 2 : bg_ec_2.jpg (Reste fixe de 33% à 58%) */
+  /* Image 2 : bg/bg_ec_2.jpg (Reste fixe de 33% à 58%) */
   33%, 58% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg_ec_2.jpg');
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_2.jpg');
   }
-  /* Image 3 : bg_es_2.png (Reste fixe de 66% à 92%) */
+  /* Image 3 : bg/bg_es_2.png (Reste fixe de 66% à 92%) */
   66%, 92% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg_es_2.png');
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_es_2.png');
   }
   /* Retour fluide vers la première image de 92% à 100% */
   100% {
-    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg_ec_1.jpg');
+    background-image: linear-gradient(rgba(10, 14, 26, 0.8), rgba(10, 14, 26, 0.8)), url('bg/bg_ec_1.jpg');
   }
 }
 
