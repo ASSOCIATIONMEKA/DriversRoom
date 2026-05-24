@@ -172,7 +172,7 @@ async function calculatePilotStats() {
         // Version simplifiée du pseudo de course pour tolérer les tirets bas (ex: K_Z_A_H -> KZAH)
         const simplifiedPFullName = pFullName.replace(/[^A-Z0-9]/g, "");
 
-        // 🔍 VÉRIFICATION MULTI-CRITÈRES
+        // 🔍 VÉRIFICATION MULTI-CRITÈRES (LIGNE CORRIGÉE SANS VARIABLE ABSENTE)
         const matchesName = (fullName && pFullName === fullName);
         const matchesSteam = (cleanSteamId && pSteamId === cleanSteamId);
         
