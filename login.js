@@ -15,12 +15,12 @@ import {
   collection
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔧 Config Firebase (Harmonisée à 100% avec le reste de ton site)
+// 🔧 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
   projectId: "estacupbymeka",
-  storageBucket: "estacupbymeka.appspot.com", // 👈 Corrigé ici pour éviter la perte de session
+  storageBucket: "estacupbymeka.appspot.com",
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
@@ -32,6 +32,7 @@ const db = getFirestore(app);
 // 🔄 Redirection automatique si le pilote est déjà connecté globalement
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    localStorage.setItem("isLoggedIn", "true"); // Sauvegarde l'état pour la navbar
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists() && userDoc.data().admin === true) {
@@ -42,6 +43,8 @@ onAuthStateChanged(auth, async (user) => {
     } catch (err) {
       console.error("Erreur lors de la redirection automatique :", err);
     }
+  } else {
+    localStorage.removeItem("isLoggedIn");
   }
 });
 
@@ -62,6 +65,9 @@ $("loginForm").addEventListener("submit", async (e) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    
+    // Mémorisation immédiate de la session pour devancer l'asynchronisme de Firebase
+    localStorage.setItem("isLoggedIn", "true");
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (userDoc.exists()) {
@@ -113,6 +119,8 @@ $("registerForm").addEventListener("submit", async (e) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
+    
+    localStorage.setItem("isLoggedIn", "true");
 
     const allUsers = await getDocs(collection(db, "users"));
     const existing = allUsers.docs.find(docu => {
