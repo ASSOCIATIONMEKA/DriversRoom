@@ -12,8 +12,8 @@ document.addEventListener("DOMContentLoaded", function() {
           <div class="dropdown">
             <a href="index.html#competitions" class="dropbtn">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-              <a href="login.html">🟢 EstaCup S10</a>
-              <a href="s9_archive.html">⚪ EstaCup S9</a>
+              <a href="NewPageS10.htlm">🟢 EstaCup S10</a>
+              <a href="login.html">⚪ EstaCup S9</a>
             </div>
           </div>
           
