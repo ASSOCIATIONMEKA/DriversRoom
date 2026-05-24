@@ -172,14 +172,14 @@ async function calculatePilotStats() {
         // Version simplifiée du pseudo de course pour tolérer les tirets bas (ex: K_Z_A_H -> KZAH)
         const simplifiedPFullName = pFullName.replace(/[^A-Z0-9]/g, "");
 
-        // 🔍 VÉRIFICATION MULTI-CRITÈRES RADICALE
+        // 🔍 VÉRIFICATION MULTI-CRITÈRES
         const matchesName = (fullName && pFullName === fullName);
         const matchesSteam = (cleanSteamId && pSteamId === cleanSteamId);
         
-        // Match si le prénom du profil se retrouve nettoyé dans le pseudo de course (ex: "KZAH" est inclus dans "K_Z_A_H")
+        // Match si le prénom (ou pseudo) nettoyé correspond à celui présent dans le rapport de course
         const matchesPseudoS9 = (simplifiedFirstName && simplifiedPFullName.includes(simplifiedFirstName));
 
-        if (matchesName || matchesSteam || matchesUsername || matchesPseudoS9) {
+        if (matchesName || matchesSteam || matchesPseudoS9) {
           pilotInThisRace = true;
           racesCount++;
           
