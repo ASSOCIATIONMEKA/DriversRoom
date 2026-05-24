@@ -19,4 +19,6 @@ document.addEventListener("DOMContentLoaded", function() {
           <a href="https://twitch.tv/asso_meka" target="_blank">TWITCH</a>
         </div>
     </nav>`;
-// ... (reste du fichier)
+// On insère cette navbar juste après l'ouverture de la balise <body>
+    document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+});
