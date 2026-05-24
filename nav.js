@@ -1,4 +1,4 @@
-// ... (début de ton fichier nav.js)
+document.addEventListener("DOMContentLoaded", function() {
     const navbarHTML = `
     <nav class="top-navbar">
         <a href="index.html">
