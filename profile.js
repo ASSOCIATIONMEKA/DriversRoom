@@ -125,28 +125,28 @@ $("profileForm").addEventListener("submit", async (e) => {
   }
 });
 
-// 3. Calcul dynamique des Statistiques globales (Version robuste et universelle)
+// 3. Calcul dynamique des Statistiques globales basé UNIQUEMENT sur le pseudo de course S9
 async function calculatePilotStats() {
   try {
     let racesCount = 0;
     let winsCount = 0;
     let podiumsCount = 0;
-    let polesCount = 0;
     let registeredChampionships = new Set();
 
-    // Récupération des infos saisies dans le profil par le pilote connecté
+    // Récupération du Prénom saisi dans le formulaire
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
     
-    const firstName = (userData.firstName || "").trim().toUpperCase();
-    const lastName = (userData.lastName || "").trim().toUpperCase();
-    const fullName = `${firstName} ${lastName}`.trim();
-    const cleanSteamId = (userData.steamId || userData.steamID64 || "").trim();
+    // On prend le prénom (ex: K_Z_A_H ou Kzah) nettoyé de ses espaces et mis en majuscules
+    const pilotTargetName = (userData.firstName || "").trim().toUpperCase();
+    const cleanTarget = pilotTargetName.replace(/[^A-Z0-9]/g, ""); // "KZAH"
 
-    // Versions simplifiées (sans espaces ni symboles) pour maximiser les correspondances
-    const simplifiedFirstName = firstName.replace(/[^A-Z0-9]/g, "");
+    if (!cleanTarget) {
+      console.log("Prénom vide, calcul ignoré.");
+      return;
+    }
 
-    // Récupération de tous les rapports de course
+    // Récupération de tous les rapports de course de la base
     const raceHistorySnap = await getDocs(collection(db, "raceHistory"));
 
     raceHistorySnap.forEach((docSnap) => {
@@ -155,46 +155,24 @@ async function calculatePilotStats() {
       let pilotInThisRace = false;
 
       participants.forEach((p) => {
-        // 1. Extraction de toutes les valeurs textes de l'objet participant pour chercher le pseudo
-        const allParticipantStrings = Object.values(p)
-          .filter(val => typeof val === 'string')
-          .map(val => val.trim().toUpperCase());
-
-        const participantFullText = soccerCombineText(p).toUpperCase();
-        const pSteamId = (p.steamId || p.steamID64 || p.guid || "").trim();
-
-        // 2. Tests de correspondance
-        const matchesSteam = (cleanSteamId && pSteamId === cleanSteamId);
+        // Extraction de n'importe quel texte identifiant le participant (name, firstName, etc.)
+        const pFirstName = (p.firstName || "").trim().toUpperCase();
+        const pLastName = (p.lastName || "").trim().toUpperCase();
+        const pNameProperty = (p.name || p.driverName || "").trim().toUpperCase();
         
-        // On regarde si le nom complet ou le prénom simplifié (ex: KZAH) se trouve n'importe où dans l'objet du participant
-        let matchesName = false;
-        if (fullName && participantFullText.includes(fullName)) {
-          matchesName = true;
-        }
-        
-        let matchesPseudo = false;
-        if (simplifiedFirstName) {
-          const cleanParticipantText = participantFullText.replace(/[^A-Z0-9]/g, "");
-          if (cleanParticipantText.includes(simplifiedFirstName)) {
-            matchesPseudo = true;
-          }
-        }
+        // On fusionne tout pour être sûr de ne rien rater
+        const combinedParticipantText = `${pFirstName} ${pLastName} ${pNameProperty}`.replace(/[^A-Z0-9]/g, "");
 
-        if (matchesSteam || matchesName || matchesPseudo) {
+        // Si "KZAH" se trouve dans le texte du participant, on valide !
+        if (combinedParticipantText.includes(cleanTarget)) {
           pilotInThisRace = true;
           racesCount++;
           
-          // Extraction flexible de la position (gère les chaînes ou les nombres, et plusieurs noms de propriétés)
-          const posRaw = p.position || p.pos || p.finishPosition || p.placement || 0;
-          const finalPos = parseInt(posRaw, 10);
+          // Lecture ultra-simple de la position finale
+          const finalPos = parseInt(p.position || p.pos || p.finishPosition || 0, 10);
           
           if (finalPos === 1) winsCount++;
           if (finalPos >= 1 && finalPos <= 3) podiumsCount++;
-          
-          // Extraction de la pole position
-          if (p.isPole === true || p.pole === true || parseInt(p.qualifyingPosition || p.qualifyingPos, 10) === 1) {
-            polesCount++;
-          }
         }
       });
 
@@ -203,7 +181,7 @@ async function calculatePilotStats() {
       }
     });
 
-    // Sauvegarde de secours s'il y a une inscription active
+    // Sauvegarde de secours via l'inscription
     const s9Signup = await getDoc(doc(db, "estacup_signups", currentUser.uid));
     if (s9Signup.exists()) {
       registeredChampionships.add("EstaCup - Saison 9");
@@ -213,7 +191,9 @@ async function calculatePilotStats() {
     $("statRaces").textContent = racesCount;
     $("statWins").textContent = winsCount;
     $("statPodiums").textContent = podiumsCount;
-    $("statPoles").textContent = polesCount;
+    
+    // Sécurité au cas où l'élément des poles existe encore dans le HTML
+    if ($("statPoles")) $("statPoles").textContent = "0";
 
     const listEl = $("championshipList");
     listEl.innerHTML = "";
@@ -230,15 +210,6 @@ async function calculatePilotStats() {
     console.error("Erreur calcul stats:", err);
     $("championshipList").innerHTML = `<li>Erreur au chargement de l'historique</li>`;
   }
-}
-
-// Fonction utilitaire pour fusionner les textes d'un objet de course
-function soccerCombineText(obj) {
-  let str = "";
-  for (let key in obj) {
-    if (typeof obj[key] === 'string') str += " " + obj[key];
-  }
-  return str;
 }
 
 // Déconnexion
