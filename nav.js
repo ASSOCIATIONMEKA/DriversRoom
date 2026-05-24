@@ -16,8 +16,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-document.addEventListener("DOMContentLoaded", function() {
-    // ⚡ Vérification instantanée du stockage local pour éviter l'effet de clignotement
+function injectNavbar() {
+    // Évite les doublons d'injection si la fonction est appelée deux fois
+    if (document.querySelector(".top-navbar")) return;
+
     const fastCheckLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
     const navbarHTML = `
@@ -33,8 +35,8 @@ document.addEventListener("DOMContentLoaded", function() {
           <div class="dropdown">
             <a href="login.html" class="dropbtn">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-              <a href="login.html">🟢 EstaCup S10</a>
-              <a href="login.html">⚪ EstaCup S9</a>
+              <a href="login.html">🟢 EstaCup S10 (Saison Actuelle)</a>
+              <a href="login.html">⚪ EstaCup S9 (Archives)</a>
             </div>
           </div>
           
@@ -50,14 +52,20 @@ document.addEventListener("DOMContentLoaded", function() {
         </div>
     </nav>`;
 
-    document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+    // Ciblage intelligent de l'élément cible
+    const targetDiv = document.getElementById("global-navbar");
+    if (targetDiv) {
+        targetDiv.innerHTML = navbarHTML;
+    } else {
+        document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+    }
 
     const authZone = document.getElementById("nav-auth-zone");
 
-    // Écouteur de session Firebase en arrière-plan
+    // Écouteur de session Firebase
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            localStorage.setItem("isLoggedIn", "true"); // Sécurité de synchronisation
+            localStorage.setItem("isLoggedIn", "true");
             try {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 const userData = userDoc.data();
@@ -78,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 document.getElementById("nav-logout-btn").addEventListener("click", (e) => {
                     e.preventDefault();
-                    localStorage.removeItem("isLoggedIn"); // Nettoyage local
+                    localStorage.removeItem("isLoggedIn");
                     signOut(auth).then(() => {
                         window.location.href = "index.html";
                     });
@@ -88,8 +96,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.error("Erreur navbar:", error);
             }
         } else {
-            localStorage.removeItem("isLoggedIn"); // Nettoyage local si déconnecté de force
+            localStorage.removeItem("isLoggedIn");
             authZone.innerHTML = `<a href="login.html" class="nav-btn-login">CONNEXION</a>`;
         }
     });
-});
+}
+
+// Lancement immédiat si le DOM est déjà prêt, sinon écoute de l'événement
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", injectNavbar);
+} else {
+    injectNavbar();
+}
