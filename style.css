@@ -1,5 +1,5 @@
 /* === MODERN ESTACUP CSS === */
-@import url('https://fonts.gstatic.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* === GLOBAL RESET === */
 * { box-sizing: border-box; margin:0; padding:0; }
@@ -190,7 +190,6 @@ ul li:hover::before{transform:scaleY(1)}
 
 /* === VOTE CIRCUIT === */
 .vote-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-@media (max-width: 820px){.vote-grid{grid-template-columns:1fr}}
 .vote-card{
   background:rgba(15,23,42,.6);border:1px solid var(--border-primary);border-radius:16px;padding:16px;box-shadow:var(--shadow-md)
 }
@@ -207,22 +206,6 @@ ul li:hover::before{transform:scaleY(1)}
 .vote-actions{margin-top:16px}
 .btn-validate{background:linear-gradient(135deg,var(--accent-success),#16a34a)}
 .btn-validate:hover{box-shadow:var(--shadow-lg),0 0 30px rgba(16,185,129,.25)}
-
-/* Responsive tweaks */
-@media (max-width:768px){
-  .container{margin:1rem;padding:2rem}
-  h2{font-size:2rem}
-  .menu,.admin-menu{gap:.5rem}
-  .menu button,.admin-menu button{padding:.75rem 1rem;font-size:.8125rem}
-  .car-thumb{width:100%;max-width:100%}
-  .engage-row{flex-direction:column;align-items:flex-start;gap:1rem}
-}
-@media (max-width:480px){
-  .container{padding:1.5rem}
-  h2{font-size:1.75rem}
-  .site-logo{max-width:140px}
-  button{padding:.875rem 1.5rem;font-size:.875rem}
-}
 
 /* Scrollbar & selection */
 ::-webkit-scrollbar{width:8px}
@@ -251,7 +234,7 @@ ul li:hover::before{transform:scaleY(1)}
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100vw; /* 👈 Force la navbar à faire 100% de la largeur de l'écran visible */
+  width: 100vw; /* Force la navbar à faire 100% de la largeur de l'écran visible */
   max-width: 100%; /* Évite les bugs de défilement horizontal */
   padding: 1rem 2rem;
   background: rgba(10, 14, 26, 0.95);
@@ -259,7 +242,7 @@ ul li:hover::before{transform:scaleY(1)}
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-sizing: border-box; /* 👈 Assure que le padding ne fait pas déborder la barre */
+  box-sizing: border-box; /* Assure que le padding ne fait pas déborder la barre */
 }
 
 .nav-logo { 
@@ -283,6 +266,7 @@ ul li:hover::before{transform:scaleY(1)}
   font-weight: 600;
   font-size: 0.9rem;
   transition: color 0.2s;
+  white-space: nowrap; /* Évite que les liens se coupent en deux sur tablette */
 }
 .nav-links a:hover { color: var(--accent-primary); }
 
@@ -326,4 +310,86 @@ ul li:hover::before{transform:scaleY(1)}
 .nav-btn-login:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-glow);
+}
+
+
+/* =======================================================================
+   📱 LE RESPONSIVE INTELLIGENT (SANS MODIFIER L'AFFICHAGE PC)
+   =======================================================================
+*/
+@media (max-width: 900px) {
+  /* Fix de la Navbar mobile : On bascule en colonne ou en menu empilé */
+  .top-navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap; /* Autorise les liens de navigation à passer à la ligne */
+    justify-content: center;
+    gap: 1rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Ajustement global des gros titres pour éviter le débordement écran */
+  h1, .site-header h1 {
+    font-size: 2rem !important;
+    word-wrap: break-word;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    margin: 1rem 0.5rem;
+    padding: 1.5rem;
+    width: calc(100% - 1rem); /* Évite le débordement horizontal à droite sur smartphone */
+    box-sizing: border-box;
+  }
+  
+  h2 { font-size: 1.8rem; }
+  
+  /* On bascule les grilles de profil et de vote en une colonne fluide */
+  .profile-grid, .vote-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+
+  .menu, .admin-menu {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .menu button, .admin-menu button {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    flex: 1 1 calc(50% - 0.5rem); /* Les boutons se placent par paires de deux */
+  }
+  
+  .car-thumb {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .engage-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem;
+  }
+  h2 { font-size: 1.5rem; }
+  .site-logo { max-width: 120px; }
+  button { width: 100%; padding: 0.875rem 1rem; font-size: 0.9rem; }
+  
+  /* Configuration en 2 colonnes compactes pour les badges de stats profil sur mobile */
+  .stat-badge-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
 }
