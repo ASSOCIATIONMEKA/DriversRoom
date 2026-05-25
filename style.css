@@ -400,3 +400,15 @@ ul li:hover::before{transform:scaleY(1)}
 .admin-table td {
   vertical-align: middle;
 }
+
+/* Style du nom d'utilisateur non cliquable dans la navbar */
+.dropdown-content .dropdown-user-name {
+  user-select: none; /* Empêche la sélection de texte accidentelle */
+  cursor: default;   /* Curseur normal au lieu du pointeur de lien */
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Petit ajustement visuel pour séparer le lien admin s'il apparaît */
+.dropdown-content a[href="admin-users.html"] {
+  border-top: 1px dashed var(--border-primary);
+}
