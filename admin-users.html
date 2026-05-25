@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Gestion des Administrateurs - EstaCup</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="top-navbar" id="navbar">
+    </div>
+
+  <header class="site-header">
+    <img src="img/logo.png" alt="EstaCup Logo" class="site-logo" onerror="this.style.display='none'">
+  </header>
+
+  <div class="container">
+    <h2>🛠️ Gestion des Droits Admin</h2>
+    <p style="text-align: center; margin-bottom: 2rem; color: var(--text-muted);">
+      Liste complète des utilisateurs inscrits sur le site. Vous pouvez accorder ou révoquer les accès administrateur.
+    </p>
+
+    <div id="msgBox" class="hidden"></div>
+
+    <div id="loading" style="text-align: center; padding: 2rem; color: var(--accent-primary);">
+      Chargement de la base des pilotes...
+    </div>
+
+    <div id="usersSection" class="hidden">
+      <div style="overflow-x: auto; width: 100%;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-primary); text-align: left;">
+              <th style="padding: 1rem; color: var(--text-muted);">Pilote</th>
+              <th style="padding: 1rem; color: var(--text-muted);">Email</th>
+              <th style="padding: 1rem; color: var(--text-muted); text-align: center;">Statut</th>
+              <th style="padding: 1rem; color: var(--text-muted); text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="admin-users.js"></script>
+</body>
+</html>
