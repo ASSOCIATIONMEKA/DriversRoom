@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -12,7 +12,8 @@ const firebaseConfig = {
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 
-const app = initializeApp(firebaseConfig);
+// 🛡️ Sécurité de double initialisation
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -35,19 +36,16 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   try {
-    // Vérification du rôle dans Firestore
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const userData = userDoc.exists() ? userDoc.data() : null;
 
     if (!userData || userData.admin !== true) {
-      // Si l'utilisateur n'est pas admin, redirection immédiate vers l'accueil
       console.warn("Accès refusé : vous n'êtes pas administrateur.");
       window.location.href = "index.html";
       return;
     }
 
     currentUser = user;
-    // L'utilisateur est bien admin, on charge la liste
     await loadAllUsers();
 
   } catch (err) {
@@ -56,7 +54,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// 👥 Chargement de tous les utilisateurs de la collection "users"
+// 👥 Chargement de tous les utilisateurs
 async function loadAllUsers() {
   try {
     const querySnapshot = await getDocs(collection(db, "users"));
@@ -72,15 +70,12 @@ async function loadAllUsers() {
       const email = data.email || "Non renseigné";
       const isAdmin = data.admin === true;
 
-      // Création de la ligne du tableau
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid var(--border-primary)";
       
-      // Style des badges de statut
       const badgeClass = isAdmin ? "badge-license licence-pro" : "badge-license licence-rookie";
       const badgeText = isAdmin ? "👑 Admin" : "📋 Pilote";
 
-      // On empêche l'admin connecté de se retirer ses propres droits par accident
       const isSelf = (uid === currentUser.uid);
       const disabledAttribute = isSelf ? "disabled" : "";
       const buttonText = isAdmin ? "Retirer Admin" : "Rendre Admin";
@@ -102,7 +97,6 @@ async function loadAllUsers() {
       tbody.appendChild(tr);
     });
 
-    // Attacher les événements sur les boutons
     document.querySelectorAll(".btn-toggle-admin").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
@@ -111,7 +105,6 @@ async function loadAllUsers() {
       });
     });
 
-    // Affichage de la section et masquage du chargement
     $("loading").classList.add("hidden");
     $("usersSection").classList.remove("hidden");
 
@@ -121,19 +114,14 @@ async function loadAllUsers() {
   }
 }
 
-// 🔄 Fonction pour intervertir le rôle Admin / Pilote
 async function toggleAdminStatus(uid, currentStatus) {
   try {
     const userRef = doc(db, "users", uid);
-    
-    // Inversion du statut
     await setDoc(userRef, {
       admin: !currentStatus
     }, { merge: true });
 
     showMsg("Droits d'accès mis à jour avec succès !");
-    
-    // Recharger la liste pour actualiser l'affichage
     await loadAllUsers();
   } catch (err) {
     console.error("Erreur lors de la modification des droits :", err);
