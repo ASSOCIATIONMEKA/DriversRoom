@@ -393,3 +393,10 @@ ul li:hover::before{transform:scaleY(1)}
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.admin-table td {
+  vertical-align: middle;
+}
