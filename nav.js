@@ -70,16 +70,26 @@ function injectNavbar() {
             try {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 const userData = userDoc.data();
+                
                 const firstName = userData ? userData.firstName : "Pilote";
+                const lastName = userData ? userData.lastName : "";
                 const isAdmin = userData && userData.admin === true;
 
                 authZone.innerHTML = `
                   <div class="dropdown">
                     <a href="#" class="dropbtn" style="color: #10B981; font-weight: 700;">👤 ${firstName.toUpperCase()} ▾</a>
-                    <div class="dropdown-content" style="min-width: 160px;">
-                      <a href="profile.html" style="font-weight: 600; color: #6366F1;">👤 Mon Profil</a>
+                    <div class="dropdown-content" style="min-width: 180px;">
+                      
+                      <div class="dropdown-user-name" style="padding: 12px 16px; font-weight: 700; color: var(--accent-primary); border-bottom: 1px solid var(--border-primary); font-size: 0.85rem; cursor: default; user-select: none; background: rgba(255, 255, 255, 0.02);">
+                        ${firstName.toUpperCase()} ${lastName.toUpperCase()}
+                      </div>
+                      
+                      <a href="profile.html">Mon Profil</a>
                       <a href="dashboard.html">🎛️ Espace Écurie S9</a>
-                      ${isAdmin ? '<a href="admin.html">🛠️ Panel Admin</a>' : ''}
+                      
+                      ${isAdmin ? '<a href="admin.html">⚙️ Panel Admin S9</a>' : ''}
+                      ${isAdmin ? '<a href="admin-users.html" style="color: var(--accent-tertiary); font-weight: 600; border-top: 1px dashed var(--border-primary);">🛠️ Gestion Admin</a>' : ''}
+                      
                       <a href="#" id="nav-logout-btn" style="color: #EF4444;">✖ Déconnexion</a>
                     </div>
                   </div>
