@@ -513,7 +513,7 @@ function toFiniteNumber(v) {
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin");
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
-  goToAdmin?.addEventListener("click", () => (window.location.href = "admin-s10.html";));
+  goToAdmin?.addEventListener("click", () => (window.location.href = "admin.html"));
 
   const buttons  = document.querySelectorAll('.menu button[data-section]');
   const sections = document.querySelectorAll('.section');
