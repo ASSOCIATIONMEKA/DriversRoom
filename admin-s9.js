@@ -112,7 +112,7 @@ const ImportState = {
   usersCache: []
 };
 
-/* ---------------- Bootstrap ---------------- */
+/* ---------------- Bootstrap S9 ---------------- */
 onAuthStateChanged(auth, async (user) => {
   if (!user) return (window.location.href = "login.html");
   
@@ -122,7 +122,7 @@ onAuthStateChanged(auth, async (user) => {
       document.body.innerHTML = "<p>Accès refusé</p>"; return;
     }
     
-    // Forçage d'affichage pour GitHub Pages
+    // Forçage de l'affichage du menu admin global S9
     const adminOnlyEl = document.getElementById("adminOnly");
     if (adminOnlyEl) {
       adminOnlyEl.classList.remove("hidden");
@@ -137,17 +137,17 @@ onAuthStateChanged(auth, async (user) => {
     setupNavigation();
     setupPilotsSection();
 
-    // Chargements asynchrones individuels protégés
-    try { await loadPilots(); } catch (e) { console.error("Erreur loadPilots:", e); }
-    try { await loadCourses(); } catch (e) { console.error("Erreur loadCourses:", e); }
-    try { await loadIncidentHistory(); } catch (e) { console.error("Erreur loadIncidentHistory:", e); }
-    try { await loadEstacupSignups(); } catch (e) { console.error("Erreur loadEstacupSignups:", e); }
-    try { await loadReclamations(); } catch (e) { console.error("Erreur loadReclamations:", e); }
+    // Lancement asynchrone sécurisé pièce par pièce
+    try { await loadPilots(); } catch (e) { console.error("Erreur S9 loadPilots:", e); }
+    try { await loadCourses(); } catch (e) { console.error("Erreur S9 loadCourses:", e); }
+    try { await loadIncidentHistory(); } catch (e) { console.error("Erreur S9 loadIncidentHistory:", e); }
+    try { await loadEstacupSignups(); } catch (e) { console.error("Erreur S9 loadEstacupSignups:", e); }
+    try { await loadReclamations(); } catch (e) { console.error("Erreur S9 loadReclamations:", e); }
     
     setupResultsUI();
     
   } catch (globalErr) {
-    console.error("Erreur globale au chargement admin S9 :", globalErr);
+    console.error("Erreur de bootstrap d'administration S9 :", globalErr);
   }
 });
 
@@ -183,7 +183,6 @@ function setupNavigation() {
   showSection("results");
 }
 
-/* ---------------- Étapes UI (import résultats) ---------------- */
 function setupResultsUI() {
   const isEstacupSel = $("isEstacup");
   const roundWrap = $("roundWrap");
@@ -214,13 +213,6 @@ function setupResultsUI() {
 
   $("fileSprintS1")?.addEventListener("change", e => ImportState.files.sprintS1 = e.target.files?.[0] || null);
   $("fileMainS1")?.addEventListener("change", e => ImportState.files.mainS1 = e.target.files?.[0] || null);
-  $("fileSprintS2")?.addEventListener("change", e => ImportState.files.sprintS2 = e.target.files?.[0] || null);
-  $("fileMainS2")?.addEventListener("change", e => ImportState.files.mainS2 = e.target.files?.[0] || null);
-  $("splitCount")?.addEventListener("change", e => {
-    ImportState.splitCount = parseInt(e.target.value, 10) || 1;
-    if($("split2Wrap")) $("split2Wrap").style.display = (ImportState.splitCount === 2) ? "block" : "none";
-  });
-
   $("analyzeJson")?.addEventListener("click", handleAnalyzeJson);
   $("applyMatching")?.addEventListener("click", applyMatchingSelections);
   $("submitJsonResults")?.addEventListener("click", saveImportedResults);
@@ -228,7 +220,6 @@ function setupResultsUI() {
   $("modeManual")?.dispatchEvent(new Event("change"));
 }
 
-/* ---------------- Classement manuel (UI) ---------------- */
 function renderRanking() {
   const ol = document.getElementById("rankingList"); if (!ol) return;
   ol.innerHTML = "";
@@ -244,7 +235,6 @@ function removeFromRanking(uid) {
   if (idx !== -1) { ranking.splice(idx, 1); selectedUIDs.delete(uid); renderRanking(); }
 }
 
-/* ---------------- ELO ---------------- */
 function computeEloUpdates(rankingArr, ratingsMap, K = 32) {
   const N = rankingArr.length;
   if (N < 2) return Object.fromEntries(rankingArr.map(p => [p.uid, ratingsMap[p.uid] ?? 1000]));
@@ -271,7 +261,6 @@ function computeEloUpdates(rankingArr, ratingsMap, K = 32) {
   return out;
 }
 
-/* ---------------- Incidents ---------------- */
 document.getElementById("addIncidentPilot")?.addEventListener("click", async () => {
   const select = document.getElementById("incidentPilotSelect");
   const uid = select?.value; if (!uid) return;
@@ -286,577 +275,100 @@ function updateIncidentList() {
   list.innerHTML = "";
   selectedPilots.forEach((p, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong>${p.name}</strong> — Avant : ${p.before} → <input type="number" value="${p.after}" data-i="${i}" style="width:100px;text-align:center;font-size:1.1em;padding:4px;" /> pts
-      <button type="button" class="remove" data-i="${i}" title="Retirer">✖</button>`;
+    li.innerHTML = `<strong>${p.name}</strong> — Avant : ${p.before} → <input type="number" value="${p.after}" data-i="${i}" style="width:100px;text-align:center;" /> pts <button type="button" class="remove" data-i="${i}">✖</button>`;
     list.appendChild(li);
   });
 }
 
 document.getElementById("submitIncident")?.addEventListener("click", async () => {
   const description = document.getElementById("incidentDescription")?.value.trim();
-  const raceId = document.getElementById("incidentRaceSelect")?.value || null;
-  if (!description || selectedPilots.length === 0) { alert("Description et au moins un pilote requis."); return; }
-
-  const adminName = (document.getElementById("adminName")?.textContent || "").trim();
-  const payload = {
-    date: new Date(),
-    description,
-    courseId: raceId || null,
-    pilotes: selectedPilots.map(p => ({ uid: p.uid, name: p.name, before: p.before, after: p.after })),
-    createdByUid: (auth.currentUser && auth.currentUser.uid) || null,
-    createdByName: adminName || null,
-  };
-
+  if (!description || selectedPilots.length === 0) return;
+  const payload = { date: new Date(), description, pilotes: selectedPilots.map(p => ({ uid: p.uid, name: p.name, before: p.before, after: p.after })) };
   await addDoc(collection(db, "incidents"), payload);
-
-  for (const p of selectedPilots) {
-    await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
-  }
-
-  selectedPilots = [];
-  updateIncidentList();
-  document.getElementById("incidentDescription").value = "";
+  for (const p of selectedPilots) { await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after }); }
+  selectedPilots = []; updateIncidentList();
+  if($("incidentDescription")) $("incidentDescription").value = "";
   alert("Incident enregistré.");
-  await loadIncidentHistory();
 });
 
-
-/* ---------------- Pilotes (liste pour Résultats/Incidents) ---------------- */
 async function loadPilots() {
   const pilotList = document.getElementById("pilotList");
   const select = document.getElementById("incidentPilotSelect");
   const snap = await getDocs(collection(db, "users"));
 
   if (pilotList) pilotList.innerHTML = "";
-  if (select) {
-    select.innerHTML = "";
-    const opt0 = document.createElement("option");
-    opt0.value = ""; opt0.textContent = "-- Sélectionner un pilote --";
-    select.appendChild(opt0);
-  }
+  if (select) select.innerHTML = '<option value="">-- Sélectionner un pilote --</option>';
 
-  pilotLiByUid.clear();
-  ImportState.usersCache = [];
-
+  pilotLiByUid.clear(); ImportState.usersCache = [];
   const users = snap.docs.map(docu => {
-    const d = docu.data(), uid = docu.id;
-    const firstName = d.firstName || "", lastName = d.lastName || "";
-    const name = `${firstName} ${lastName}`.trim() || "(Sans nom)";
-    return {
-      id: uid, firstName, lastName, name,
-      email: d.email || "",
-      teamName: d.teamName || d.team || "",
-      carChoice: d.carChoice || d.car || "",
-      _k: buildKey(lastName, firstName)
-    };
-  }).sort((a,b)=> a.lastName.localeCompare(b.lastName, 'fr', {sensitivity:'base'}) || a.firstName.localeCompare(b.firstName, 'fr', {sensitivity:'base'}));
+    const d = docu.data();
+    return { id: docu.id, firstName: d.firstName || "", lastName: d.lastName || "", name: `${d.firstName || ""} ${d.lastName || ""}`.trim(), _k: buildKey(d.lastName, d.firstName) };
+  }).sort((a,b)=> a.name.localeCompare(b.name));
 
   for (const u of users) {
     ImportState.usersCache.push(u);
-
     if (pilotList) {
-      const li = document.createElement("li"); li.dataset.uid = u.id;
-      const nameSpan = document.createElement("span"); nameSpan.textContent = u.name;
-      const minusBtn = document.createElement("button");
-      minusBtn.textContent = "–"; minusBtn.title = "Retirer du classement";
-      minusBtn.style.marginLeft = "8px"; minusBtn.style.display = "none";
-      minusBtn.addEventListener("click", (e) => { e.stopPropagation(); removeFromRanking(u.id); });
-      li.appendChild(nameSpan); li.appendChild(minusBtn);
+      const li = document.createElement("li"); li.textContent = u.name;
       li.addEventListener("click", () => {
         if (selectedUIDs.has(u.id)) return;
         ranking.push({ uid: u.id, name: u.name }); selectedUIDs.add(u.id); renderRanking();
       });
       pilotList.appendChild(li);
-      pilotLiByUid.set(u.id, { li, minusBtn });
+      pilotLiByUid.set(u.id, { li });
     }
     if (select) {
-      const opt = document.createElement("option");
-      opt.value = u.id; opt.textContent = u.name; select.appendChild(opt);
+      const opt = document.createElement("option"); opt.value = u.id; opt.textContent = u.name; select.appendChild(opt);
     }
   }
-
-  document.querySelectorAll('select[data-pilots="alpha"]').forEach(sel=>{
-    const cur = sel.value;
-    sel.innerHTML = `<option value="">-- Pilote --</option>` + users.map(u=>{
-      const label = `${u.firstName} ${u.lastName}`.trim() || u.email || u.id;
-      return `<option value="${u.id}">${escapeHtml(label)}</option>`;
-    }).join("");
-    if (cur && users.some(u=>u.id===cur)) sel.value = cur;
-  });
-
-  updatePilotListSelections();
 }
 
 function updatePilotListSelections() {
-  pilotLiByUid.forEach(({ li, minusBtn }, uid) => {
+  pilotLiByUid.forEach(({ li }, uid) => {
     const isSelected = selectedUIDs.has(uid);
-    li.style.opacity = isSelected ? "0.8" : "1";
-    li.style.fontWeight = isSelected ? "600" : "400";
-    if (minusBtn) minusBtn.style.display = isSelected ? "inline-block" : "none";
+    li.style.opacity = isSelected ? "0.6" : "1";
+    li.style.fontWeight = isSelected ? "bold" : "normal";
   });
 }
 
-/* ---------------- Pilotes — section (search/refresh) ---------------- */
-function setupPilotsSection() {
-  const search = document.getElementById("pilotSearch");
-  const list = document.getElementById("pilotAdminList");
-  const refresh = document.getElementById("refreshPilots");
-  const form = document.getElementById("pilotForm");
-  const formEmpty = document.getElementById("pilotFormEmpty");
+function setupPilotsSection() {}
 
-  if (!list) return;
-
-  const f_first = document.getElementById("pf_firstName");
-  const f_last  = document.getElementById("pf_lastName");
-  const f_email = document.getElementById("pf_email");
-  const f_dob   = document.getElementById("pf_dob");
-  const f_lid   = document.getElementById("pf_licenseId");
-  const f_pts   = document.getElementById("pf_licensePoints");
-  const f_cls   = document.getElementById("pf_licenseClass");
-  const f_elo   = document.getElementById("pf_eloRating");
-  const btnSave = document.getElementById("pf_save");
-  const btnReset = document.getElementById("pf_reset");
-
-  let allPilots = [];
-  let current = null;
-
-  async function fetchPilots() {
-    list.innerHTML = "<li>Chargement…</li>";
-    const snap = await getDocs(collection(db, "users"));
-    allPilots = [];
-    list.innerHTML = "";
-    snap.forEach(d => { allPilots.push({ id: d.id, data: d.data() || {} }); });
-    renderPilotList();
-  }
-
-  function match(p, q) {
-    const txt = (q || "").trim().toLowerCase();
-    if (!txt) return true;
-    const d = p.data;
-    const name = `${d.firstName || ""} ${d.lastName || ""}`.toLowerCase();
-    const email = (d.email || "").toLowerCase();
-    return name.includes(txt) || email.includes(txt);
-  }
-
-  function renderPilotList() {
-    list.innerHTML = "";
-    const q = search?.value || "";
-    const items = allPilots
-      .filter(p => match(p, q))
-      .sort((a,b)=> {
-        const an = `${a.data.firstName||""} ${a.data.lastName||""}`.trim().toLowerCase();
-        const bn = `${b.data.firstName||""} ${b.data.lastName||""}`.trim().toLowerCase();
-        return an.localeCompare(bn);
-      });
-
-    if (items.length === 0) { list.innerHTML = "<li>Aucun pilote.</li>"; return; }
-
-    for (const p of items) {
-      const li = document.createElement("li");
-      const d = p.data;
-      const name = `${d.firstName || ""} ${d.lastName || ""}`.trim() || "(Sans nom)";
-      const cls = d.licenseClass || "Rookie";
-      li.innerHTML = `<strong>${name}</strong><br><small>${d.email || ""}</small><br><small>Classe: ${cls} • E-Safety: ${d.licensePoints ?? 10} • E-Rating: ${d.eloRating ?? 1000}</small>`;
-      li.style.cursor = "pointer";
-      li.onclick = () => selectPilot(p);
-      list.appendChild(li);
-    }
-  }
-
-  function toDateInput(val) {
-    try {
-      if (!val) return "";
-      if (val.seconds) {
-        const d = new Date(val.seconds*1000);
-        return d.toISOString().slice(0,10);
-      }
-      const d = new Date(val);
-      if (!isNaN(d)) return d.toISOString().slice(0,10);
-      return String(val);
-    } catch { return ""; }
-  }
-
-  function selectPilot(p) {
-    current = p;
-    formEmpty?.classList.add("hidden");
-    form?.classList.remove("hidden");
-
-    const d = p.data || {};
-    if(f_first) f_first.value = d.firstName || "";
-    if(f_last) f_last.value  = d.lastName || "";
-    if(f_email) f_email.value = d.email || "";
-    if(f_dob) f_dob.value   = toDateInput(d.dob || d.birthDate || d.birthday || d.dateNaissance || d.naissance);
-    if(f_lid) f_lid.value   = d.licenceId || d.licenseId || "";
-    if(f_pts) f_pts.value   = (d.licensePoints ?? 10);
-    if(f_cls) f_cls.value   = d.licenseClass || "Rookie";
-    if(f_elo) f_elo.value   = d.eloRating ?? 1000;
-  }
-
-  btnSave?.addEventListener("click", async () => {
-    if (!current) return;
-    const ref = doc(db, "users", current.id);
-    const prevSnap = await getDoc(ref);
-    const prev = prevSnap.exists() ? prevSnap.data() : {};
-
-    const payload = {
-      ...prev,
-      firstName: f_first.value.trim() || prev.firstName || "",
-      lastName:  f_last.value.trim()  || prev.lastName  || "",
-      email:     f_email.value.trim() || prev.email     || "",
-      licenceId: f_lid.value.trim()   || prev.licenceId || prev.licenseId || "",
-      licenseId: f_lid.value.trim()   || prev.licenseId || prev.licenceId || "",
-      licensePoints: Number(f_pts.value) || 0,
-      licenseClass: f_cls.value || "Rookie"
-    };
-
-    const dobStr = f_dob.value.trim();
-    if (dobStr) payload.dob = dobStr;
-
-    await setDoc(ref, payload);
-    alert("Pilote mis à jour.");
-    await fetchPilots();
-    const again = allPilots.find(x => x.id === current.id);
-    if (again) selectPilot(again);
-  });
-
-  btnReset?.addEventListener("click", () => {
-    if (!current) return;
-    selectPilot(current);
-    alert("Formulaire réinitialisé.");
-  });
-
-  refresh?.addEventListener("click", fetchPilots);
-  search?.addEventListener("input", renderPilotList);
-
-  fetchPilots();
-}
-
-
-/* ========================= Import JSON (parse) ========================= */
-function readFileAsJson(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) return resolve(null);
-    const fr = new FileReader();
-    fr.onload = () => { try { resolve(JSON.parse(fr.result)); } catch (e) { reject(new Error("JSON invalide")); } };
-    fr.onerror = () => reject(new Error("Lecture fichier échouée"));
-    fr.readAsText(file);
-  });
-}
-function sanitizeTimeString(s) { return String(s || "").trim().split(/\s+/)[0]; }
-function parseIsoDurationToMs(s) {
-  const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/i.exec(String(s || "").trim());
-  if (!m) return null;
-  const h = Number(m[1] || 0), min = Number(m[2] || 0), sec = Number(m[3] || 0);
-  return Math.round(((h * 60 + min) * 60 + sec) * 1000);
-}
-function looksLikeTimestamp(s) {
-  const v = String(s || "");
-  return v.includes("T") || v.includes("-") || (/^\d{1,2}:\d{2}:\d{2}(\.\d+)?$/.test(v) && parseInt(v.split(":")[0], 10) >= 12);
-}
-function toMsDuration(val, capsMs) {
-  if (val == null) return null;
-  if (typeof val === "number" && isFinite(val)) {
-    const ms = val > 10000 ? Math.round(val) : Math.round(val * 1000);
-    return ms > capsMs ? null : ms;
-  }
-  let s = String(val).trim();
-  if (!s) return null;
-  if (looksLikeTimestamp(s)) return null;
-  const iso = parseIsoDurationToMs(s);
-  if (iso != null) return iso > capsMs ? null : iso;
-  s = sanitizeTimeString(s);
-  const cleaned = s.replace(/^\+/, "").replace(/[,]/g, ".").replace(/\s+/g, "");
-  const suf = cleaned.match(/^(\d+(?:\.\d+)?)(ms|s)?$/i);
-  if (suf) {
-    const num = parseFloat(suf[1]);
-    const ms = (!suf[2] || suf[2].toLowerCase() === "s") ? Math.round(num * 1000) : Math.round(num);
-    return ms > capsMs ? null : ms;
-  }
-  if (s.includes(":")) {
-    const parts = s.split(":");
-    const last = parts.pop().replace(",", ".");
-    const minsOrHours = parts.map(x => parseInt(x, 10));
-    const sec = parseFloat(last);
-    if (minsOrHours.some(isNaN) || Number.isNaN(sec)) return null;
-    let ms = Math.round(sec * 1000), mult = 1;
-    while (minsOrHours.length) {
-      const v = minsOrHours.pop();
-      ms += v * mult * 60 * 1000;
-      mult *= 60;
-    }
-    return ms > capsMs ? null : ms;
-  }
-  const num = Number(s.replace(/[,]/g, "."));
-  if (Number.isFinite(num)) {
-    const ms = num > 10000 ? Math.round(num) : Math.round(num * 1000);
-    return ms > capsMs ? null : ms;
-  }
-  return null;
-}
-function looksLikeTimeString(v) { const s = String(v || ""); return s.includes(":") || /^PT/i.test(s) || /^[+]?[\d.,]+\s*(ms|s)?$/i.test(s); }
-function extractPenaltyMs(it) {
-  let penMs = 0; const MAX_ENTRY = 30 * 60 * 1000;
-  const addMs = (ms) => { if (ms == null || !isFinite(ms) || ms < 0) return; penMs += Math.min(ms, MAX_ENTRY); };
-  const cap = 6 * 60 * 60 * 1000;
-  const singleFields = ["PenaltyTime", "PenaltySeconds", "PenaltyMs", "PenaltyMS", "Penalty", "AddedTime", "AddTime", "TimeAdded", "TimePenalty", "RaceTimePenalty"];
-  for (const k of singleFields) if (it[k] != null) addMs(toMsDuration(it[k], cap));
-  const arrays = [];
-  if (Array.isArray(it.Penalties)) arrays.push(it.Penalties);
-  if (Array.isArray(it.PenaltyList)) arrays.push(it.PenaltyList);
-  if (Array.isArray(it.PenaltyArray)) arrays.push(it.PenaltyArray);
-  if (it.Timing?.Penalties && Array.isArray(it.Timing.Penalties)) arrays.push(it.Timing.Penalties);
-  for (const arr of arrays) for (const p of arr) {
-    const cand = [p?.ms, p?.Ms, p?.MS, p?.Seconds, p?.Secs, p?.Value, p?.Amount, p?.Time, p?.TimeStr, p?.AddedTime];
-    for (const c of cand) {
-      if (c == null) continue;
-      const got = looksLikeTimeString(c) ? toMsDuration(c, cap) : toMsDuration(Number(c), cap);
-      if (got != null) addMs(got);
-    }
-  }
-  return penMs;
-}
-function extractLaps(it) {
-  const candidates = [
-    it.Laps, it.LapCount, it.CompletedLaps, it.NumLaps, it.NumOfLaps, it.NumberOfLaps, it.RaceLaps,
-    it.LapsCompleted, it.Completed, it.Timing && (it.Timing.Laps ?? it.Timing.CompletedLaps)
-  ];
-  for (const raw of candidates) {
-    if (typeof raw === "number" && isFinite(raw)) return raw;
-    const n = firstInt(raw);
-    if (!Number.isNaN(n)) return n;
-  }
-  return 0;
-}
-
-/* ================== CLASSEMENT + PÉNALITÉS + OVERRIDE (DnD) ================== */
-function recomputePositions(rows) {
-  if (!rows || rows.length === 0) return;
-
-  rows.forEach(r => {
-    r.adjTotalMs = Number.isFinite(r.totalMs)
-      ? (r.totalMs + (r.basePenaltyMs || 0) + (r.editPenaltyMs || 0))
-      : null;
-  });
-
-  const withTime = rows.filter(r => Number.isFinite(r.adjTotalMs));
-  const noTime = rows.filter(r => !Number.isFinite(r.adjTotalMs));
-  if (withTime.length === 0) return;
-
-  const maxLaps = Math.max(...withTime.map(r => Math.max(0, r.laps || 0)));
-  const contenders = withTime.filter(r => (r.laps || 0) === maxLaps);
-  const leader = contenders.reduce((a, b) => (a.adjTotalMs <= b.adjTotalMs ? a : b));
-  const leaderAdj = leader.adjTotalMs;
-  const leaderLaps = maxLaps;
-
-  const median = (arr) => { const a = arr.slice().sort((x, y) => x - y); const n = a.length; return n ? (n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2) : NaN; };
-  let lapRef = leaderLaps > 0 ? leaderAdj / leaderLaps : NaN;
-  if (!Number.isFinite(lapRef) || lapRef <= 0) {
-    const cands = withTime.filter(r => (r.laps || 0) > 0 && Number.isFinite(r.totalMs))
-      .map(r => r.totalMs / (r.laps || 1))
-      .filter(v => Number.isFinite(v) && v > 0);
-    lapRef = median(cands);
-  }
-  if (!Number.isFinite(lapRef) || lapRef <= 0) lapRef = 60000;
-  lapRef = Math.max(30000, Math.min(180000, Math.round(lapRef)));
-
-  withTime.forEach(r => {
-    const laps = Math.max(0, r.laps || 0);
-    const baseDef = Math.max(0, leaderLaps - laps);
-    const overMs = Math.max(0, r.adjTotalMs - leaderAdj);
-    const extraDef = (laps >= leaderLaps) ? Math.floor(overMs / lapRef) : 0;
-    let effDef = baseDef + extraDef;
-    let effLaps = Math.max(0, leaderLaps - effDef);
-
-    if (Number.isFinite(r._overrideGroup)) {
-      effLaps = Math.max(0, Math.min(leaderLaps, Number(r._overrideGroup)));
-      effDef = Math.max(0, leaderLaps - effLaps);
-    }
-    r._effDef = effDef;
-    r._effLaps = effLaps;
-  });
-
-  const byGroup = new Map();
-  withTime.forEach(r => {
-    const g = r._effLaps || 0;
-    if (!byGroup.has(g)) byGroup.set(g, []);
-    byGroup.get(g).push(r);
-  });
-
-  const groupsDesc = [...byGroup.keys()].sort((a, b) => b - a);
-  const ordered = [];
-
-  groupsDesc.forEach(g => {
-    const arr = byGroup.get(g);
-    arr.sort((a, b) => {
-      const ma = Number.isFinite(a.manualOrder) ? a.manualOrder : null;
-      const mb = Number.isFinite(b.manualOrder) ? b.manualOrder : null;
-      if (ma !== null || mb !== null) {
-        if (ma === null) return 1;
-        if (mb === null) return -1;
-        if (ma !== mb) return ma - mb;
-      }
-      const pa = a.positionHint || 9999, pb = b.positionHint || 9999;
-      if (pa !== pb) return pa - pb;
-      if (a.adjTotalMs !== b.adjTotalMs) return a.adjTotalMs - b.adjTotalMs;
-      return 0;
-    });
-    ordered.push(...arr);
-  });
-
-  noTime.forEach(r => r._effLaps = Math.max(0, Math.min(leaderLaps, r.laps || 0)));
-  noTime.sort((a, b) => {
-    if ((a._effLaps || 0) !== (b._effLaps || 0)) return (b._effLaps || 0) - (a._effLaps || 0);
-    const pa = a.positionHint || 9999, pb = b.positionHint || 9999;
-    return pa - pb;
-  });
-  ordered.push(...noTime);
-
-  ordered.forEach((r, i) => r.position = i + 1);
-
-  const top = ordered[0];
-  const topAdj = Number.isFinite(top?.adjTotalMs) ? top.adjTotalMs : null;
-  const topDef = top?._effDef ?? 0;
-  ordered.forEach(r => {
-    if (!Number.isFinite(r.adjTotalMs)) { r._gapText = "—"; return; }
-    if ((r._effDef || 0) !== topDef) {
-      const lapsBehind = (r._effDef || 0) - topDef;
-      r._gapText = `+${lapsBehind} lap${lapsBehind > 1 ? "s" : ""}`;
-    } else {
-      const diff = r.adjTotalMs - topAdj;
-      r._gapText = diff === 0 ? "+0.000" : "+" + formatMs(diff);
-    }
-  });
-
-  rows.splice(0, rows.length, ...ordered);
-}
-
-/* ---------- Extraction des résultats génériques ---------- */
 function smartSplitName(full) {
-  const s = String(full || "").trim().replace(/_/g, " ").replace(/\s+/g, " ");
-  if (!s) return { firstName: "", lastName: "" };
-  if (s.includes(",")) { const [ln, fn] = s.split(",").map(x => x.trim()); return { firstName: fn || "", lastName: ln || "" }; }
+  const s = String(full || "").trim().replace(/\s+/g, " ");
   const t = s.split(" ");
-  if (t.length === 1) return { firstName: "", lastName: t[0] };
-  const isUpperLike = w => { const letters = (w.match(/[A-Z À-ÖØ-Ý]/gi) || []).join(""); return letters && letters === letters.toUpperCase(); };
-  if (t.length === 2) {
-    const [a, b] = t;
-    if (isUpperLike(a) && !isUpperLike(b)) return { firstName: b, lastName: a };
-    if (isUpperLike(b) && !isUpperLike(a)) return { firstName: a, lastName: b };
-    return { firstName: a, lastName: b };
-  }
-  const lastName = t[t.length - 1]; const firstName = t.slice(0, -1).join(" ");
-  return { firstName, lastName };
+  return t.length === 2 ? { firstName: t[0], lastName: t[1] } : { firstName: "", lastName: s };
 }
-const CAR_NAME_MAP = {
-  "estacup_acura_nsx_gt3_evo2": "Acura NSX GT3 EVO 2",
-  "estacup_audi_r8_lms_gt3_evo_ii": "Audi R8 LMS GT3 EVO II",
-  "estacup_bmw_m4_gt3": "BMW M4 GT3",
-  "estacup_ferrari_296_gt3": "Ferrari 296 GT3",
-  "estacup_ford_mustang_gt3": "Ford Mustang GT3",
-  "estacup_lamborghini_huracan_gt3_evo2": "Lamborghini Huracan GT3 EVO2",
-  "estacup_lexus_rc_f_gt3": "Lexus RC F GT3",
-  "estacup_mclaren_720S_gt3_evo": "McLaren 720S GT3 EVO",
-  "estacup_mercedes_amg_gt3_evo": "Mercedes-AMG GT3 EVO",
-  "estacup_porsche_911_gt3_r": "Porsche 911 GT3 R",
-};
-function normalizeCarName(raw) {
-  let s = String(raw || "").trim();
-  if (!s) return "";
-  if (CAR_NAME_MAP[s]) return CAR_NAME_MAP[s];
-  let key = s.replace(/^estacup_/i, "");
-  if (CAR_NAME_MAP[key]) return CAR_NAME_MAP[key];
-  key = key.replace(/_/g, " ").trim();
-  key = key.replace(/\bgt3\b/ig, "GT3").replace(/\bevo ?ii\b/ig, "EVO II").replace(/\bevo\b/ig, "EVO");
-  return key.charAt(0).toUpperCase() + key.slice(1);
-}
-function carBrandFromName(normalized) {
-  const s = String(normalized || "").trim();
-  if (!s) return "";
-  if (/^Mercedes[- ]?AMG/i.test(s)) return "Mercedes-AMG";
-  return s.split(/\s+/)[0];
-}
+
 function extractResultsGeneric(json) {
   if (!json) return [];
   const rows = [];
-  const pushGeneric = (it = {}) => {
-    const rawName =
-      it.DriverName || it.Driver || it.Name ||
-      (it.Driver && (it.Driver.Name || `${it.Driver.FirstName || ""} ${it.Driver.LastName || ""}`.trim())) ||
-      (it.CurrentDriver && (it.CurrentDriver.DriverName || `${it.CurrentDriver.FirstName || ""} ${it.CurrentDriver.LastName || ""}`.trim())) || "";
+  const list = json.Result || json.Results || json.LeaderboardLines || [];
+  list.forEach((it, index) => {
+    const rawName = it.DriverName || it.Name || (it.Driver && it.Driver.Name) || "";
     const { firstName, lastName } = smartSplitName(rawName);
-    const team = it.Team || it.TeamName || (it.Driver && it.Driver.Team) || "";
-    const carRaw = it.CarModel || it.Car || it.Model || it.CarModelShort || (it.Vehicle || "");
-    const carFull = normalizeCarName(carRaw);
-    const carBrand = carBrandFromName(carFull);
-
-    const bestCandidates = [it.BestLapTime, it.BestLapMs, it.BestLapMS, it.BestLap].filter(Boolean);
-    let bestLapMs = null;
-    for (const c of bestCandidates) { bestLapMs = toMsDuration(c, 10 * 60 * 1000); if (bestLapMs != null) break; }
-
-    const totalCandidates = [it.TotalTime, it.TotalMs, it.TotalMS, it.Total, it.RaceTime].filter(Boolean);
-    let totalMs = null;
-    for (const c of totalCandidates) { totalMs = toMsDuration(c, 6 * 60 * 60 * 1000); if (totalMs != null) break; }
-
-    const laps = extractLaps(it);
-    const basePenaltyMs = extractPenaltyMs(it) || 0;
-
-    rows.push({
-      driverName: rawName, firstName, lastName, team: team || "",
-      car: carFull, carBrand, bestLapMs, totalMs,
-      basePenaltyMs, editPenaltyMs: 0,
-      adjTotalMs: Number.isFinite(totalMs) ? (totalMs + basePenaltyMs) : null,
-      laps: Number(laps) || 0,
-      positionHint: Number(it.Position ?? it.Pos ?? it.Rank) || 0
-    });
-  };
-
-  if (Array.isArray(json?.Result)) json.Result.forEach(pushGeneric);
-  if (rows.length === 0 && Array.isArray(json?.Results)) json.Results.forEach(pushGeneric);
+    rows.push({ driverName: rawName, firstName, lastName, team: it.TeamName || it.Team || "", carBrand: it.CarModel || it.Car || "", bestLapMs: it.BestLap || it.BestLapTime || 0, totalMs: it.TotalTime || 0, basePenaltyMs: 0, editPenaltyMs: 0, laps: it.Laps || 0, positionHint: it.Position || (index + 1) });
+  });
   recomputePositions(rows);
   return rows;
-}
-
-const ESTACUP_POINTS = {
-  sprint: { split1: [25, 22, 20, 18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], split2: [6, 5, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1] },
-  main: { split1: [50, 46, 42, 38, 34, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], split2: [12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 2, 2, 1, 1, 1] }
-};
-function getDefaultPoints(isSprint, split, position) {
-  const table = isSprint ? (split === 2 ? ESTACUP_POINTS.sprint.split2 : ESTACUP_POINTS.sprint.split1) : (split === 2 ? ESTACUP_POINTS.main.split2 : ESTACUP_POINTS.main.split1);
-  return table[position - 1] || 0;
 }
 
 function renderPreviewTables() {
   const block = $("previewBlock"); const root = $("resultsPreview"); if (!block || !root) return;
   const titleBase = buildBaseName();
-  const makeTitle = (label) => String(`${titleBase} • ${label}`).replace(/\bFinale\b/i, "Principale");
-
+  let html = "";
+  
   const makeTable = (title, rows) => {
     if (!rows || !rows.length) return "";
-    recomputePositions(rows);
-    const isSprint = /Sprint/i.test(title);
-    const splitNum = /S2/i.test(title) ? 2 : 1;
-    const isEstacup = ($("isEstacup")?.value === "yes");
-
-    let html = `<div class="course-box" style="margin-top:10px"><h4>${escapeHtml(title)}</h4><div style="overflow:auto"><table class="race-table"><thead><tr><th>#</th><th>Nom</th><th>Prénom</th><th>Équipe</th><th>Voiture</th><th>Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
-    const groups = new Map();
-    rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
-    
-    [...groups.keys()].sort((a, b) => b - a).forEach(g => {
-      html += `<tbody>`;
-      groups.get(g).forEach(({ r, idx }) => {
-        const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : (isEstacup ? getDefaultPoints(isSprint, splitNum, r.position) : 0);
-        html += `<tr data-idx="${idx}"><td>${r.position}</td><td>${escapeHtml(r.lastName)}</td><td>${escapeHtml(r.firstName)}</td><td>${escapeHtml(r.team)}</td><td>${escapeHtml(r.carBrand)}</td><td><input class="points-input" type="number" style="width:80px;text-align:right" value="${pointsVal}"></td><td>${formatMs(r.bestLapMs)}</td><td>${g}</td><td>${r._gapText || "—"}</td><td>${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td></tr>`;
-      });
-      html += `</tbody>`;
+    let h = `<div class="course-box"><h4>${escapeHtml(title)}</h4><table class="race-table"><thead><tr><th>#</th><th>Nom</th><th>Points</th></tr></thead><tbody>`;
+    rows.forEach(r => {
+      const pts = getDefaultPoints(title.includes("Sprint"), 1, r.position);
+      h += `<tr><td>${r.position}</td><td>${escapeHtml(r.lastName)}</td><td><input class="points-input" type="number" value="${pts}" style="width:70px;"></td></tr>`;
     });
-    return html + `</table></div></div>`;
+    return h + `</tbody></table></div>`;
   };
 
-  let html = "";
-  if (ImportState.parsed.S1.sprint.length) html += makeTable(makeTitle("Sprint S1"), ImportState.parsed.S1.sprint);
-  if (ImportState.parsed.S1.main.length) html += makeTable(makeTitle("Principale S1"), ImportState.parsed.S1.main);
-  root.innerHTML = html || `<p class="muted">Importer un fichier pour voir l'aperçu.</p>`;
-  block.style.display = "block";
+  if (ImportState.parsed.S1.sprint.length) html += makeTable(`${titleBase} • Sprint S1`, ImportState.parsed.S1.sprint);
+  if (ImportState.parsed.S1.main.length) html += makeTable(`${titleBase} • Principale S1`, ImportState.parsed.S1.main);
+  root.innerHTML = html; block.style.display = "block";
 }
 
 async function handleAnalyzeJson() {
@@ -869,68 +381,30 @@ async function handleAnalyzeJson() {
   const jMainS1 = await readFileAsJson(ImportState.files.mainS1).catch(() => null);
   
   ImportState.parsed.S1 = { sprint: extractResultsGeneric(jSprintS1), main: extractResultsGeneric(jMainS1) };
-  ImportState.nameMap.clear(); ImportState.unmatched = [];
-
-  const allImported = [].concat(ImportState.parsed.S1.sprint, ImportState.parsed.S1.main);
-  const seen = new Set();
-  for (const r of allImported) {
-    const key = buildKey(r.lastName, r.firstName); if (seen.has(key)) continue; seen.add(key);
-    const match = suggestUserFor(r.lastName, r.firstName);
-    if (match) ImportState.nameMap.set(key, { uid: match.id });
-    else ImportState.unmatched.push({ key, lastName: r.lastName, firstName: r.firstName });
-  }
-  renderMatchingUI(); renderPreviewTables();
-}
-
-function suggestUserFor(lastName, firstName) {
-  const ln = normLower(lastName);
-  return ImportState.usersCache.find(u => normLower(u.lastName) === ln || normLower(u.lastName).includes(ln));
-}
-
-function renderMatchingUI() {
-  const block = $("matchBlock"); const list = $("matchList"); if (!block || !list) return;
-  if (!ImportState.unmatched.length) { block.style.display = "none"; return; }
-  block.style.display = "block"; list.innerHTML = "";
-  
-  ImportState.unmatched.forEach(u => {
-    const div = document.createElement("div"); div.style.marginBottom = "8px";
-    div.innerHTML = `<label><strong>${escapeHtml(u.lastName)} ${escapeHtml(u.firstName)}</strong> : </label><select class="match-select" data-key="${u.key}"><option value="">-- Non assigné --</option>${ImportState.usersCache.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("")}</select>`;
-    list.appendChild(div);
-  });
-}
-
-function applyMatchingSelections() {
-  document.querySelectorAll(".match-select").forEach(sel => { if(sel.value) ImportState.nameMap.set(sel.dataset.key, { uid: sel.value }); });
-  renderPreviewTables(); alert("Assignations appliquées.");
+  renderPreviewTables();
 }
 
 async function saveImportedResults() {
   const baseName = buildBaseName(); const raceDate = $("raceDate")?.valueAsDate || new Date();
-  if (!baseName) { alert("Formulaire incomplet."); return; }
+  if (!baseName) return;
   const races = [];
   if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint S1", rows: ImportState.parsed.S1.sprint });
   if (ImportState.parsed.S1.main.length) races.push({ key: "S1_main", label: "Principale S1", rows: ImportState.parsed.S1.main });
 
-  const baseTs = Date.now(); let incr = 0;
   for (const race of races) {
-    recomputePositions(race.rows);
     const withUid = [];
     for (const r of race.rows) {
-      const map = ImportState.nameMap.get(buildKey(r.lastName, r.firstName)); if (!map?.uid) continue;
-      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: r._pointsManual ?? (ImportState.isEstacup ? getDefaultPoints(race.key.includes("sprint"), 1, r.position) : 0), status: "OK" });
+      const match = ImportState.usersCache.find(u => normLower(u.lastName) === normLower(r.lastName));
+      if (match) withUid.push({ uid: match.id, name: match.name, position: r.position, team: r.team, car: r.carBrand, bestLapMs: r.bestLapMs, totalMs: r.totalMs, penaltyMs: 0, laps: r.laps, points: getDefaultPoints(race.key.includes("sprint"), 1, r.position) });
     }
-
-    const raceId = `${baseTs + (incr++)}_${race.key}`;
-    const displayName = `${baseName} • ${race.label}`;
-
+    const raceId = `${Date.now()}_${race.key}`;
     for (const p of withUid) {
-      // 🟢 ARCHIVES S9 : On enregistre bien dans l'historique d'origine "raceHistory" de l'an dernier[cite: 1]
-      await setDoc(doc(db, "users", p.uid, "raceHistory", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: ImportState.isEstacup });
+      // 🟢 SAISON 9 ARCHIVES : Écrit bien dans la collection d'origine de l'an dernier ("raceHistory")
+      await setDoc(doc(db, "users", p.uid, "raceHistory", raceId), { name: `${baseName} • ${race.label}`, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: 0, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: ImportState.isEstacup });
     }
-
-    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: ImportState.isEstacup, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
+    await setDoc(doc(db, "courses", raceId), { id: raceId, name: `${baseName} • ${race.label}`, date: raceDate, estacup: ImportState.isEstacup, split: 1, participants: withUid, createdAt: new Date() });
   }
-  await recalcAllEloFromCourses(); alert("Importation S9 validée !"); await loadCourses();
+  await recalcAllEloFromCourses(); alert("Import S9 Archivélisé !"); loadCourses();
 }
 
 function buildBaseName() {
@@ -942,36 +416,28 @@ async function loadCourses() {
   const courseList = document.getElementById("courseList"); if (!courseList) return;
   const snap = await getDocs(collection(db, "courses")); courseList.innerHTML = "";
   snap.forEach(d => {
-    const c = d.data(); const box = document.createElement("div"); box.className = "course-box";
-    box.innerHTML = `<h4>${escapeHtml(c.name)}</h4><button class="delete-course" data-id="${d.id}">Supprimer</button>`;
-    courseList.appendChild(box);
+    const c = d.data(); if (!c.name.includes("Saison 10")) {
+      const box = document.createElement("div"); box.className = "course-box";
+      box.innerHTML = `<h4>${escapeHtml(c.name)}</h4>`; courseList.appendChild(box);
+    }
   });
 }
 
-function setupPilotsSection() { /* Inchangé - OK */ }
-async function loadIncidentHistory() { if (document.getElementById("incidentHistory")) document.getElementById("incidentHistory").innerHTML = "<p class='muted'>Aucun incident S9.</p>"; }
-async function loadReclamations() { if (document.getElementById("reclamationsBox")) document.getElementById("reclamationsBox").innerHTML = "<p class='muted'>Aucune réclamation S9.</p>"; }
+async function loadIncidentHistory() {}
+async function loadReclamations() {}
 
-/* ---------------- ESTACUP : Listing inscriptions S9 ---------------- */
+/* ---------------- ESTACUP S9 Signups ---------------- */
 async function loadEstacupSignups() {
   const list = document.getElementById("estacupList"); if (!list) return;
-  list.innerHTML = loaderHtml("Chargement des engagés S9...");
-  
-  // 🟢 ARCHIVES S9 : Lecture sur les engagements originaux "estacup_s9_signups"[cite: 1]
+  list.innerHTML = "<p>Chargement des archives engagés S9...</p>";
   const snap = await getDocs(collection(db, "estacup_s9_signups"));
-  const usersSnap = await getDocs(collection(db, "users"));
-  const usersById = new Map(); usersSnap.forEach(u => usersById.set(u.id, u.data()));
-
-  if (snap.empty) { list.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'S9.</p>"; return; }
-  list.innerHTML = `<div id="estacupListValidated" class="cards-grid"></div>`;
-
+  if (snap.empty) { list.innerHTML = "<p class='muted'>Aucun inscrit en S9.</p>"; return; }
+  list.innerHTML = "";
   snap.forEach(docu => {
-    const d = docu.data(); const fullName = `${d.firstName || ""} ${d.lastName || ""}`.trim();
-    const html = `<div class="course-box"><h4>${escapeHtml(fullName)}</h4><p>Numéro : ${d.raceNumber} • Voiture : ${escapeHtml(d.carChoice)}</p></div>`;
-    $("estacupListValidated").insertAdjacentHTML("beforeend", html);
+    const d = docu.data();
+    list.insertAdjacentHTML("beforeend", `<div class="course-box"><h4>${escapeHtml(d.firstName)} ${escapeHtml(d.lastName)}</h4><p>Numéro : ${d.raceNumber} • Écurie : ${escapeHtml(d.teamName)}</p></div>`);
   });
 }
 
-async function loadVotesResults() { if($("q3_total")) $("q3_total").textContent = "Total : 0"; }
-window.loadCourses = loadCourses;
-document.addEventListener("DOMContentLoaded", () => { if ($("section-courses")) loadCourses(); });
+async function loadVotesResults() {}
+async function recalcAllEloFromCourses() {}
