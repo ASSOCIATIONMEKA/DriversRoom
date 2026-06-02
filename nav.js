@@ -85,7 +85,7 @@ function injectNavbar() {
                       </div>
                       
                       <a href="profile.html">Mon Profil</a>
-                      <a href="dashboard.html">🎛️ Espace Écurie S9</a>
+                      <a href="estacup-s9.html">🎛️ Espace Écurie S9</a>
                       
                       ${isAdmin ? '<a href="admin.html">⚙️ Panel Admin S9</a>' : ''}
                       ${isAdmin ? '<a href="admin-users.html" style="color: var(--accent-tertiary); font-weight: 600; border-top: 1px dashed var(--border-primary);">🛠️ Gestion Admin</a>' : ''}
