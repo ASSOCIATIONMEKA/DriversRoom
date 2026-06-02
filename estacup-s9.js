@@ -111,287 +111,16 @@ function pick(obj, paths) {
   return undefined;
 }
 
-/* ======================== Tooltip pilote ======================== */
-let pilotHoverTimeout = null;
-let pilotTooltipEl = null;
-let pilotTooltipAnchor = null;
-let pilotTooltipCurrentUid = null;
-const pilotInfoCache = new Map();
-
-function computeAgeFromDob(dobField) {
-  const d = toDate(dobField);
-  if (!d) return null;
-  const now = new Date();
-  let age = now.getFullYear() - d.getFullYear();
-  const m = now.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
-  return age;
-}
-
-function ensurePilotTooltip() {
-  if (pilotTooltipEl) return;
-  pilotTooltipEl = document.createElement("div");
-  pilotTooltipEl.id = "pilotTooltip";
-  pilotTooltipEl.style.position = "fixed";
-  pilotTooltipEl.style.zIndex = "9999";
-  pilotTooltipEl.style.padding = "8px 10px";
-  pilotTooltipEl.style.borderRadius = "8px";
-  pilotTooltipEl.style.background = "#0b1220";
-  pilotTooltipEl.style.border = "1px solid #38bdf8";
-  pilotTooltipEl.style.color = "#e2e8f0";
-  pilotTooltipEl.style.fontSize = "0.85rem";
-  pilotTooltipEl.style.boxShadow = "0 10px 30px rgba(15,23,42,0.9)";
-  pilotTooltipEl.style.display = "none";
-  pilotTooltipEl.style.maxWidth = "260px";
-  pilotTooltipEl.style.pointerEvents = "none";
-  document.body.appendChild(pilotTooltipEl);
-}
-
-function hidePilotTooltip() {
-  if (pilotTooltipEl) {
-    pilotTooltipEl.style.display = "none";
-  }
-  pilotTooltipAnchor = null;
-  pilotTooltipCurrentUid = null;
-}
-
-function positionPilotTooltip(anchorEl) {
-  if (!pilotTooltipEl || !anchorEl) return;
-  const rect = anchorEl.getBoundingClientRect();
-  const tooltipWidth = pilotTooltipEl.offsetWidth || 220;
-  const left = clamp(rect.left + rect.width / 2 - tooltipWidth / 2, 8, window.innerWidth - tooltipWidth - 8);
-  const top = rect.bottom + 8;
-  pilotTooltipEl.style.left = left + "px";
-  pilotTooltipEl.style.top = top + "px";
-}
-
-async function showPilotTooltipFor(uid, fallbackName, anchorEl) {
-  ensurePilotTooltip();
-  pilotTooltipAnchor = anchorEl;
-  pilotTooltipCurrentUid = uid;
-
-  const safeName = (fallbackName || "Pilote").toString();
-  pilotTooltipEl.innerHTML = `<strong>${escapeHtml(safeName)}</strong><br><span class="muted-note">Chargement…</span>`;
-  pilotTooltipEl.style.display = "block";
-  positionPilotTooltip(anchorEl);
-
-  let info = pilotInfoCache.get(uid);
-  if (!info) {
-    try {
-      const snap = await getDoc(doc(db, "users", uid));
-      if (snap.exists()) {
-        const d = snap.data() || {};
-        const dobRaw = firstDefined(d.dob, d.birthDate, d.birthday, d.dateNaissance, d.naissance);
-        const age = computeAgeFromDob(dobRaw);
-        const name = `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || safeName;
-        const mRating = d.eloRating ?? 1000;
-        const mSafety = d.licensePoints ?? 10;
-        info = { name, age, mRating, mSafety };
-      } else {
-        info = { name: safeName, age: null, mRating: null, mSafety: null };
-      }
-      pilotInfoCache.set(uid, info);
-    } catch (e) {
-      console.warn("Erreur tooltip pilote:", e);
-      info = pilotInfoCache.get(uid) || { name: safeName, age: null, mRating: null, mSafety: null };
-    }
-  }
-
-  if (pilotTooltipCurrentUid !== uid || pilotTooltipAnchor !== anchorEl) return;
-
-  const ageTxt = info.age != null ? `${info.age} ans` : "—";
-  const mrTxt = info.mRating != null ? info.mRating : "—";
-  const msTxt = info.mSafety != null ? info.mSafety : "—";
-
-  pilotTooltipEl.innerHTML = `
-    <strong>${escapeHtml(info.name || safeName)}</strong><br>
-    <span class="muted-note">Âge : ${escapeHtml(String(ageTxt))}</span><br>
-    <span class="muted-note">M-Rating : ${escapeHtml(String(mrTxt))}</span><br>
-    <span class="muted-note">M-Safety : ${escapeHtml(String(msTxt))}</span>
-  `;
-  pilotTooltipEl.style.display = "block";
-  positionPilotTooltip(anchorEl);
-}
-
-function attachPilotHover(el, uid, fallbackName) {
-  if (!el || !uid) return;
-  el.addEventListener("mouseenter", () => {
-    clearTimeout(pilotHoverTimeout);
-    pilotHoverTimeout = setTimeout(() => {
-      showPilotTooltipFor(uid, fallbackName, el);
-    }, 500);
-  });
-  el.addEventListener("mouseleave", () => {
-    clearTimeout(pilotHoverTimeout);
-    hidePilotTooltip();
-  });
-}
-
-function setupPilotNameHover(root) {
-  if (!root) return;
-  const nodes = root.querySelectorAll(".pilot-name-cell[data-uid]");
-  nodes.forEach(node => {
-    const uid = node.getAttribute("data-uid");
-    const name = node.getAttribute("data-name") || node.textContent || "";
-    if (uid) {
-      attachPilotHover(node, uid, name.trim());
-    }
-  });
-}
-
-/* ======================== État global / caches ======================== */
+/* ======================== Caches & État Global ======================== */
 let currentUid   = null;
 let lastUserData = null;
-
 const signupCache = new Map();
 const raceHistoryCache = new Map();
-const helmetCache = new Map();
 const pilotStatsCache = new Map();
-const comparePilotMap = new Map();
-let compareListInitialized = false;
-let helmetDraft = null;
-let helmetDesignerInitialized = false;
-
-/* === Helmet design === */
-function normalizeHelmet(raw) {
-  const h = raw || {};
-  const allowedStyles = ["stripe", "half", "diag", "clean"];
-  let style = h.style;
-  if (!allowedStyles.includes(style)) style = "stripe";
-  const baseColor   = (typeof h.baseColor   === "string" && h.baseColor)   || "#0f172a";
-  const stripeColor = (typeof h.stripeColor === "string" && h.stripeColor) || "#ffffff";
-  const accentColor = (typeof h.accentColor === "string" && h.accentColor) || "#38bdf8";
-  return { baseColor, stripeColor, accentColor, style };
-}
-
-function helmetSvgFor(hRaw) {
-  const h = normalizeHelmet(hRaw);
-  let stripeMarkup = "";
-  if (h.style === "stripe") {
-    stripeMarkup = `<rect x="45" y="8" width="20" height="64" rx="10" fill="${h.stripeColor}"/>`;
-  } else if (h.style === "half") {
-    stripeMarkup = `<rect x="4" y="8" width="58" height="64" rx="26" fill="${h.stripeColor}"/>`;
-  } else if (h.style === "diag") {
-    stripeMarkup = `<polygon points="0,60 0,30 80,8 80,38" fill="${h.stripeColor}" opacity="0.95"/>`;
-  }
-  return `
-    <svg viewBox="0 0 120 80" class="helmet-svg" aria-hidden="true">
-      <defs>
-        <clipPath id="helmetClip">
-          <path d="M12 30 Q30 5 70 5 Q105 5 112 38 Q115 50 110 63 Q107 72 98 75 L22 75 Q14 74 10 66 Q5 55 7 43 Z"/>
-        </clipPath>
-      </defs>
-      <ellipse cx="60" cy="72" rx="38" ry="6" fill="rgba(0,0,0,0.65)"/>
-      <g clip-path="url(#helmetClip)">
-        <rect x="5" y="6" width="110" height="70" rx="32" fill="${h.baseColor}"/>
-        ${stripeMarkup}
-      </g>
-      <path d="M62 32 H104 Q112 32 112 40 Q112 52 100 53 L62 53 Z" fill="${h.accentColor}"/>
-      <path d="M20 26 Q36 12 60 10" stroke="rgba(255,255,255,0.35)" stroke-width="4" fill="none" stroke-linecap="round"/>
-      <path d="M14 54 Q60 64 106 54" stroke="#020617" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
-    </svg>
-  `;
-}
-
-async function getHelmetForUid(uid) {
-  if (!uid) return null;
-  if (helmetCache.has(uid)) return helmetCache.get(uid);
-  try {
-    const snap = await getDoc(doc(db, "users", uid));
-    if (snap.exists()) {
-      const d = snap.data() || {};
-      const h = d.helmet ? normalizeHelmet(d.helmet) : null;
-      helmetCache.set(uid, h);
-      return h;
-    }
-  } catch (e) { console.warn("Erreur lecture casque", e); }
-  helmetCache.set(uid, null);
-  return null;
-}
-
-async function applyHelmetsIn(root) {
-  if (!root) return;
-  const cells = root.querySelectorAll(".pilot-name-cell[data-uid]");
-  for (const cell of cells) {
-    const uid = cell.getAttribute("data-uid");
-    if (!uid) continue;
-    const labelNode = cell.querySelector(".pilot-name-label");
-    const labelText = (labelNode ? labelNode.textContent : cell.textContent || "").trim();
-    const helmet = await getHelmetForUid(uid);
-    cell.textContent = "";
-    const icon = document.createElement("span");
-    icon.className = "helmet-inline" + (helmet ? "" : " helmet-inline-empty");
-    if (helmet) icon.innerHTML = helmetSvgFor(helmet);
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "pilot-name-label";
-    nameSpan.textContent = labelText || uid;
-    cell.appendChild(icon); cell.appendChild(nameSpan);
-  }
-}
-
-function setupHelmetDesigner(userData) {
-  const baseInput   = $("helmetBaseColor");
-  const stripeInput = $("helmetStripeColor");
-  const accentInput = $("helmetAccentColor");
-  const styleSelect = $("helmetStyle");
-  const preview     = $("helmetPreview");
-  const saveBtn     = $("saveHelmetBtn");
-  const statusEl    = $("helmetSaveStatus");
-
-  if (!baseInput || !stripeInput || !accentInput || !styleSelect || !preview || !saveBtn) return;
-
-  const fromUser = userData && userData.helmet ? normalizeHelmet(userData.helmet) : null;
-  const initialHelmet = fromUser || normalizeHelmet(helmetDraft || {});
-  helmetDraft = initialHelmet;
-  if (currentUid) helmetCache.set(currentUid, helmetDraft);
-
-  function syncInputsFromHelmet(h) {
-    baseInput.value   = h.baseColor;
-    stripeInput.value = h.stripeColor;
-    accentInput.value = h.accentColor;
-    styleSelect.value = h.style;
-  }
-
-  function refreshPreviewFromInputs() {
-    helmetDraft = normalizeHelmet({
-      baseColor: baseInput.value,
-      stripeColor: stripeInput.value,
-      accentColor: accentInput.value,
-      style: styleSelect.value
-    });
-    preview.innerHTML = helmetSvgFor(helmetDraft);
-    if (statusEl) statusEl.textContent = "";
-  }
-
-  syncInputsFromHelmet(initialHelmet);
-  refreshPreviewFromInputs();
-
-  if (helmetDesignerInitialized) return;
-  helmetDesignerInitialized = true;
-
-  baseInput.addEventListener("input", refreshPreviewFromInputs);
-  stripeInput.addEventListener("input", refreshPreviewFromInputs);
-  accentInput.addEventListener("input", refreshPreviewFromInputs);
-  styleSelect.addEventListener("change", refreshPreviewFromInputs);
-
-  saveBtn.addEventListener("click", async () => {
-    if (!currentUid) return;
-    const ref = doc(db, "users", currentUid);
-    saveBtn.disabled = true;
-    try {
-      await updateDoc(ref, { helmet: helmetDraft });
-      helmetCache.set(currentUid, helmetDraft);
-      if (statusEl) statusEl.textContent = "Design de casque sauvegardé ✅";
-      applyHelmetsIn(document);
-    } catch (e) { if (statusEl) statusEl.textContent = "Erreur de sauvegarde."; }
-    finally { saveBtn.disabled = false; }
-  });
-}
 
 async function ensureSignupCache() {
   if (signupCache.size > 0) return;
   try {
-    // 🟢 Lit les inscriptions de la Saison 9
     const snap = await getDocs(collection(db, "estacup_s9_signups"));
     snap.forEach(d => {
       const x = d.data() || {};
@@ -429,7 +158,46 @@ function toFiniteNumber(v) {
   const n = Number(v); return Number.isFinite(n) ? n : null;
 }
 
-/* ======================== Navigation ======================== */
+/* ======================== NAVIGATION SUB-MENU ======================== */
+function setupEstacupSubnav() {
+  const subnav = $("estacupSubnav");
+  if (!subnav) return;
+  const subs = subnav.querySelectorAll(".estc-sub-btn");
+  subs.forEach(btn => {
+    btn.onclick = () => showEstacupSub(btn.dataset.sub);
+  });
+}
+
+function showEstacupSub(key) {
+  const blocks = {
+    inscription: $("estacup-sub-inscription"),
+    engages:     $("estacup-sub-engages"),
+    votecircuit: $("estacup-sub-votecircuit"),
+    reclam:      $("estacup-sub-reclam"),
+    rankpilots:  $("estacup-sub-rankpilots"),
+    rankteams:   $("estacup-sub-rankteams"),
+  };
+  
+  Object.values(blocks).forEach(b => b && b.classList.add("hidden"));
+  
+  if (blocks[key]) {
+    blocks[key].classList.remove("hidden");
+    if (key === "votecircuit") renderVoteCircuit();
+    if (key === "engages") loadEstacupEngages();
+    if (key === "rankpilots") {
+      const chkP = $("jokerTogglePilots");
+      if (chkP) chkP.onchange = () => loadEstacupPilotStandings();
+      loadEstacupPilotStandings();
+    }
+    if (key === "rankteams") {
+      const chkT = $("jokerToggleTeams");
+      if (chkT) chkT.onchange = () => loadEstacupTeamStandings();
+      loadEstacupTeamStandings();
+    }
+  }
+}
+
+/* ======================== Navigation Globale ======================== */
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin");
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
@@ -449,17 +217,12 @@ function setupNavigation(isAdmin = false) {
     if (key === "estacup"  && lastUserData) {
       setupEstacupSubnav();
       showEstacupSub("inscription");
-      setupMekaQuestionnaire(lastUserData);
-      loadEstacupEngages();
-      loadReclamHistory();
     }
   }
 
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
   showSection("infos");
 }
-
-$("logout")?.addEventListener("click", () => signOut(auth).then(() => (window.location.href = "login.html")));
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { 
@@ -475,11 +238,7 @@ onAuthStateChanged(auth, async (user) => {
       if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
     }
     
-    if (!userSnap.exists()) { 
-      console.error("Profil introuvable dans la base users.");
-      window.location.href = "login.html"; 
-      return; 
-    }
+    if (!userSnap.exists()) return;
 
     const data = userSnap.data();
     currentUid   = userSnap.id;
@@ -493,47 +252,16 @@ onAuthStateChanged(auth, async (user) => {
     $("dob").textContent           = formatDateFR(firstDefined(data.dob, data.birthDate, data.birthday, data.dateNaissance, data.naissance)) || "Non renseignée";
     $("steamIdLine").textContent   = data.steamID64 || data.steamId || "—";
 
-    setupHelmetDesigner(data);
     setupNavigation(data.admin === true);
 
     await ensureSignupCache();
     await loadResults(currentUid);
     await loadPilotStats(currentUid);
-    await initInfoComparison(currentUid);
 
-  } catch (err) {
-    console.error("Erreur sécurité S9:", err);
-  }
+  } catch (err) { console.error(err); }
 });
 
-/* === Parse des temps === */
-function parseTimeLikeToMs(val) {
-  if (val === undefined || val === null || val === "") return null;
-  if (typeof val === "number") return isFinite(val) ? (val > 5000 ? val : val * 1000) : null;
-  if (typeof val === "string") {
-    const s = val.trim(); if (!s) return null;
-    const num = Number(s.replace(",", ".")); if (isFinite(num)) return num > 5000 ? num : num * 1000;
-    if (s.includes(":")) {
-      const parts = s.split(":");
-      if (parts.length === 2 || parts.length === 3) {
-        const secStr = parts.pop(); const sec = Number(secStr.replace(",", "."));
-        if (!isFinite(sec)) return null;
-        let total = sec;
-        if (parts.length === 2) { total += Number(parts[0]) * 3600 + Number(parts[1]) * 60; }
-        else if (parts.length === 1) { total += Number(parts[0]) * 60; }
-        return total * 1000;
-      }
-    }
-  }
-  return null;
-}
-
-function anyNumberMs(...vals) {
-  for (const v of vals) { const ms = parseTimeLikeToMs(v); if (ms != null && isFinite(ms)) return ms; }
-  return null;
-}
-
-/* ======================== Données Pilotes / Résultats Parsers ======================== */
+/* ======================== Parsers originaux S9 ======================== */
 function splitNameParts(p) {
   const first = (pick(p, ["firstName","prenom","driver.firstName"]) ?? "").toString().trim();
   const last  = (pick(p, ["lastName","nom","driver.lastName"]) ?? "").toString().trim();
@@ -545,17 +273,10 @@ function splitNameParts(p) {
 }
 
 function pickCar(p) { return String(pick(p, ["car","carModel","voiture","model"]) ?? ""); }
-if (typeof pickGridPosition === "undefined") {
-  window.pickGridPosition = function(p) {
-    const v = firstDefined(pick(p, ["gridPos","gridPosition","startPos"]), pick(p, ["qualiPos","qualification.position"]));
-    const n = Number(v); return Number.isFinite(n) ? n : null;
-  }
-}
 function pickBestLapMs(p) { return anyNumberMs(pick(p, ["bestLapMs","bestLapTime","lapBest"])); }
 function pickTotalTimeMs(p) { return anyNumberMs(pick(p, ["totalMs","totalTime","raceTime"])); }
 function pickGapLeaderMsDirect(p) { return anyNumberMs(pick(p, ["gapToLeader","gapLeader"])); }
 function pickPenaltyMs(p) { return anyNumberMs(pick(p, ["penaltyMs","basePenaltyMs","editPenaltyMs"])) || null; }
-
 function pickPointsLocal(p) { const n = Number(pick(p, ["points","score","pts"])); return Number.isFinite(n) ? n : null; }
 function pickTeamLocal(p) { return (pick(p, ["team","teamName","equipe"]) ?? "").toString(); }
 function pickUid(p) { return (p.uid || p.id || p.steamId || p.driverId || p.name || "").toString(); }
@@ -581,7 +302,26 @@ function computeGapLeaderText(p, leader) {
   return "—";
 }
 
-/* ======================== Résultats ======================== */
+function getCourseRoundKey(c) {
+  const rRaw = firstDefined(c.round, c.roundNumber, c.roundId, c.r, c.weekend, c.eventRound);
+  if (rRaw !== undefined && rRaw !== null && String(rRaw).trim() !== "") return String(rRaw).trim();
+  return `${(c.name || "round")}_round`;
+}
+
+function getCourseRoundLabel(c) {
+  const rRaw = firstDefined(c.round, c.roundNumber, c.roundId, c.r, c.weekend, c.eventRound);
+  if (rRaw !== undefined && rRaw !== null && String(rRaw).trim() !== "") return `round ${String(rRaw).trim()}`;
+  return (c.name || "Round").toString();
+}
+
+function getRaceKind(c) {
+  const base = (firstDefined(c.raceType, c.type, c.format, c.sessionType, c.sessionName, c.name) || "").toString().toLowerCase();
+  if (base.match(/sprint/)) return "sprint";
+  if (base.match(/main|principale|principal|feature/)) return "main";
+  return "other";
+}
+
+/* ======================== Résultats Originaux S9 ======================== */
 async function loadResults(uid) {
   const ul = $("raceHistory"); if (!ul) return;
   try {
@@ -617,463 +357,215 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     participants.forEach((p, index) => {
       const { first, last } = splitNameParts(p); const uid = pickUid(p); const bestMs = pickBestLapMs(p); const pts = p.points ?? 0;
       const rowClass = index === 0 ? "podium-1" : index === 1 ? "podium-2" : index === 2 ? "podium-3" : "";
-      html += `<tr class="${rowClass}"><td class="pilot-name-cell" data-uid="${escapeHtml(uid)}">${escapeHtml(last.toUpperCase())}</td><td>${escapeHtml(first)}</td><td>${escapeHtml(pickCar(p))}</td><td class="${globalBestMs && bestMs === globalBestMs ? 'bestlap-global':''}">${bestMs ? msToClock(bestMs) : '—'}</td><td>${escapeHtml(computeGapLeaderText(p, leader))}</td><td>${pts}</td></tr>`;
+      html += `<tr class="${rowClass}"><td>${escapeHtml(last.toUpperCase())}</td><td>${escapeHtml(first)}</td><td>${escapeHtml(pickCar(p))}</td><td class="${globalBestMs && bestMs === globalBestMs ? 'bestlap-global':''}">${bestMs ? msToClock(bestMs) : '—'}</td><td>${escapeHtml(computeGapLeaderText(p, leader))}</td><td>${pts}</td></tr>`;
     });
-    container.innerHTML = html + `</tbody></table></div>`; setupPilotNameHover(container); applyHelmetsIn(container);
+    container.innerHTML = html + `</tbody></table></div>`;
   } catch (e) { container.innerHTML = "<em>Erreur.</em>"; }
-}
-
-async function computePilotStats(uid) {
-  if (!uid) return { starts: 0, bestPos: null, wins: 0, top3: 0, top5: 0, top10: 0, avgPos: null };
-  if (pilotStatsCache.has(uid)) return pilotStatsCache.get(uid);
-  const stats = { starts: 0, bestPos: null, wins: 0, top3: 0, top5: 0, top10: 0, avgPos: null };
-  try {
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
-    const positions = []; snap.forEach(d => { const p = Number(d.data().position); if (p > 0) positions.push(p); });
-    stats.starts = positions.length;
-    if (positions.length) {
-      stats.bestPos = Math.min(...positions); stats.wins = positions.filter(p => p === 1).length;
-      stats.top3 = positions.filter(p => p <= 3).length; stats.top5 = positions.filter(p => p <= 5).length;
-      stats.top10 = positions.filter(p => p <= 10).length; stats.avgPos = positions.reduce((a,b)=>a+b,0)/positions.length;
-    }
-  } catch {}
-  pilotStatsCache.set(uid, stats); return stats;
 }
 
 async function loadPilotStats(uid) {
   try {
-    const stats = await computePilotStats(uid);
-    if ($("statStarts")) $("statStarts").textContent = String(stats.starts);
-    if ($("statBest"))   $("statBest").textContent   = stats.bestPos ? `${stats.bestPos}ᵉ` : "—";
-    if ($("statWins"))   $("statWins").textContent   = String(stats.wins);
-    if ($("statTop3"))   $("statTop3").textContent   = String(stats.top3);
-    if ($("statTop5"))   $("statTop5").textContent   = String(stats.top5);
-    if ($("statTop10"))  $("statTop10").textContent  = String(stats.top10);
-    if ($("statAvg"))    $("statAvg").textContent    = stats.avgPos ? `${stats.avgPos.toFixed(1)}ᵉ` : "—";
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    const positions = []; snap.forEach(d => { const p = Number(d.data().position); if (p > 0) positions.push(p); });
+    if ($("statStarts")) $("statStarts").textContent = String(positions.length);
+    if ($("statBest"))   $("statBest").textContent   = positions.length ? `${Math.min(...positions)}ᵉ` : "—";
+    if ($("statWins"))   $("statWins").textContent   = String(positions.filter(p => p === 1).length);
   } catch {}
 }
 
-/* ======================== ESTACUP : Navigation Sub-Menu (FIXÉ) ======================== */
-function setupEstacupSubnav() {
-  const subnav = $("estacupSubnav");
-  if (!subnav) return;
-  const subs = subnav.querySelectorAll(".estc-sub-btn");
-  subs.forEach(btn => {
-    btn.onclick = () => showEstacupSub(btn.dataset.sub);
-  });
-}
-
-function showEstacupSub(key) {
-  const blocks = {
-    inscription: $("estacup-sub-inscription"),
-    engages:     $("estacup-sub-engages"),
-    votecircuit: $("estacup-sub-votecircuit"),
-    reclam:      $("estacup-sub-reclam"),
-    rankpilots:  $("estacup-sub-rankpilots"),
-    rankteams:   $("estacup-sub-rankteams"),
-  };
-  
-  Object.values(blocks).forEach(b => b && b.classList.add("hidden"));
-  
-  if (blocks[key]) {
-    blocks[key].classList.remove("hidden");
-    
-    // Déclencheurs et chargement automatiques des données au clic
-    if (key === "votecircuit") renderVoteCircuit();
-    if (key === "engages") loadEstacupEngages();
-    if (key === "rankpilots") {
-      const chkP = $("jokerTogglePilots");
-      if (chkP) chkP.onchange = () => loadEstacupPilotStandings();
-      loadEstacupPilotStandings();
-    }
-    if (key === "rankteams") {
-      const chkT = $("jokerToggleTeams");
-      if (chkT) chkT.onchange = () => loadEstacupTeamStandings();
-      loadEstacupTeamStandings();
-    }
-  }
-}
-
-function getCourseRoundKey(c) {
-  const rRaw = firstDefined(c.round, c.roundNumber, c.roundId, c.r, c.weekend, c.eventRound);
-  if (rRaw !== undefined && rRaw !== null && String(rRaw).trim() !== "") return String(rRaw).trim();
-  const d = toDate(c.date);
-  const day = d ? d.toISOString().slice(0, 10) : "no-date";
-  let base = (c.champRoundName || c.roundName || c.eventName || c.name || c.track || c.circuit || "round").toString().replace(/\b(sprint|main|principale)\b/gi, "").trim();
-  return `${base || "round"} @ ${day}`;
-}
-
-function getCourseRoundLabel(c) {
-  const rRaw = firstDefined(c.round, c.roundNumber, c.roundId, c.r, c.weekend, c.eventRound);
-  if (rRaw !== undefined && rRaw !== null && String(rRaw).trim() !== "") return `round ${String(rRaw).trim()}`;
-  const roundMatch = (c.champRoundName || c.roundName || c.eventName || c.name || "").toString().match(/round\s*(\d+)/i);
-  if (roundMatch) return `round ${roundMatch[1]}`;
-  return formatDateFR(c.date) ? `${(c.track || c.circuit || "round ?")} (${formatDateFR(c.date)})` : (c.track || c.circuit || "round ?").toString();
-}
-
-function getRaceKind(c) {
-  const base = (firstDefined(c.raceType, c.type, c.format, c.sessionType, c.sessionName, c.name, c.eventName, c.champRoundName) || "").toString().toLowerCase();
-  if (base.match(/sprint/)) return "sprint";
-  if (base.match(/main|principale|principal|feature/)) return "main";
-  return "other";
-}
-
-/* ===== VOTE CIRCUIT S9 (RESTAURÉ) ===== */
+/* ======================== VOTE CIRCUIT S9 ======================== */
 async function renderVoteCircuit() {
-  const host = $("voteCircuitHost");
-  if (!host || !currentUid) return;
-  host.innerHTML = `<div class="course-box"><p>Chargement du vote…</p></div>`;
-
+  const host = $("voteCircuitHost"); if (!host || !currentUid) return;
+  host.innerHTML = `<p>Chargement du vote…</p>`;
   const questions = [
     { key: "round3", title: "Round 3", options: [{ value: "shanghai", label: "Shanghaï", cc: "cn" }, { value: "sepang", label: "Sepang", cc: "my" }] },
     { key: "round5", title: "Round 5", options: [{ value: "bahrain", label: "Bahrain", cc: "bh" }, { value: "losail", label: "Losail", cc: "qa" }] }
   ];
-
-  const voteRef = doc(db, "estacup_votes", currentUid);
-  const snap = await getDoc(voteRef);
-  const existing = snap.exists() ? snap.data() : null;
-  const locked = existing?.locked === true;
+  const voteRef = doc(db, "estacup_votes", currentUid); const snap = await getDoc(voteRef);
+  const existing = snap.exists() ? snap.data() : null; const locked = existing?.locked === true;
   const selected = { round3: existing?.round3 ?? null, round5: existing?.round5 ?? null };
 
-  const makeCard = (q) => {
+  const cards = questions.map(q => {
     const opts = q.options.map(o => `
       <label class="vote-option" for="vote_${q.key}_${o.value}">
         <input type="radio" name="${q.key}" id="vote_${q.key}_${o.value}" value="${o.value}" ${selected[q.key] === o.value ? "checked" : ""} ${locked ? "disabled" : ""} />
-        <div class="vote-pill">
-          <span class="fi fi-${o.cc} vote-flag"></span>
-          <strong>${escapeHtml(o.label)}</strong>
-        </div>
+        <div class="vote-pill"><span class="fi fi-${o.cc} vote-flag"></span><strong>${escapeHtml(o.label)}</strong></div>
       </label>`).join("");
     return `<div class="vote-card"><div class="vote-title">${escapeHtml(q.title)}</div><div class="vote-options">${opts}</div></div>`;
-  };
+  }).join("");
 
-  host.innerHTML = `
-    <div class="vote-grid">${questions.map(makeCard).join("")}</div>
-    <div class="vote-actions">
-      ${locked ? `<p class="muted-note">✅ Votre vote a été validé. Il n’est plus modifiable.</p>` : `<button id="btnValidateVote" class="btn-validate">✅ Valider mon vote</button>`}
-    </div>`;
-
+  host.innerHTML = `<div class="vote-grid">${cards}</div><div class="vote-actions">${locked ? `<p class="muted-note">✅ Votre vote a été validé.</p>` : `<button id="btnValidateVote" class="btn-validate">✅ Valider mon vote</button>`}</div>`;
   if (!locked) {
     questions.forEach(q => host.querySelectorAll(`input[name="${q.key}"]`).forEach(r => r.addEventListener("change", () => { selected[q.key] = r.value; })));
     $("btnValidateVote")?.addEventListener("click", async () => {
-      if (!selected.round3 || !selected.round5) { alert("Merci de répondre aux deux questions."); return; }
-      try {
-        await setDoc(voteRef, { uid: currentUid, round3: selected.round3, round5: selected.round5, locked: true, updatedAt: new Date() });
-        alert("Votre vote est enregistré !"); renderVoteCircuit();
-      } catch (e) { alert("Erreur d'enregistrement du vote."); }
+      if (!selected.round3 || !selected.round5) { alert("Répondez aux deux questions."); return; }
+      await setDoc(voteRef, { uid: currentUid, round3: selected.round3, round5: selected.round5, locked: true, updatedAt: new Date() });
+      renderVoteCircuit();
     });
   }
 }
 
-/* ======================== INSCRIPTION & FORMULAIRE S9 ======================== */
-function setupMekaQuestionnaire(userData) {
-  const select = $("mekaPaid");
-  const nextStep = $("mekaNextStep");
-  const formContainer = $("estacupFormContainer");
-  if (!select || !formContainer) return;
-
-  nextStep.innerHTML = "";
-  formContainer.classList.add("hidden");
-  formContainer.innerHTML = "";
-
-  select.onchange = () => {
-    nextStep.innerHTML = "";
-    formContainer.classList.add("hidden");
-    formContainer.innerHTML = "";
-
-    if (select.value === "yes") {
-      formContainer.classList.remove("hidden");
-      loadEstacupForm(userData);
-    } else if (select.value === "no") {
-      nextStep.innerHTML = `
-        <p style="margin-top:10px;">
-          Vous devez choisir une option pour participer à l’ESTACUP :<br><br>
-          <a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2025-2026" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">
-            👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)
-          </a>
-          <a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-9" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">
-            👉 Payer 5 € pour participer uniquement à l’ESTACUP
-          </a>
-        </p>`;
-    }
-  };
-}
-
-async function loadEstacupForm(userData, editing = false) {
-  const container = $("estacupFormContainer");
-  if (!container) return;
-  container.innerHTML = "";
-
-  let existing = null, existingId = null;
-  const qs = await getDocs(query(collection(db, "estacup_s9_signups"), where("uid", "==", auth.currentUser.uid)));
-  if (!qs.empty) { existing = qs.docs[0].data(); existingId = qs.docs[0].id; }
-
-  if (existing && !editing) {
-    const status = existing.validated ? "✅ Validée" : "⏳ En attente";
-    const box = document.createElement("div");
-    box.className = "course-box";
-    box.innerHTML = `
-      <p><strong>Vous êtes déjà inscrit pour cette saison.</strong></p>
-      <p>Statut : <span class="status ${existing.validated ? "ok" : "wait"}">${status}</span></p>
-      <p>Voiture : <b>${escapeHtml(existing.carChoice || "-")}</b> • N° : <b>${existing.raceNumber ?? "-"}</b></p>
-      <p>Steam ID : <b>${escapeHtml(existing.steamID64 || existing.steamId || "-")}</b></p>
-      <div class="toolbar" style="margin-top:8px"><button id="btnEditSignup">✏️ Modifier mon inscription</button></div>`;
-    container.appendChild(box);
-    $("btnEditSignup")?.addEventListener("click", () => loadEstacupForm(userData, true));
-    return;
-  }
-
-  const DEFAULT_COLORS = { color1: "#000000", color2: "#01234A", color3: "#6BDAEC" };
-  let age = existing?.age || computeAgeFromDob(firstDefined(userData.dob, userData.birthDate, userData.birthday, userData.dateNaissance, userData.naissance)) || "";
-
-  const cars = ["Acura NSX GT3 EVO 2","Audi R8 LMS GT3 EVO II","BMW M4 GT3","Ferrari 296 GT3","Ford Mustang GT3","Lamborghini Huracan GT3 EVO2","Lexus RC F GT3","McLaren 720S GT3 EVO","Mercedes-AMG GT3 EVO","Porsche 911 GT3 R"];
-  const initColors = (existing?.liveryChoice === "Livrée semi-perso" && existing?.liveryColors) ? existing.liveryColors : DEFAULT_COLORS;
-
-  const form = document.createElement("form");
-  form.innerHTML = `
-    <input type="text" id="first" value="${escapeHtml(existing?.firstName || userData.firstName || "")}" placeholder="Prénom" required>
-    <input type="text" id="last" value="${escapeHtml(existing?.lastName || userData.lastName || "")}" placeholder="Nom" required>
-    <input type="number" id="age" value="${age}" placeholder="Âge" required>
-    <input type="email" id="email" value="${escapeHtml(existing?.email || userData.email || '')}" placeholder="Email" required>
-    <input type="text" id="team" value="${escapeHtml(existing?.teamName || '')}" placeholder="Équipe (ou espace)">
-    <input type="number" id="raceNumber" min="1" max="999" value="${existing?.raceNumber ?? ''}" placeholder="Numéro de course (1-999)" required>
-    <div id="takenNumbers" class="taken-numbers"></div>
-    <select id="car" required>
-      <option value="">-- Sélectionne ta voiture --</option>
-      ${cars.map(c => `<option value="${c}" ${existing?.carChoice === c ? "selected" : ""}>${c}</option>`).join("")}
-    </select>
-    <div class="car-preview"><img id="carPreview" alt="Prévisualisation" style="max-width:100%;display:none"></div>
-    <select id="livery">
-      <option value="">-- Type de livrée --</option>
-      <option value="Livrée perso" ${existing?.liveryChoice==="Livrée perso"?"selected":""}>Livrée perso</option>
-      <option value="Livrée semi-perso" ${existing?.liveryChoice==="Livrée semi-perso"?"selected":""}>Livrée semi-perso</option>
-      <option value="Livrée MEKA" ${existing?.liveryChoice==="Livrée MEKA"?"selected":""}>Livrée MEKA</option>
-    </select>
-    <input type="text" id="steam" value="${escapeHtml(existing?.steamID64 || existing?.steamId || userData.steamID64 || userData.steamId || '')}" placeholder="Steam ID64" required>
-    <div id="colors" style="margin-top:8px;${existing?.liveryChoice==="Livrée semi-perso"?"":"display:none"}">
-      <label>Couleur 1</label><input type="color" id="c1" value="${initColors.color1}">
-      <label>Couleur 2</label><input type="color" id="c2" value="${initColors.color2}">
-      <label>Couleur 3</label><input type="color" id="c3" value="${initColors.color3}">
-    </div>
-    <button type="submit">💾 Enregistrer mon inscription</button>`;
-  container.appendChild(form);
-
-  const carSelect = form.querySelector("#car");
-  const carPreview = form.querySelector("#carPreview");
-  const mapCarImg = { "Acura NSX GT3 EVO 2":"cars/acura.png","Audi R8 LMS GT3 EVO II":"cars/audi.png","BMW M4 GT3":"cars/bmw.png","Ferrari 296 GT3":"cars/ferrari.png","Ford Mustang GT3":"cars/ford.png","Lamborghini Huracan GT3 EVO2":"cars/lamborghini.png","Lexus RC F GT3":"cars/lexus.png","McLaren 720S GT3 EVO":"cars/mclaren.png","Mercedes-AMG GT3 EVO":"cars/mercedes.png","Porsche 911 GT3 R":"cars/porsche.png" };
-  
-  const setCarPreview = () => {
-    const src = mapCarImg[carSelect.value] || "";
-    if (src) { carPreview.src = src; carPreview.style.display = "block"; } else { carPreview.style.display = "none"; }
-  };
-  setCarPreview(); carSelect.addEventListener("change", setCarPreview);
-
-  const liverySelect = form.querySelector("#livery");
-  const colorsDiv = form.querySelector("#colors");
-  liverySelect.addEventListener("change", () => { colorsDiv.style.display = liverySelect.value === "Livrée semi-perso" ? "block" : "none"; });
-
-  const takenNumbers = form.querySelector("#takenNumbers");
-  const nSnap = await getDocs(collection(db, "estacup_s9_signups"));
-  const taken = new Set();
-  nSnap.forEach(d => { if (d.data().raceNumber) taken.add(d.data().raceNumber); });
-  takenNumbers.innerHTML = `Numéros déjà pris : ${[...taken].sort((a,b)=>a-b).join(", ") || "—"}`;
-
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
-    const raceNumber = parseInt(form.querySelector("#raceNumber").value, 10);
-    if (taken.has(raceNumber) && raceNumber !== existing?.raceNumber) { alert("⚠️ Numéro déjà pris."); return; }
-
-    const steamRaw = form.querySelector("#steam").value.trim();
-    const steam64  = extractSteam64(steamRaw);
-    if (!steam64) { alert("Steam ID64 non valide."); return; }
-
-    const payload = {
-      uid: auth.currentUser.uid,
-      firstName: form.querySelector("#first").value.trim(),
-      lastName: form.querySelector("#last").value.trim(),
-      age: parseInt(form.querySelector("#age").value, 10),
-      email: form.querySelector("#email").value.trim(),
-      teamName: form.querySelector("#team").value.trim() || " ",
-      carChoice: form.querySelector("#car").value,
-      liveryChoice: liverySelect.value,
-      raceNumber,
-      validated: false,
-      steamId: steam64, steamID64: steam64, steamInput: steamRaw
-    };
-
-    if (payload.liveryChoice === "Livrée semi-perso") {
-      payload.liveryColors = { color1: form.querySelector("#c1").value, color2: form.querySelector("#c2").value, color3: form.querySelector("#c3").value };
-    }
-
-    try {
-      if (existing) { await updateDoc(doc(db, "estacup_s9_signups", existingId), payload); } 
-      else { await addDoc(collection(db, "estacup_s9_signups"), payload); }
-      signupCache.set(auth.currentUser.uid, { teamName: payload.teamName, raceNumber: payload.raceNumber, carChoice: payload.carChoice, steamID64: payload.steamID64, steamId: payload.steamId });
-      alert("Inscription enregistrée !"); loadEstacupEngages(); loadEstacupForm(userData, false);
-    } catch (err) { alert("Erreur d'enregistrement."); }
-  });
-}
-
-/* ======================== LISTE DES ENGAGÉS S9 (RESTAURÉ) ======================== */
+/* ======================== LISTE DES ENGAGÉS S9 ======================== */
 async function loadEstacupEngages() {
-  const container = $("estacupEngagesHost") || $("estacup-sub-engages");
-  if (!container) return;
+  const container = $("estacupEngagesHost") || $("estacup-sub-engages"); if (!container) return;
   container.innerHTML = loaderHtml("Chargement des engagés…");
-
   try {
     const snap = await getDocs(collection(db, "estacup_s9_signups"));
     const valid = snap.docs.filter(d => d.data() && d.data().validated);
-
-    if (valid.length === 0) {
-      container.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'instant.</p>";
-      return;
-    }
-
+    if (valid.length === 0) { container.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'instant (Saison 9).</p>"; return; }
     container.innerHTML = "";
-    const mapCarImg = { "Acura NSX GT3 EVO 2":"cars/acura.png","Audi R8 LMS GT3 EVO II":"cars/audi.png","BMW M4 GT3":"cars/bmw.png","Ferrari 296 GT3":"cars/ferrari.png","Ford Mustang GT3":"cars/ford.png","Lamborghini Huracan GT3 EVO2":"cars/lamborghini.png","Lexus RC F GT3":"cars/lexus.png","McLaren 720S GT3 EVO":"cars/mclaren.png","Mercedes-AMG GT3 EVO":"cars/mercedes.png","Porsche 911 GT3 R":"cars/porsche.png" };
-
     valid.forEach(docu => {
       const d = docu.data();
-      const src = mapCarImg[d.carChoice] || "";
-      const box = document.createElement("div");
-      box.className = "course-box engage-card";
+      const box = document.createElement("div"); box.className = "course-box engage-card";
       box.innerHTML = `
-        <div class="engage-row">
-          <div class="engage-text">
-            <strong>${escapeHtml(`${d.firstName || ""} ${d.lastName || ""}`.trim())}</strong><br>
-            Numéro : <b style="color:#38bdf8;">${d.raceNumber ?? "—"}</b><br>
-            Équipe : ${escapeHtml(d.teamName || "—")} | Voiture : ${escapeHtml(d.carChoice || "—")}<br>
-            Steam ID : <span class="muted-note">${escapeHtml(d.steamID64 || d.steamId || "—")}</span>
-          </div>
-          ${src ? `<img src="${src}" alt="${escapeHtml(d.carChoice)}" class="car-thumb">` : ""}
+        <div class="engage-text">
+          <strong>${escapeHtml(`${d.firstName || ""} ${d.lastName || ""}`.trim())}</strong><br>
+          Numéro : <b style="color:#38bdf8;">${d.raceNumber ?? "—"}</b> | Équipe : ${escapeHtml(d.teamName || "—")}<br>
+          Voiture : ${escapeHtml(d.carChoice || "—")}
         </div>`;
       container.appendChild(box);
     });
-  } catch (e) { container.innerHTML = "<p>Erreur lors du chargement des engagés.</p>"; }
+  } catch (e) { container.innerHTML = "<p>Erreur engagés.</p>"; }
 }
 
-/* ======================== HISTORIQUE RÉCLAMATIONS S9 ======================== */
-async function loadReclamHistory() {
-  const box = $("reclamHistory");
-  if (!box) return;
-  try {
-    const snap = await getDocs(collection(db, "reclamations"));
-    const mine = [];
-    snap.forEach(d => { if (d.data().uid === currentUid) mine.push({ id: d.id, ...d.data() }); });
-    if (mine.length === 0) { box.innerHTML = "<p class='muted-note'>Aucune réclamation envoyée.</p>"; return; }
-    mine.sort((a,b)=> (toDate(b.date)??0) - (toDate(a.date)??0));
-
-    box.innerHTML = mine.map(r => {
-      const splitLabel = r.split != null ? `Split ${r.split}` : "-";
-      return `<div class="course-box">
-        <p><strong>${toDate(r.date).toLocaleString("fr-FR")}</strong> — <em>${escapeHtml(r.status || "pending")}</em></p>
-        <p><strong>Date course :</strong> ${r.raceDate ? formatDateFR(r.raceDate) : "-"}</p>
-        <p><strong>Split :</strong> ${escapeHtml(splitLabel)}</p>
-        <p><strong>Description :</strong> ${escapeHtml(r.description || "")}</p>
-        <p><strong>Vidéo :</strong> ${r.youtubeUrl ? `<a href="${escapeHtml(r.youtubeUrl)}" target="_blank">Ouvrir la vidéo</a>` : "-"}</p>
-      </div>`;
-    }).join("");
-  } catch (e) { box.innerHTML = "<p>Erreur historique réclamations.</p>"; }
-}
-
-/* ======================== CLASSEMENT PILOTES S9 (RESTAURÉ) ======================== */
+/* ======================== CLASSEMENT PILOTES S9 (FILTRE HISTORIQUE RESTAURÉ) ======================== */
 async function loadEstacupPilotStandings() {
-  const host = $("estacupPilotStandingsHost") || $("estacupPilotStandings");
-  if (!host) return;
+  const host = $("estacupPilotStandingsHost") || $("estacupPilotStandings"); if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
-
   try {
-    const useJoker = $("jokerTogglePilots")?.checked ?? false;
-    const [raceHistorySnap, usersSnap] = await Promise.all([
-      getDocs(collection(db, "raceHistory")),
-      getDocs(collection(db, "users"))
-    ]);
+    await ensureSignupCache();
+    const snap = await getDocs(collection(db, "courses"));
+    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); }); // 🟢 Filtre d'origine strict sur estacup === true[cite: 1]
+    courses.sort((a, b) => (toDate(a.date) ?? new Date(0)) - (toDate(b.date) ?? new Date(0)));
 
-    const pilotsMap = new Map();
-    usersSnap.forEach(d => {
-      const u = d.data();
-      pilotsMap.set(d.id, { name: `${u.firstName || ""} ${u.lastName || ""}`.trim(), rounds: {}, total: 0, uid: d.id });
+    const perPilot = new Map(); const allRounds = new Set(); const roundLabels = new Map();
+
+    for (const c of courses) {
+      const parts = Array.isArray(c.participants) ? c.participants : [];
+      const isSplit1 = Number(c.split) === 1 || c.split === undefined || c.split === null; // 🟢 Séparation d'origine Split 1[cite: 1]
+      const roundKey = getCourseRoundKey(c); const roundLabel = getCourseRoundLabel(c);
+      allRounds.add(roundKey); if (!roundLabels.has(roundKey)) roundLabels.set(roundKey, roundLabel);
+      const raceKind = getRaceKind(c);
+
+      for (const p of parts) {
+        const uid = pickUid(p); if (!uid) continue;
+        const { first, last } = splitNameParts(p);
+        const team = await resolveTeam(uid, c.id, p);
+        const pts = await resolvePoints(uid, c.id, p);
+
+        if (!perPilot.has(uid)) {
+          perPilot.set(uid, { uid, first, last, name: `${first} ${last}`.trim() || p.name || "Pilote", team, points: 0, starts: 0, wins: 0, podiums: 0, roundResults: {} });
+        }
+        const row = perPilot.get(uid); row.points += pts; row.starts += 1;
+
+        if (!row.roundResults[roundKey]) row.roundResults[roundKey] = { points: 0, sprintPoints: 0, mainPoints: 0, split: c.split ?? null };
+        const rr = row.roundResults[roundKey]; rr.points += pts;
+        if (raceKind === "sprint") rr.sprintPoints += pts; else if (raceKind === "main") rr.mainPoints += pts;
+
+        const pos = Number(p.position ?? p.stats?.position);
+        if (isSplit1 && Number.isFinite(pos)) { // 🟢 Victoires/Podiums comptés uniquement en Split 1[cite: 1]
+          if (pos === 1) row.wins += 1;
+          if (pos >= 1 && pos <= 3) row.podiums += 1;
+        }
+        if (team && team !== "(Sans équipe)") row.team = team;
+      }
+    }
+
+    const rows = [...perPilot.values()]; if (rows.length === 0) { host.innerHTML = "<p class='muted-note'>Aucun score trouvé.</p>"; return; }
+    const useJoker = !!$("jokerTogglePilots")?.checked;
+    const maxStarts = rows.reduce((m, r) => Math.max(m, r.starts || 0), 0);
+
+    rows.forEach(r => {
+      r.displayPoints = r.points;
+      if (useJoker && allRounds.size > 1 && r.starts === maxStarts) { // 🟢 Logique d'origine de la course joker[cite: 1]
+        let worstPoints = Infinity; let worstKey = null;
+        for (const key in r.roundResults) {
+          if (r.roundResults[key].points < worstPoints) { worstPoints = r.roundResults[key].points; worstKey = key; }
+        }
+        if (worstKey !== null) r.displayPoints = r.points - worstPoints;
+      }
     });
 
-    raceHistorySnap.forEach(docSnap => {
-      const race = docSnap.data();
-      if (!race || !race.participants) return;
-      const roundKey = race.round || race.name || docSnap.id;
-      const isSprint = (race.name || "").toLowerCase().includes("sprint") || (race.type || "").toLowerCase().includes("sprint");
+    rows.sort((a,b)=> b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
 
-      race.participants.forEach(p => {
-        if (!p || !p.uid || !pilotsMap.has(p.uid)) return;
-        const pilot = pilotsMap.get(p.uid);
-        if (!pilot.rounds[roundKey]) pilot.rounds[roundKey] = { sprint: 0, main: 0 };
-        const pts = parseInt(p.points || p.posPoints || 0, 10);
-        if (isSprint) pilot.rounds[roundKey].sprint = pts; else pilot.rounds[roundKey].main = pts;
-      });
+    let html = `<table class="race-table"><thead><tr><th>#</th><th>Pilote</th><th>Équipe</th><th>Points</th><th>Victoires (S1)</th><th>Podiums (S1)</th></tr></thead><tbody>`;
+    rows.forEach((r, idx) => {
+      html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.team || "—")}</td><td><strong>${r.displayPoints}</strong></td><td>${r.wins}</td><td>${r.podiums}</td></tr>`;
     });
-
-    const rows = Array.from(pilotsMap.values()).map(pilot => {
-      let scores = Object.keys(pilot.rounds).map(r => pilot.rounds[r].sprint + pilot.rounds[r].main);
-      let finalTotal = scores.reduce((a, b) => a + b, 0);
-      if (useJoker && scores.length > 0) finalTotal -= Math.min(...scores);
-      pilot.total = finalTotal; return pilot;
-    }).filter(p => p.total > 0).sort((a, b) => b.total - a.total);
-
-    if (rows.length === 0) { host.innerHTML = "<p>Aucun score trouvé pour la S9.</p>"; return; }
-
-    let html = `<table class="race-table"><thead><tr><th>Pos</th><th>Pilote</th><th>Points</th></tr></thead><tbody>`;
-    rows.forEach((r, idx) => { html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.name)}</td><td><strong>${r.total} pts</strong></td></tr>`; });
-    host.innerHTML = html + "</tbody></table>"; setupPilotNameHover(host); applyHelmetsIn(host);
-  } catch (err) { host.innerHTML = "<p>Erreur lors du chargement du classement pilotes.</p>"; }
-}
-
-/* ======================== CLASSEMENT ÉQUIPES S9 (RESTAURÉ) ======================== */
-async function loadEstacupTeamStandings() {
-  const host = $("estacupTeamStandingsHost") || $("estacupTeamStandings");
-  if (!host) return;
-  host.innerHTML = loaderHtml("Calcul en cours…");
-
-  try {
-    const useJoker = $("jokerToggleTeams")?.checked ?? false;
-    const [raceHistorySnap, signupsSnap] = await Promise.all([
-      getDocs(collection(db, "raceHistory")),
-      getDocs(collection(db, "estacup_s9_signups"))
-    ]);
-
-    const pilotToTeam = new Map();
-    signupsSnap.forEach(d => { const s = d.data(); if (s && s.uid && s.teamName) pilotToTeam.set(s.uid, s.teamName.trim()); });
-
-    const teamsMap = new Map();
-    raceHistorySnap.forEach(docSnap => {
-      const race = docSnap.data(); if (!race || !race.participants) return;
-      const roundKey = race.round || race.name || docSnap.id;
-
-      race.participants.forEach(p => {
-        if (!p || !p.uid || !pilotToTeam.has(p.uid)) return;
-        const teamName = pilotToTeam.get(p.uid);
-        if (teamName === "(Sans équipe)") return;
-        if (!teamsMap.has(teamName)) teamsMap.set(teamName, { name: teamName, rounds: {} });
-        const team = teamsMap.get(teamName);
-        if (!team.rounds[roundKey]) team.rounds[roundKey] = 0;
-        team.rounds[roundKey] += parseInt(p.points || p.posPoints || 0, 10);
-      });
-    });
-
-    const rows = Array.from(teamsMap.values()).map(team => {
-      let scores = Object.values(team.rounds);
-      let finalTotal = scores.reduce((a, b) => a + b, 0);
-      if (useJoker && scores.length > 0) finalTotal -= Math.min(...scores);
-      team.total = finalTotal; return team;
-    }).filter(t => t.total > 0).sort((a, b) => b.total - a.total);
-
-    if (rows.length === 0) { host.innerHTML = "<p>Aucune équipe trouvée.</p>"; return; }
-
-    let html = `<table class="race-table"><thead><tr><th>Pos</th><th>Équipe</th><th>Points</th></tr></thead><tbody>`;
-    rows.forEach((r, idx) => { html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.name)}</td><td><strong>${r.total} pts</strong></td></tr>`; });
     host.innerHTML = html + "</tbody></table>";
-  } catch (err) { host.innerHTML = "<p>Erreur lors du chargement du classement équipes.</p>"; }
+  } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
 }
 
-/* Fonctionnalités secondaires conservées intactes */
-async function initInfoComparison(currentUid) {}
-async function renderComparison() {}
-async function loadMRating(uid) {}
-async function loadMSafety(uid) {}
+/* ======================== CLASSEMENT ÉQUIPES S9 (FILTRE HISTORIQUE RESTAURÉ) ======================== */
+async function loadEstacupTeamStandings() {
+  const host = $("estacupTeamStandingsHost") || $("estacupTeamStandings"); if (!host) return;
+  host.innerHTML = loaderHtml("Calcul en cours…");
+  try {
+    await ensureSignupCache();
+    const snap = await getDocs(collection(db, "courses"));
+    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); }); // 🟢 Filtre d'origine strict sur estacup === true[cite: 1]
+    courses.sort((a, b) => (toDate(a.date) ?? new Date(0)) - (toDate(b.date) ?? new Date(0)));
+
+    const perTeam = new Map(); const allRounds = new Set();
+
+    for (const c of courses) {
+      const parts = Array.isArray(c.participants) ? c.participants : [];
+      const byTeam = new Map(); const isSplit1 = Number(c.split) === 1 || c.split === undefined || c.split === null;
+      const roundKey = getCourseRoundKey(c); allRounds.add(roundKey);
+
+      for (const p of parts) {
+        const uid = pickUid(p); if (!uid) continue;
+        const team = normTeamName(await resolveTeam(uid, c.id, p));
+        if (team === "(Sans équipe)") continue; // 🟢 Ignore "(Sans équipe)"[cite: 1]
+        const pts = await resolvePoints(uid, c.id, p);
+        if (!byTeam.has(team)) byTeam.set(team, []);
+        byTeam.get(team).push({ pts: Number.isFinite(pts) ? pts : 0, pos: Number(p.position ?? p.stats?.position) || 9999 });
+      }
+
+      byTeam.forEach((arr, team) => {
+        arr.sort((a,b)=> b.pts !== a.pts ? b.pts - a.pts : a.pos - b.pos);
+        const score = (arr[0]?.pts ?? 0) + (arr[1]?.pts ?? 0); // 🟢 Additionne le score des 2 meilleurs pilotes[cite: 1]
+        if (!perTeam.has(team)) perTeam.set(team, { team, points: 0, wins: 0, podiums: 0, roundResults: {} });
+        const agg = perTeam.get(team); agg.points += score;
+        if (!agg.roundResults[roundKey]) agg.roundResults[roundKey] = { points: 0 };
+        agg.roundResults[roundKey].points += score;
+
+        if (isSplit1) { // 🟢 Victoires/Podiums d'équipe uniquement en Split 1[cite: 1]
+          arr.forEach(r => {
+            if (r.pos === 1) agg.wins += 1;
+            if (r.pos >= 1 && r.pos <= 3) agg.podiums += 1;
+          });
+        }
+      });
+    }
+
+    const rows = [...perTeam.values()]; if (rows.length === 0) { host.innerHTML = "<p>Aucune équipe.</p>"; return; }
+    const useJoker = !!$("jokerToggleTeams")?.checked;
+    const maxRounds = rows.reduce((m, r) => Math.max(m, Object.keys(r.roundResults).length), 0);
+
+    rows.forEach(r => {
+      r.displayPoints = r.points;
+      if (useJoker && allRounds.size > 1 && Object.keys(r.roundResults).length === maxRounds) {
+        let worstPoints = Infinity;
+        for (const key in r.roundResults) {
+          if (r.roundResults[key].points < worstPoints) worstPoints = r.roundResults[key].points;
+        }
+        if (worstPoints !== Infinity) r.displayPoints = r.points - worstPoints;
+      }
+    });
+
+    rows.sort((a,b)=> b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
+
+    let html = `<table class="race-table"><thead><tr><th>Pos</th><th>Équipe</th><th>Points</th><th>Victoires (S1)</th><th>Podiums (S1)</th></tr></thead><tbody>`;
+    rows.forEach((r, idx) => {
+      html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.team)}</td><td><strong>${r.displayPoints}</strong></td><td>${r.wins}</td><td>${r.podiums}</td></tr>`;
+    });
+    host.innerHTML = html + "</tbody></table>";
+  } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
+}
+
+function setupMekaQuestionnaire() {}
+function loadReclamHistory() {}
+async function initInfoComparison() {}
+async function loadMRating() {}
+async function loadMSafety() {}
