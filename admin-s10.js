@@ -147,7 +147,7 @@ function ensureDriversRoomButton() {
   const menu = document.querySelector(".admin-menu");
   if (!menu || document.getElementById("backToDriversRoom")) return;
   const btn = document.createElement("button");
-  btn.id = "backToDriversRoom"; btn.type = "button"; btn.textContent = "Driver's Room";
+  btn.id = "backToDriversRoom"; btn.type = "button"; btn.textContent = "EstaCup Saison 10";
   btn.addEventListener("click", () => (window.location.href = "estacup-s10.html"));
   menu.appendChild(btn);
 }
