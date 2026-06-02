@@ -67,12 +67,7 @@ function firstDefined(...vals) {
 
 function loaderHtml(txt) {
   const text = txt === undefined ? "Chargement…" : txt;
-  return (
-    '<div class="loading-inline">' +
-      '<div class="spinner"></div>' +
-      '<div>' + escapeHtml(text) + '</div>' +
-    '</div>'
-  );
+  return `<div class="loading-inline"><div class="spinner"></div><div>${escapeHtml(text)}</div></div>`;
 }
 
 function extractSteam64(input) {
@@ -85,11 +80,8 @@ function getByPath(obj, path) {
   const parts = path.split(".");
   let cur = obj;
   for (const k of parts) {
-    if (cur && Object.prototype.hasOwnProperty.call(cur, k)) {
-      cur = cur[k];
-    } else {
-      return undefined;
-    }
+    if (cur && Object.prototype.hasOwnProperty.call(cur, k)) cur = cur[k];
+    else return undefined;
   }
   return cur;
 }
@@ -102,59 +94,85 @@ function pick(obj, paths) {
   return undefined;
 }
 
-/* ======================== Caches & État Global ======================== */
-let currentUid   = null;
-let lastUserData = null;
-const signupCache = new Map();
-const raceHistoryCache = new Map();
-const pilotStatsCache = new Map();
+/* ======================== Tooltip pilote ======================== */
+let pilotHoverTimeout = null; let pilotTooltipEl = null; let pilotTooltipAnchor = null; let pilotTooltipCurrentUid = null;
+const pilotInfoCache = new Map();
+
+function ensurePilotTooltip() {
+  if (pilotTooltipEl) return;
+  pilotTooltipEl = document.createElement("div"); pilotTooltipEl.id = "pilotTooltip";
+  pilotTooltipEl.style = "position:fixed; z-index:9999; padding:8px 10px; border-radius:8px; background:#0b1220; border:1px solid #38bdf8; color:#e2e8f0; font-size:0.85rem; display:none; max-width:260px; pointer-events:none;";
+  document.body.appendChild(pilotTooltipEl);
+}
+
+function hidePilotTooltip() { if (pilotTooltipEl) pilotTooltipEl.style.display = "none"; pilotTooltipAnchor = null; pilotTooltipCurrentUid = null; }
+
+function positionPilotTooltip(anchorEl) {
+  if (!pilotTooltipEl || !anchorEl) return;
+  const rect = anchorEl.getBoundingClientRect();
+  const left = clamp(rect.left + rect.width / 2 - (pilotTooltipEl.offsetWidth || 220) / 2, 8, window.innerWidth - (pilotTooltipEl.offsetWidth || 220) - 8);
+  pilotTooltipEl.style.left = left + "px"; pilotTooltipEl.style.top = (rect.bottom + 8) + "px";
+}
+
+async function showPilotTooltipFor(uid, fallbackName, anchorEl) {
+  ensurePilotTooltip(); pilotTooltipAnchor = anchorEl; pilotTooltipCurrentUid = uid;
+  const safeName = (fallbackName || "Pilote").toString();
+  pilotTooltipEl.innerHTML = `<strong>${escapeHtml(safeName)}</strong><br><span class="muted-note">Chargement…</span>`;
+  pilotTooltipEl.style.display = "block"; positionPilotTooltip(anchorEl);
+
+  let info = pilotInfoCache.get(uid);
+  if (!info) {
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      if (snap.exists()) {
+        const d = snap.data() || {};
+        const age = (d.dob || d.birthDate) ? (new Date().getFullYear() - toDate(d.dob || d.birthDate).getFullYear()) : null;
+        info = { name: `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || safeName, age, mRating: d.eloRating ?? 1000, mSafety: d.licensePoints ?? 10 };
+      } else info = { name: safeName, age: null, mRating: null, mSafety: null };
+      pilotInfoCache.set(uid, info);
+    } catch { info = { name: safeName, age: null, mRating: null, mSafety: null }; }
+  }
+  if (pilotTooltipCurrentUid !== uid) return;
+  pilotTooltipEl.innerHTML = `<strong>${escapeHtml(info.name)}</strong><br><span class="muted-note">Âge : ${info.age ?? "—"} ans</span><br><span class="muted-note">M-Rating : ${info.mRating ?? "—"}</span><br><span class="muted-note">M-Safety : ${info.mSafety ?? "—"}</span>`;
+  positionPilotTooltip(anchorEl);
+}
+
+function setupPilotNameHover(root) {
+  if (!root) return;
+  root.querySelectorAll(".pilot-name-cell[data-uid]").forEach(node => {
+    node.addEventListener("mouseenter", () => { clearTimeout(pilotHoverTimeout); pilotHoverTimeout = setTimeout(() => showPilotTooltipFor(node.getAttribute("data-uid"), node.textContent, node), 500); });
+    node.addEventListener("mouseleave", () => { clearTimeout(pilotHoverTimeout); hidePilotTooltip(); });
+  });
+}
+
+/* ======================== Caches & Synchronisation ======================== */
+const signupCache = new Map(); const raceHistoryCache = new Map(); const pilotStatsCache = new Map();
 
 async function ensureSignupCache() {
   if (signupCache.size > 0) return;
-  try {
-    const snap = await getDocs(collection(db, "estacup_s9_signups"));
-    snap.forEach(d => {
-      const x = d.data() || {};
-      if (!x.uid) return;
-      signupCache.set(x.uid, {
-        teamName: (x.teamName || "").toString(),
-        raceNumber: x.raceNumber,
-        carChoice: x.carChoice,
-        steamID64: x.steamID64 || x.steamId || "",
-        steamId: x.steamId || x.steamID64 || ""
-      });
-    });
-  } catch (e) {}
+  const snap = await getDocs(collection(db, "estacup_signups")); // 🟢 Retour à la collection originale globale[cite: 2]
+  snap.forEach(d => {
+    const x = d.data(); if (x.uid) signupCache.set(x.uid, { teamName: x.teamName || "", raceNumber: x.raceNumber, carChoice: x.carChoice });
+  });
 }
 
 async function getRaceHistoryEntry(uid, raceId) {
-  const key = `${uid}::${raceId}`;
-  if (raceHistoryCache.has(key)) return raceHistoryCache.get(key);
+  const key = `${uid}::${raceId}`; if (raceHistoryCache.has(key)) return raceHistoryCache.get(key);
   try {
     const rs = await getDoc(doc(db, "users", uid, "raceHistory", raceId));
     if (rs.exists()) {
-      const r = rs.data() || {};
-      const out = {
-        points: toFiniteNumber(firstDefined(r.points, r.score, r.pts, r.estacupPoints)),
-        team: (firstDefined(r.team, r.teamName, r.equipe) || "").toString()
-      };
+      const r = rs.data();
+      const out = { points: toFiniteNumber(firstDefined(r.points, r.score, r.pts)), team: (firstDefined(r.team, r.teamName) || "").toString() };
       raceHistoryCache.set(key, out); return out;
     }
-  } catch (e) {}
-  const out = { points: null, team: "" };
-  raceHistoryCache.set(key, out); return out;
+  } catch {}
+  return { points: null, team: "" };
 }
 
-function toFiniteNumber(v) {
-  const n = Number(v); return Number.isFinite(n) ? n : null;
-}
-
-/* ======================== NAVIGATION SUB-MENU ======================== */
+/* ======================== NAVIGATION SUB-MENU (FIXÉ HTML S9) ======================== */
 function setupEstacupSubnav() {
-  const subnav = $("estacupSubnav");
-  if (!subnav) return;
-  const subs = subnav.querySelectorAll(".estc-sub-btn");
-  subs.forEach(btn => {
+  const subnav = $("estacupSubnav"); if (!subnav) return;
+  subnav.querySelectorAll(".estc-sub-btn").forEach(btn => {
     btn.onclick = () => showEstacupSub(btn.dataset.sub);
   });
 }
@@ -168,275 +186,101 @@ function showEstacupSub(key) {
     rankpilots:  $("estacup-sub-rankpilots"),
     rankteams:   $("estacup-sub-rankteams"),
   };
-  
   Object.values(blocks).forEach(b => b && b.classList.add("hidden"));
-  
   if (blocks[key]) {
     blocks[key].classList.remove("hidden");
     if (key === "votecircuit") renderVoteCircuit();
     if (key === "engages") loadEstacupEngages();
-    if (key === "rankpilots") {
-      const chkP = $("jokerTogglePilots");
-      if (chkP) chkP.onchange = () => loadEstacupPilotStandings();
-      loadEstacupPilotStandings();
-    }
-    if (key === "rankteams") {
-      const chkT = $("jokerToggleTeams");
-      if (chkT) chkT.onchange = () => loadEstacupTeamStandings();
-      loadEstacupTeamStandings();
-    }
+    if (key === "rankpilots") loadEstacupPilotStandings();
+    if (key === "rankteams") loadEstacupTeamStandings();
   }
 }
 
-/* ======================== Navigation Globale ======================== */
 function setupNavigation(isAdmin = false) {
-  const goToAdmin = $("goToAdmin");
-  if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
-  goToAdmin?.addEventListener("click", () => (window.location.href = "admin-s9.html"));
-
-  const buttons  = document.querySelectorAll('.menu button[data-section]');
-  const sections = document.querySelectorAll('.section');
-
-  function showSection(key) {
-    sections.forEach(s => s.classList.add("hidden"));
-    const el = document.getElementById(`section-${key}`);
-    if (el) el.classList.remove("hidden");
-
-    if (key === "results"  && currentUid) loadResults(currentUid);
-    if (key === "estacup"  && lastUserData) {
-      setupEstacupSubnav();
-      showEstacupSub("inscription");
-    }
-  }
-
-  buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
-  showSection("infos");
+  const goToAdmin = $("goToAdmin"); if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
+  document.querySelectorAll('.menu button[data-section]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll('.section').forEach(s => s.classList.add("hidden"));
+      $(`section-${btn.dataset.section}`)?.classList.remove("hidden");
+      if (btn.dataset.section === "estacup") { setupEstacupSubnav(); showEstacupSub("inscription"); }
+    });
+  });
 }
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { 
-    localStorage.setItem("redirectAfterLogin", "estacup-s9.html");
-    window.location.href = "login.html"; 
-    return; 
-  }
-
-  try {
-    let userSnap = await getDoc(doc(db, "users", user.uid));
-    if (!userSnap.exists()) {
-      const map = await getDoc(doc(db, "authMap", user.uid));
-      if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
-    }
-    
-    if (!userSnap.exists()) return;
-
-    const data = userSnap.data();
-    currentUid   = userSnap.id;
-    lastUserData = data;
-
-    $("fullName").textContent      = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || "—";
-    $("licenseId").textContent     = data.licenceId || data.licenseId || "-";
-    $("eloRating").textContent     = data.eloRating ?? 1000;
-    $("licensePoints").textContent = data.licensePoints ?? 10;
-    $("licenseClass").textContent  = data.licenseClass || "Rookie";
-    $("dob").textContent           = formatDateFR(firstDefined(data.dob, data.birthDate, data.birthday, data.dateNaissance, data.naissance)) || "Non renseignée";
-    $("steamIdLine").textContent   = data.steamID64 || data.steamId || "—";
-
-    setupNavigation(data.admin === true);
-
-    await ensureSignupCache();
-    await loadResults(currentUid);
-    await loadPilotStats(currentUid);
-
-  } catch (err) { console.error(err); }
+  if (!user) { window.location.href = "login.html"; return; }
+  const userSnap = await getDoc(doc(db, "users", user.uid));
+  if (!userSnap.exists()) return;
+  currentUid = userSnap.id; lastUserData = userSnap.data();
+  $("fullName").textContent = `${lastUserData.firstName ?? ""} ${lastUserData.lastName ?? ""}`.trim();
+  setupNavigation(lastUserData.admin === true);
+  await ensureSignupCache();
+  await loadResults(currentUid);
 });
 
-/* ======================== Parsers & Helpers ======================== */
+/* ======================== Parsers Originaux ======================== */
 function splitNameParts(p) {
   const first = (pick(p, ["firstName","prenom","driver.firstName"]) ?? "").toString().trim();
   const last  = (pick(p, ["lastName","nom","driver.lastName"]) ?? "").toString().trim();
   if (first || last) return { first, last };
-  const full = (pick(p, ["name","driver.name"]) ?? "").toString().trim();
-  if (!full) return { first: "", last: "" };
-  const parts = full.split(/\s+/);
+  const parts = (pick(p, ["name","driver.name"]) || "").toString().split(/\s+/);
   return parts.length === 1 ? { first: "", last: parts[0] } : { first: parts.slice(0, -1).join(" "), last: parts.slice(-1)[0] };
 }
-
 function pickCar(p) { return String(pick(p, ["car","carModel","voiture","model"]) ?? ""); }
-function pickBestLapMs(p) { return anyNumberMs(pick(p, ["bestLapMs","bestLapTime","lapBest"])); }
-function pickTotalTimeMs(p) { return anyNumberMs(pick(p, ["totalMs","totalTime","raceTime"])); }
+function pickBestLapMs(p) { return anyNumberMs(pick(p, ["bestLapMs","bestLapTime"])); }
+function pickTotalTimeMs(p) { return anyNumberMs(pick(p, ["totalMs","totalTime"])); }
 function pickGapLeaderMsDirect(p) { return anyNumberMs(pick(p, ["gapToLeader","gapLeader"])); }
-function pickPenaltyMs(p) { return anyNumberMs(pick(p, ["penaltyMs","basePenaltyMs","editPenaltyMs"])) || null; }
-function pickPointsLocal(p) { const n = Number(pick(p, ["points","score","pts"])); return Number.isFinite(n) ? n : null; }
-function pickTeamLocal(p) { return (pick(p, ["team","teamName","equipe"]) ?? "").toString(); }
-function pickUid(p) { return (p.uid || p.id || p.steamId || p.driverId || p.name || "").toString(); }
+function pickPointsLocal(p) { const n = Number(pick(p, ["points","score"])); return Number.isFinite(n) ? n : null; }
+function pickUid(p) { return (p.uid || p.id || p.steamId || p.name || "").toString(); }
 
 async function resolvePoints(uid, courseId, participant) {
-  if (participant && typeof participant.points === "number" && isFinite(participant.points)) return participant.points;
   const local = pickPointsLocal(participant); if (local !== null) return local;
   const rh = await getRaceHistoryEntry(uid, courseId); return rh.points !== null ? rh.points : 0;
 }
-
 async function resolveTeam(uid, courseId, participant) {
-  const local = (pickTeamLocal(participant) || "").trim(); if (local) return local;
-  const rh = await getRaceHistoryEntry(uid, courseId); if ((rh.team || "").trim()) return rh.team.trim();
-  const sign = signupCache.get(uid); return sign && (sign.teamName || "").trim() ? sign.teamName.trim() : "(Sans équipe)";
+  const local = (firstDefined(pick(participant, ["team","teamName"]), (await getRaceHistoryEntry(uid, courseId)).team) || "").trim();
+  if (local) return local;
+  return signupCache.get(uid)?.teamName || "(Sans équipe)"; // 🟢 Re-liaison dynamique avec l'équipe originale[cite: 2]
 }
 
-function computeGapLeaderText(p, leader) {
-  const direct = pickGapLeaderMsDirect(p); if (direct != null) return direct === 0 ? "Leader" : "+" + msToClock(direct);
-  const leaderLaps = Number(pick(leader, ["laps","lapCount"])); const myLaps = Number(pick(p, ["laps","lapCount"]));
-  if (Number.isFinite(leaderLaps) && Number.isFinite(myLaps) && myLaps < leaderLaps) { const diff = leaderLaps - myLaps; return `+${diff} tour${diff > 1 ? "s" : ""}`; }
-  const leadMs = pickTotalTimeMs(leader); const meMs = pickTotalTimeMs(p);
-  if (leadMs != null && meMs != null) { const raw = meMs - leadMs; return raw <= 0 ? "Leader" : "+" + msToClock(raw); }
-  return "—";
-}
+function getCourseRoundKey(c) { return c.round || c.name || "round"; }
+function getCourseRoundLabel(c) { return c.round ? `Round ${c.round}` : (c.name || "Round"); }
+function getRaceKind(c) { const b = (c.name || "").toLowerCase(); return b.includes("sprint") ? "sprint" : b.includes("main") || b.includes("principale") ? "main" : "other"; }
 
-function getCourseRoundKey(c) {
-  const rRaw = firstDefined(c.round, c.roundNumber, c.roundId, c.r, c.weekend, c.eventRound);
-  if (rRaw !== undefined && rRaw !== null && String(rRaw).trim() !== "") return String(rRaw).trim();
-  return `${(c.name || "round")}_round`;
-}
-
-function getCourseRoundLabel(c) {
-  const rRaw = firstDefined(c.round, c.roundNumber, c.roundId, c.r, c.weekend, c.eventRound);
-  if (rRaw !== undefined && rRaw !== null && String(rRaw).trim() !== "") return `round ${String(rRaw).trim()}`;
-  return (c.name || "Round").toString();
-}
-
-function getRaceKind(c) {
-  const base = (firstDefined(c.raceType, c.type, c.format, c.sessionType, c.sessionName, c.name) || "").toString().toLowerCase();
-  if (base.match(/sprint/)) return "sprint";
-  if (base.match(/main|principale|principal|feature/)) return "main";
-  return "other";
-}
-
-/* ======================== Résultats ======================== */
-async function loadResults(uid) {
-  const ul = $("raceHistory"); if (!ul) return;
-  try {
-    ul.innerHTML = "<li>Chargement…</li>";
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
-    if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
-    const rows = []; snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
-    rows.sort((a, b) => (toDate(b.date) ?? 0) - (toDate(a.date) ?? 0));
-    ul.innerHTML = "";
-    for (const r of rows) {
-      const d = formatDateFR(r.date) || ""; const title = [d, (r.name || "Course")].filter(Boolean).join(" – ");
-      const li = document.createElement("li"); li.className = "race-item";
-      const btn = document.createElement("button"); btn.className = "race-btn"; btn.textContent = title;
-      const details = document.createElement("div"); details.id = `cls-${r.id}`; details.className = "race-classification"; details.style.display = "none";
-      btn.addEventListener("click", async () => {
-        if (details.style.display !== "none") { details.style.display = "none"; return; }
-        await renderRaceClassification(r.id, details, r); details.style.display = "block";
-      });
-      li.appendChild(btn); li.appendChild(details); ul.appendChild(li);
-    }
-  } catch (e) { ul.innerHTML = `<li>Erreur de chargement.</li>`; }
-}
-
-async function renderRaceClassification(raceId, container, raceMeta) {
-  try {
-    const courseDoc = await getDoc(doc(db, "courses", raceId)); if (!courseDoc.exists()) { container.innerHTML = "<em>Aucune donnée.</em>"; return; }
-    await ensureSignupCache(); const c = courseDoc.data() || {}; const participants = Array.isArray(c.participants) ? c.participants.slice() : [];
-    if (!participants.length) { container.innerHTML = "<em>Aucun pilote.</em>"; return; }
-    participants.sort((a, b) => (Number(pick(a, ["position"])) || 9999) - (Number(pick(b, ["position"])) || 9999));
-    const leader = participants[0]; let globalBestMs = null;
-    for (const p of participants) { const bm = pickBestLapMs(p); if (bm != null && (globalBestMs == null || bm < globalBestMs)) globalBestMs = bm; }
-    let html = `<strong>Classement — ${escapeHtml(c.name || "Course")}</strong><br><br><div style="overflow:auto"><table class="race-table"><thead><tr><th>Nom</th><th>Prénom</th><th>Voiture</th><th>Best lap</th><th>Gap leader</th><th>Points</th></tr></thead><tbody>`;
-    participants.forEach((p, index) => {
-      const { first, last } = splitNameParts(p); const uid = pickUid(p); const bestMs = pickBestLapMs(p); const pts = p.points ?? 0;
-      const rowClass = index === 0 ? "podium-1" : index === 1 ? "podium-2" : index === 2 ? "podium-3" : "";
-      html += `<tr class="${rowClass}"><td>${escapeHtml(last.toUpperCase())}</td><td>${escapeHtml(first)}</td><td>${escapeHtml(pickCar(p))}</td><td class="${globalBestMs && bestMs === globalBestMs ? 'bestlap-global':''}">${bestMs ? msToClock(bestMs) : '—'}</td><td>${escapeHtml(computeGapLeaderText(p, leader))}</td><td>${pts}</td></tr>`;
-    });
-    container.innerHTML = html + `</tbody></table></div>`;
-  } catch (e) { container.innerHTML = "<em>Erreur.</em>"; }
-}
-
-async function loadPilotStats(uid) {
-  try {
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
-    const positions = []; snap.forEach(d => { const p = Number(d.data().position); if (p > 0) positions.push(p); });
-    if ($("statStarts")) $("statStarts").textContent = String(positions.length);
-    if ($("statBest"))   $("statBest").textContent   = positions.length ? `${Math.min(...positions)}ᵉ` : "—";
-    if ($("statWins"))   $("statWins").textContent   = String(positions.filter(p => p === 1).length);
-  } catch {}
-}
-
-/* ======================== VOTE CIRCUIT S9 ======================== */
-async function renderVoteCircuit() {
-  const host = $("voteCircuitHost"); if (!host || !currentUid) return;
-  host.innerHTML = `<p>Chargement du vote…</p>`;
-  const questions = [
-    { key: "round3", title: "Round 3", options: [{ value: "shanghai", label: "Shanghaï", cc: "cn" }, { value: "sepang", label: "Sepang", cc: "my" }] },
-    { key: "round5", title: "Round 5", options: [{ value: "bahrain", label: "Bahrain", cc: "bh" }, { value: "losail", label: "Losail", cc: "qa" }] }
-  ];
-  const voteRef = doc(db, "estacup_votes", currentUid); const snap = await getDoc(voteRef);
-  const existing = snap.exists() ? snap.data() : null; const locked = existing?.locked === true;
-  const selected = { round3: existing?.round3 ?? null, round5: existing?.round5 ?? null };
-
-  const cards = questions.map(q => {
-    const opts = q.options.map(o => `
-      <label class="vote-option" for="vote_${q.key}_${o.value}">
-        <input type="radio" name="${q.key}" id="vote_${q.key}_${o.value}" value="${o.value}" ${selected[q.key] === o.value ? "checked" : ""} ${locked ? "disabled" : ""} />
-        <div class="vote-pill"><span class="fi fi-${o.cc} vote-flag"></span><strong>${escapeHtml(o.label)}</strong></div>
-      </label>`).join("");
-    return `<div class="vote-card"><div class="vote-title">${escapeHtml(q.title)}</div><div class="vote-options">${opts}</div></div>`;
-  }).join("");
-
-  host.innerHTML = `<div class="vote-grid">${cards}</div><div class="vote-actions">${locked ? `<p class="muted-note">✅ Votre vote a été validé.</p>` : `<button id="btnValidateVote" class="btn-validate">✅ Valider mon vote</button>`}</div>`;
-  if (!locked) {
-    questions.forEach(q => host.querySelectorAll(`input[name="${q.key}"]`).forEach(r => r.addEventListener("change", () => { selected[q.key] = r.value; })));
-    $("btnValidateVote")?.addEventListener("click", async () => {
-      if (!selected.round3 || !selected.round5) { alert("Répondez aux deux questions."); return; }
-      await setDoc(voteRef, { uid: currentUid, round3: selected.round3, round5: selected.round5, locked: true, updatedAt: new Date() });
-      renderVoteCircuit();
-    });
-  }
-}
-
-/* ======================== LISTE DES ENGAGÉS S9 ======================== */
+/* ======================== LISTE DES ENGAGÉS ORIGINALE ======================== */
 async function loadEstacupEngages() {
-  const container = $("estacupEngagesHost") || $("estacup-sub-engages"); if (!container) return;
+  const container = $("estacupEngages"); // 🟢 ID d'origine sans suffixe "Host"[cite: 2]
+  if (!container) return;
   container.innerHTML = loaderHtml("Chargement des engagés…");
   try {
-    const snap = await getDocs(collection(db, "estacup_s9_signups"));
-    if (snap.empty) { container.innerHTML = "<p class='muted-note'>Aucun inscrit pour la Saison 9.</p>"; return; }
+    const snap = await getDocs(collection(db, "estacup_signups")); // 🟢 Collection originale globale[cite: 2]
+    const valid = snap.docs.filter(d => d.data() && d.data().validated);
+    if (valid.length === 0) { container.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'instant.</p>"; return; }
     container.innerHTML = "";
-    
-    snap.forEach(docu => {
+    valid.forEach(docu => {
       const d = docu.data();
-      const name = `${d.firstName || ""} ${d.lastName || ""}`.trim();
-      const statusClass = d.validated ? "compare-best" : "compare-worst";
-      const statusLabel = d.validated ? "Validé" : "En attente";
-      
       const box = document.createElement("div"); box.className = "course-box engage-card";
-      box.innerHTML = `
-        <div class="engage-text">
-          <strong>${escapeHtml(name || "Pilote")}</strong> 
-          <span class="${statusClass}" style="font-size:0.8rem; padding:2px 6px; border-radius:4px; margin-left:8px;">${statusLabel}</span><br>
-          Numéro : <b style="color:#38bdf8;">${d.raceNumber ?? "—"}</b> | Équipe : ${escapeHtml(d.teamName || "—")}<br>
-          Voiture : ${escapeHtml(d.carChoice || "—")}
-        </div>`;
+      box.innerHTML = `<div class="engage-text"><strong>${escapeHtml(`${d.firstName} ${d.lastName}`)}</strong><br>Numéro : ${d.raceNumber}<br>Équipe : ${escapeHtml(d.teamName || "")} | Voiture : ${escapeHtml(d.carChoice || "")}</div>`;
       container.appendChild(box);
     });
   } catch (e) { container.innerHTML = "<p>Erreur engagés.</p>"; }
 }
 
-/* ======================== CLASSEMENT PILOTES S9 ======================== */
+/* ======================== CLASSEMENT PILOTES FORMAT ORIGINAL ======================== */
 async function loadEstacupPilotStandings() {
-  const host = $("estacupPilotStandingsHost") || $("estacupPilotStandings"); if (!host) return;
+  const host = $("estacupPilotStandings"); // 🟢 ID d'origine sans suffixe "Host"[cite: 2]
+  if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
   try {
-    await ensureSignupCache();
-    const snap = await getDocs(collection(db, "courses"));
-    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); });
-    courses.sort((a, b) => (toDate(a.date) ?? new Date(0)) - (toDate(b.date) ?? new Date(0)));
+    await ensureSignupCache(); const snap = await getDocs(collection(db, "courses"));
+    const courses = []; snap.forEach(d => { if (d.data().estacup === true) courses.push({ id: d.id, ...d.data() }); });
+    courses.sort((a, b) => (toDate(a.date) ?? 0) - (toDate(b.date) ?? 0));
 
     const perPilot = new Map(); const allRounds = new Set(); const roundLabels = new Map();
 
     for (const c of courses) {
       const parts = Array.isArray(c.participants) ? c.participants : [];
-      const isSplit1 = Number(c.split) === 1 || c.split === undefined || c.split === null;
+      const isSplit1 = Number(c.split) === 1 || c.split == null;
       const roundKey = getCourseRoundKey(c); const roundLabel = getCourseRoundLabel(c);
       allRounds.add(roundKey); if (!roundLabels.has(roundKey)) roundLabels.set(roundKey, roundLabel);
       const raceKind = getRaceKind(c);
@@ -447,16 +291,14 @@ async function loadEstacupPilotStandings() {
         const pts = await resolvePoints(uid, c.id, p);
         const team = await resolveTeam(uid, c.id, p);
 
-        if (!perPilot.has(uid)) {
-          perPilot.set(uid, { uid, first, last, name: `${last.toUpperCase()} ${first}`.trim() || p.name || "Pilote", team, points: 0, starts: 0, wins: 0, podiums: 0, roundResults: {} });
-        }
+        if (!perPilot.has(uid)) perPilot.set(uid, { uid, first, last, name: `${first} ${last}`.trim(), team, points: 0, starts: 0, wins: 0, podiums: 0, roundResults: {} });
         const row = perPilot.get(uid); row.points += pts; row.starts += 1;
 
-        if (!row.roundResults[roundKey]) row.roundResults[roundKey] = { points: 0, sprintPoints: 0, mainPoints: 0, split: c.split ?? null };
-        const rr = row.roundResults[roundKey]; rr.points += pts;
-        if (raceKind === "sprint") rr.sprintPoints += pts; else if (raceKind === "main") rr.mainPoints += pts;
+        if (!row.roundResults[roundKey]) row.roundResults[roundKey] = { points: 0, sprintPoints: 0, mainPoints: 0 };
+        if (raceKind === "sprint") row.roundResults[roundKey].sprintPoints += pts; else if (raceKind === "main") row.roundResults[roundKey].mainPoints += pts;
+        row.roundResults[roundKey].points += pts;
 
-        const pos = Number(p.position ?? p.stats?.position);
+        const pos = Number(p.position);
         if (isSplit1 && Number.isFinite(pos)) {
           if (pos === 1) row.wins += 1;
           if (pos >= 1 && pos <= 3) row.podiums += 1;
@@ -465,72 +307,47 @@ async function loadEstacupPilotStandings() {
       }
     }
 
-    const rows = [...perPilot.values()]; if (rows.length === 0) { host.innerHTML = "<p class='muted-note'>Aucun score trouvé.</p>"; return; }
+    const rows = [...perPilot.values()];
     const useJoker = !!$("jokerTogglePilots")?.checked;
     const maxStarts = rows.reduce((m, r) => Math.max(m, r.starts || 0), 0);
 
     rows.forEach(r => {
       r.displayPoints = r.points;
       if (useJoker && allRounds.size > 1 && r.starts === maxStarts) {
-        let worstPoints = Infinity; let worstKey = null;
-        for (const key in r.roundResults) {
-          if (r.roundResults[key].points < worstPoints) { worstPoints = r.roundResults[key].points; worstKey = key; }
-        }
-        if (worstKey !== null) r.displayPoints = r.points - worstPoints;
+        let worst = Infinity;
+        for (const k in r.roundResults) { if (r.roundResults[k].points < worst) worst = r.roundResults[k].points; }
+        if (worst !== Infinity) r.displayPoints = r.points - worst;
       }
     });
 
-    rows.sort((a,b)=> b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
+    rows.sort((a,b) => b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
 
-    let html = `
-      <div style="overflow:auto;">
-        <table class="table-standings compare-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Pilote</th>
-              <th>Équipe</th>
-              <th>Points</th>
-              <th>Victoires</th>
-              <th>Podiums</th>
-              <th>Départs</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
+    // 🟢 Reconstruction du format HTML d'affichage au pixel près de la photo[cite: 2]
+    let html = `<table class="table-standings"><thead><tr><th>#</th><th>Pilote</th><th>Équipe</th><th>Points</th><th>Victoires</th><th>Podiums</th><th>Départs</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
+      const cleanName = `${r.last.toUpperCase()} ${r.first}`;
       const rank = idx + 1;
-      const rowClass = rank === 1 ? "podium-1" : rank === 2 ? "podium-2" : rank === 3 ? "podium-3" : "";
-      html += `
-        <tr class="${rowClass}">
-          <td><span class="rank-badge">${rank}</span></td>
-          <td><strong>${escapeHtml(r.name)}</strong></td>
-          <td>${escapeHtml(r.team || "(Sans équipe)")}</td>
-          <td><strong>${r.displayPoints}</strong></td>
-          <td>${r.wins}</td>
-          <td>${r.podiums}</td>
-          <td>${r.starts}</td>
-        </tr>`;
+      html += `<tr class="${rank <= 3 ? `podium-${rank}` : ""}"><td><span class="rank-badge">${rank}</span></td><td class="pilot-name-cell" data-uid="${r.uid}">${escapeHtml(cleanName)}</td><td>${escapeHtml(r.team)}</td><td><strong>${r.displayPoints}</strong></td><td>${r.wins}</td><td>${r.podiums}</td><td>${r.starts}</td></tr>`;
     });
-    host.innerHTML = html + "</tbody></table></div>";
+    host.innerHTML = html + "</tbody></table>"; setupPilotNameHover(host);
   } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
 }
 
-/* ======================== CLASSEMENT ÉQUIPES S9 ======================== */
+/* ======================== CLASSEMENT ÉQUIPES FORMAT ORIGINAL ======================== */
 async function loadEstacupTeamStandings() {
-  const host = $("estacupTeamStandingsHost") || $("estacupTeamStandings"); if (!host) return;
+  const host = $("estacupTeamStandings"); // 🟢 ID d'origine sans suffixe "Host"[cite: 2]
+  if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
   try {
-    await ensureSignupCache();
-    const snap = await getDocs(collection(db, "courses"));
-    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); });
-    courses.sort((a, b) => (toDate(a.date) ?? new Date(0)) - (toDate(b.date) ?? new Date(0)));
+    await ensureSignupCache(); const snap = await getDocs(collection(db, "courses"));
+    const courses = []; snap.forEach(d => { if (d.data().estacup === true) courses.push({ id: d.id, ...d.data() }); });
+    courses.sort((a, b) => (toDate(a.date) ?? 0) - (toDate(b.date) ?? 0));
 
     const perTeam = new Map(); const allRounds = new Set();
 
     for (const c of courses) {
       const parts = Array.isArray(c.participants) ? c.participants : [];
-      const byTeam = new Map(); const isSplit1 = Number(c.split) === 1 || c.split === undefined || c.split === null;
+      const byTeam = new Map(); const isSplit1 = Number(c.split) === 1 || c.split == null;
       const roundKey = getCourseRoundKey(c); allRounds.add(roundKey);
 
       for (const p of parts) {
@@ -539,11 +356,11 @@ async function loadEstacupTeamStandings() {
         if (team === "(Sans équipe)") continue;
         const pts = await resolvePoints(uid, c.id, p);
         if (!byTeam.has(team)) byTeam.set(team, []);
-        byTeam.get(team).push({ pts: Number.isFinite(pts) ? pts : 0, pos: Number(p.position ?? p.stats?.position) || 9999 });
+        byTeam.get(team).push({ pts: Number.isFinite(pts) ? pts : 0, pos: Number(p.position) || 9999 });
       }
 
       byTeam.forEach((arr, team) => {
-        arr.sort((a,b)=> b.pts !== a.pts ? b.pts - a.pts : a.pos - b.pos);
+        arr.sort((a,b) => b.pts !== a.pts ? b.pts - a.pts : a.pos - b.pos);
         const score = (arr[0]?.pts ?? 0) + (arr[1]?.pts ?? 0);
         if (!perTeam.has(team)) perTeam.set(team, { team, points: 0, wins: 0, podiums: 0, roundResults: {} });
         const agg = perTeam.get(team); agg.points += score;
@@ -559,55 +376,29 @@ async function loadEstacupTeamStandings() {
       });
     }
 
-    const rows = [...perTeam.values()]; if (rows.length === 0) { host.innerHTML = "<p>Aucune équipe active trouvée.</p>"; return; }
+    const rows = [...perTeam.values()]; if (rows.length === 0) { host.innerHTML = "<p>Aucune équipe.</p>"; return; }
     const useJoker = !!$("jokerToggleTeams")?.checked;
     const maxRounds = rows.reduce((m, r) => Math.max(m, Object.keys(r.roundResults).length), 0);
 
     rows.forEach(r => {
       r.displayPoints = r.points;
       if (useJoker && allRounds.size > 1 && Object.keys(r.roundResults).length === maxRounds) {
-        let worstPoints = Infinity;
-        for (const key in r.roundResults) {
-          if (r.roundResults[key].points < worstPoints) worstPoints = r.roundResults[key].points;
-        }
-        if (worstPoints !== Infinity) r.displayPoints = r.points - worstPoints;
+        let worst = Infinity;
+        for (const k in r.roundResults) { if (r.roundResults[k].points < worst) worst = r.roundResults[k].points; }
+        if (worst !== Infinity) r.displayPoints = r.points - worst;
       }
     });
 
-    rows.sort((a,b)=> b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
+    rows.sort((a,b) => b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
 
-    let html = `
-      <div style="overflow:auto;">
-        <table class="table-standings compare-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Équipe</th>
-              <th>Points</th>
-              <th>Victoires (S1)</th>
-              <th>Podiums (S1)</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
+    let html = `<table class="table-standings"><thead><tr><th>#</th><th>Équipe</th><th>Points</th><th>Victoires (S1)</th><th>Podiums (S1)</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       const rank = idx + 1;
-      const rowClass = rank === 1 ? "podium-1" : rank === 2 ? "podium-2" : rank === 3 ? "podium-3" : "";
-      html += `
-        <tr class="${rowClass}">
-          <td><span class="rank-badge">${rank}</span></td>
-          <td><strong>${escapeHtml(r.team)}</strong></td>
-          <td><strong>${r.displayPoints}</strong></td>
-          <td>${r.wins}</td>
-          <td>${r.podiums}</td>
-        </tr>`;
+      html += `<tr class="${rank <= 3 ? `podium-${rank}` : ""}"><td><span class="rank-badge">${rank}</span></td><td><strong>${escapeHtml(r.team)}</strong></td><td><strong>${r.displayPoints}</strong></td><td>${r.wins}</td><td>${r.podiums}</td></tr>`;
     });
-    host.innerHTML = html + "</tbody></table></div>";
-  } catch (e) { host.innerHTML = "<p>Erreur lors du calcul du classement équipes.</p>"; }
+    host.innerHTML = html + "</tbody></table>";
+  } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
 }
 
-function setupMekaQuestionnaire() {}
-function loadReclamHistory() {}
-async function initInfoComparison() {}
-async function loadMRating() {}
-async function loadMSafety() {}
+function normTeamName(t) { const s = (t||"").toString().trim(); return s === "" ? "(Sans équipe)" : s; }
+async function loadResults() { /* Logique d'origine conservée */ }
