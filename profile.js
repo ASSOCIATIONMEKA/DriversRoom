@@ -1,8 +1,9 @@
+// profile.js — Gestion du profil et des statistiques cumulées S9 + S10
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔧 Config Firebase (Strictement identique à tes autres fichiers)
+// 🔧 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
@@ -23,6 +24,7 @@ let currentUser = null;
 // Messages UI
 function showMsg(text, type = "success") {
   const box = $("msgBox");
+  if (!box) return;
   box.textContent = text;
   box.className = `msg-box msg-${type}`;
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -41,7 +43,7 @@ onAuthStateChanged(auth, async (user) => {
   await calculatePilotStats();
 });
 
-// 1. Chargement des données du profil utilisateur
+// 1. Chargement des données du profil
 async function loadUserProfile() {
   try {
     const userDocRef = doc(db, "users", currentUser.uid);
@@ -53,11 +55,12 @@ async function loadUserProfile() {
       $("profLastName").value = data.lastName || "";
       $("profSteamId").value = data.steamId || data.steamID64 || "";
       
-      // Gestion de la licence visuelle
-      const licence = data.licence || "Rookie";
+      const licence = data.licenceClass || data.licence || "Rookie";
       const licenceEl = $("profLicence");
-      licenceEl.textContent = licence;
-      licenceEl.className = `badge-license licence-${licence.toLowerCase()}`;
+      if (licenceEl) {
+        licenceEl.textContent = licence;
+        licenceEl.className = `badge-license licence-${licence.toLowerCase()}`;
+      }
     }
   } catch (err) {
     console.error("Erreur chargement profil:", err);
@@ -103,40 +106,33 @@ $("profileForm").addEventListener("submit", async (e) => {
       lastUpdate: new Date().toISOString()
     }, { merge: true });
 
-    // Synchronisation sur l'inscription de la Saison 9
+    // Synchronisation S9
     const signupRefS9 = doc(db, "estacup_signups", currentUser.uid);
     const signupSnapS9 = await getDoc(signupRefS9);
     if (signupSnapS9.exists()) {
-      await setDoc(signupRefS9, {
-        steamId: cleanSteamId64,
-        steamID64: cleanSteamId64
-      }, { merge: true });
+      await setDoc(signupRefS9, { steamId: cleanSteamId64, steamID64: cleanSteamId64 }, { merge: true });
     }
 
-    // Synchronisation sur l'inscription de la Saison 10
+    // Synchronisation S10
     const signupRefS10 = doc(db, "estacup_s10_signups", currentUser.uid);
     const signupSnapS10 = await getDoc(signupRefS10);
     if (signupSnapS10.exists()) {
-      await setDoc(signupRefS10, {
-        steamId: cleanSteamId64,
-        steamID64: cleanSteamId64
-      }, { merge: true });
+      await setDoc(signupRefS10, { steamId: cleanSteamId64, steamID64: cleanSteamId64 }, { merge: true });
     }
 
     showMsg("Profil mis à jour avec succès !");
     $("profSteamId").value = cleanSteamId64;
-    
     await calculatePilotStats();
   } catch (err) {
     console.error("Erreur sauvegarde:", err);
     showMsg("Impossible de sauvegarder les modifications.", "error");
   } finally {
     btn.disabled = false;
-    btn.textContent = "Sauvegarde les modifications";
+    btn.textContent = "Sauvegarder les modifications";
   }
 });
 
-// 3. Calcul dynamique des Statistiques globales (Cumul S9 + S10) baseado sur le prénom
+// 3. Calcul dynamique des Statistiques globales (Cumul S9 + S10)
 async function calculatePilotStats() {
   try {
     let racesCount = 0;
@@ -144,24 +140,20 @@ async function calculatePilotStats() {
     let podiumsCount = 0;
     let registeredChampionships = new Set();
 
-    // Récupération du Prénom saisi dans le formulaire
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
     
-    // Nettoyage de la cible de recherche ("MARIN" par exemple)
     const pilotTargetName = (userData.firstName || "").trim().toUpperCase();
     const cleanTarget = pilotTargetName.replace(/[^A-Z0-9]/g, "");
 
-    if (!cleanTarget) {
-      console.log("Prénom vide, calcul ignoré.");
-      return;
-    }
+    if (!cleanTarget) return;
 
-    // 🏎️ RÉCUPÉRATION DES DEUX SAISONS (S9 et S10)
-    const raceHistorySnapS9 = await getDocs(collection(db, "raceHistory"));
-    const raceHistorySnapS10 = await getDocs(collection(db, "raceHistory_s10"));
+    // 🟢 RÉCUPÉRATION DES DEUX SAISONS (S9 = "raceHistory", S10 = "raceHistory_s10")
+    const [raceHistorySnapS9, raceHistorySnapS10] = await Promise.all([
+        getDocs(collection(db, "raceHistory")), 
+        getDocs(collection(db, "raceHistory_s10"))
+    ]);
 
-    // Fonction globale pour traiter les documents d'une collection de course
     const processRaces = (querySnapshot, defaultChampionshipName) => {
       querySnapshot.forEach((docSnap) => {
         const raceData = docSnap.data() || {};
@@ -169,18 +161,13 @@ async function calculatePilotStats() {
         let pilotInThisRace = false;
 
         participants.forEach((p) => {
-          const pFirstName = (p.firstName || "").trim().toUpperCase();
-          const pLastName = (p.lastName || "").trim().toUpperCase();
-          const pNameProperty = (p.name || p.driverName || "").trim().toUpperCase();
-          
-          const combinedParticipantText = `${pFirstName} ${pLastName} ${pNameProperty}`.replace(/[^A-Z0-9]/g, "");
+          const pNameProperty = (p.name || p.driverName || p.firstName || "").trim().toUpperCase();
+          const combinedParticipantText = pNameProperty.replace(/[^A-Z0-9]/g, "");
 
           if (combinedParticipantText.includes(cleanTarget)) {
             pilotInThisRace = true;
             racesCount++;
-            
             const finalPos = parseInt(p.position || p.pos || p.finishPosition || 0, 10);
-            
             if (finalPos === 1) winsCount++;
             if (finalPos >= 1 && finalPos <= 3) podiumsCount++;
           }
@@ -192,47 +179,28 @@ async function calculatePilotStats() {
       });
     };
 
-    // Analyse des rapports de course des deux saisons
     processRaces(raceHistorySnapS9, "EstaCup - Saison 9");
     processRaces(raceHistorySnapS10, "EstaCup - Saison 10");
 
-    // Vérifications de secours via les tables d'inscriptions directes
-    const s9Signup = await getDoc(doc(db, "estacup_signups", currentUser.uid));
-    if (s9Signup.exists()) {
-      registeredChampionships.add("EstaCup - Saison 9");
-    }
-
-    const s10Signup = await getDoc(doc(db, "estacup_s10_signups", currentUser.uid));
-    if (s10Signup.exists()) {
-      registeredChampionships.add("EstaCup - Saison 10");
-    }
-
-    // Mise à jour de l'affichage HTML
-    $("statRaces").textContent = racesCount;
-    $("statWins").textContent = winsCount;
-    $("statPodiums").textContent = podiumsCount;
-    
-    if ($("statPoles")) $("statPoles").textContent = "0";
+    // Mise à jour UI
+    if($("statRaces")) $("statRaces").textContent = racesCount;
+    if($("statWins")) $("statWins").textContent = winsCount;
+    if($("statPodiums")) $("statPodiums").textContent = podiumsCount;
+    if($("statPoles")) $("statPoles").textContent = "0";
 
     const listEl = $("championshipList");
-    listEl.innerHTML = "";
-
-    if (registeredChampionships.size === 0) {
-      listEl.innerHTML = `<li>Nouveau pilote — Aucun championnat enregistré</li>`;
-    } else {
-      registeredChampionships.forEach((champ) => {
-        listEl.innerHTML += `<li>🏎️ <strong>${champ}</strong> — Pilote Engagé</li>`;
-      });
+    if(listEl) {
+        listEl.innerHTML = registeredChampionships.size === 0 
+            ? `<li>Nouveau pilote — Aucun championnat enregistré</li>` 
+            : Array.from(registeredChampionships).map(champ => `<li>🏎️ <strong>${champ}</strong> — Pilote Engagé</li>`).join("");
     }
-
   } catch (err) {
     console.error("Erreur calcul stats:", err);
-    $("championshipList").innerHTML = `<li>Erreur au chargement de l'historique</li>`;
   }
 }
 
 // Déconnexion
-$("btnProfileLogout").addEventListener("click", () => {
+$("btnProfileLogout")?.addEventListener("click", () => {
   signOut(auth).then(() => {
     window.location.href = "login.html";
   });
