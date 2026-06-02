@@ -737,7 +737,6 @@ async function renderVoteCircuit() {
     </div>
   `;
 }
-  ];
 
   const voteRef = doc(db, "estacup_votes", currentUid);
   const snap = await getDoc(voteRef);
