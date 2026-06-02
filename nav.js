@@ -34,12 +34,13 @@ function injectNavbar() {
           <a href="https://www.helloasso.com/associations/meka" target="_blank" rel="noopener noreferrer">L'ASSOCIATION</a>
           
           <div class="dropdown">
-            <a href="login.html" class="dropbtn">NOS COMPÉTITIONS ▾</a>
+            <!-- Le bouton principal ne recharge pas la page, il sert juste de survol -->
+            <a href="#" class="dropbtn" onclick="return false;">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-              <a href="login.html">🟢 EstaCup S10</a>
-              <a href="login.html">⚪ EstaCup S9</a>
-            </div>
+            <a href="estacup-s10.html">🟢 EstaCup S10</a>
+            <a href="estacup-s9.html">⚪ EstaCup S9</a>
           </div>
+        </div>
           
           <a href="esport.html">ÉQUIPE ESPORT</a>
           <a href="https://discord.gg/jB6yDhQFyw" target="_blank">DISCORD</a>
