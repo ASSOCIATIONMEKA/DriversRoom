@@ -37,7 +37,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   currentUser = user;
-  $("profEmail").value = user.email;
+  if ($("profEmail")) $("profEmail").value = user.email;
   
   await loadUserProfile();
   await calculatePilotStats();
@@ -51,9 +51,9 @@ async function loadUserProfile() {
     
     if (snap.exists()) {
       const data = snap.data();
-      $("profFirstName").value = data.firstName || "";
-      $("profLastName").value = data.lastName || "";
-      $("profSteamId").value = data.steamId || data.steamID64 || "";
+      if ($("profFirstName")) $("profFirstName").value = data.firstName || "";
+      if ($("profLastName")) $("profLastName").value = data.lastName || "";
+      if ($("profSteamId")) $("profSteamId").value = data.steamId || data.steamID64 || "";
       
       const licence = data.licenceClass || data.licence || "Rookie";
       const licenceEl = $("profLicence");
@@ -69,13 +69,15 @@ async function loadUserProfile() {
 }
 
 // 2. Sauvegarde du profil
-$("profileForm").addEventListener("submit", async (e) => {
+$("profileForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentUser) return;
 
   const btn = $("btnSaveProfile");
-  btn.disabled = true;
-  btn.textContent = "Sauvegarde...";
+  if(btn) {
+    btn.disabled = true;
+    btn.textContent = "Sauvegarde...";
+  }
 
   let rawSteam = $("profSteamId").value.trim();
   let cleanSteamId64 = "";
@@ -106,14 +108,13 @@ $("profileForm").addEventListener("submit", async (e) => {
       lastUpdate: new Date().toISOString()
     }, { merge: true });
 
-    // Synchronisation S9
+    // Synchronisation S9/S10
     const signupRefS9 = doc(db, "estacup_signups", currentUser.uid);
     const signupSnapS9 = await getDoc(signupRefS9);
     if (signupSnapS9.exists()) {
       await setDoc(signupRefS9, { steamId: cleanSteamId64, steamID64: cleanSteamId64 }, { merge: true });
     }
 
-    // Synchronisation S10
     const signupRefS10 = doc(db, "estacup_s10_signups", currentUser.uid);
     const signupSnapS10 = await getDoc(signupRefS10);
     if (signupSnapS10.exists()) {
@@ -121,14 +122,17 @@ $("profileForm").addEventListener("submit", async (e) => {
     }
 
     showMsg("Profil mis à jour avec succès !");
-    $("profSteamId").value = cleanSteamId64;
+    if($("profSteamId")) $("profSteamId").value = cleanSteamId64;
+    
     await calculatePilotStats();
   } catch (err) {
     console.error("Erreur sauvegarde:", err);
     showMsg("Impossible de sauvegarder les modifications.", "error");
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Sauvegarder les modifications";
+    if(btn) {
+      btn.disabled = false;
+      btn.textContent = "Sauvegarder les modifications";
+    }
   }
 });
 
@@ -142,13 +146,15 @@ async function calculatePilotStats() {
 
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
-    
-    const pilotTargetName = (userData.firstName || "").trim().toUpperCase();
-    const cleanTarget = pilotTargetName.replace(/[^A-Z0-9]/g, "");
+    // Utilisation du SteamID pour une correspondance exacte dans les logs
+    const targetSteam = (userData.steamId || userData.steamID64 || "").toString().trim();
 
-    if (!cleanTarget) return;
+    if (!targetSteam) {
+      console.log("Aucun SteamID trouvé sur le profil, stats non disponibles.");
+      return;
+    }
 
-    // 🟢 RÉCUPÉRATION DES DEUX SAISONS (S9 = "raceHistory", S10 = "raceHistory_s10")
+    // 🟢 Récupération parallélisée des collections
     const [raceHistorySnapS9, raceHistorySnapS10] = await Promise.all([
         getDocs(collection(db, "raceHistory")), 
         getDocs(collection(db, "raceHistory_s10"))
@@ -161,10 +167,9 @@ async function calculatePilotStats() {
         let pilotInThisRace = false;
 
         participants.forEach((p) => {
-          const pNameProperty = (p.name || p.driverName || p.firstName || "").trim().toUpperCase();
-          const combinedParticipantText = pNameProperty.replace(/[^A-Z0-9]/g, "");
-
-          if (combinedParticipantText.includes(cleanTarget)) {
+          const pSteam = (p.steamId || p.steamID || p.steamID64 || "").toString().trim();
+          
+          if (pSteam === targetSteam) {
             pilotInThisRace = true;
             racesCount++;
             const finalPos = parseInt(p.position || p.pos || p.finishPosition || 0, 10);
@@ -192,7 +197,7 @@ async function calculatePilotStats() {
     if(listEl) {
         listEl.innerHTML = registeredChampionships.size === 0 
             ? `<li>Nouveau pilote — Aucun championnat enregistré</li>` 
-            : Array.from(registeredChampionships).map(champ => `<li>🏎️ <strong>${champ}</strong> — Pilote Engagé</li>`).join("");
+            : Array.from(registeredChampionships).map(champ => `<li>🏎️ <strong>${champ}</strong></li>`).join("");
     }
   } catch (err) {
     console.error("Erreur calcul stats:", err);
