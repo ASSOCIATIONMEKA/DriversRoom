@@ -151,6 +151,7 @@ function ensureDriversRoomButton() {
   btn.addEventListener("click", () => (window.location.href = "estacup-s10.html"));
   menu.appendChild(btn);
 }
+
 function ensureRedLogoutButton() {
   const btn = document.getElementById("logout"); if (!btn) return;
   Object.assign(btn.style, { backgroundColor: "#e53935", borderColor: "#e53935", color: "#fff", fontWeight: "600", padding: "8px 12px", borderRadius: "10px" });
