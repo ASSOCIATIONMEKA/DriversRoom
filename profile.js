@@ -47,13 +47,17 @@ async function loadUserProfile() {
 // 🟢 CALCUL DES STATS PAR UID (Fiable à 100%)
 async function calculatePilotStats() {
   try {
+    // On récupère le SteamID du profil utilisateur actuel
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
-    
-    // Normalisation des identifiants
-    const myUid = currentUser.uid;
-    const myFullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim().toUpperCase();
+    const mySteamId = (userData.steamId || userData.steamID64 || "").toString().trim();
 
+    if (!mySteamId) {
+      console.warn("Aucun SteamID trouvé sur le profil.");
+      return;
+    }
+
+    // Récupération des deux sources de données
     const [snapS9, snapS10] = await Promise.all([
       getDocs(collection(db, "raceHistory")), 
       getDocs(collection(db, "raceHistory_s10"))
@@ -62,21 +66,21 @@ async function calculatePilotStats() {
     let racesCount = 0, winsCount = 0, podiumsCount = 0;
     let championships = new Set();
 
+    // Fonction de traitement basée UNIQUEMENT sur le SteamID
     const process = (snap, champName) => {
       snap.forEach(docSnap => {
         const data = docSnap.data();
         const participants = data.participants || [];
         
-        // 🟢 Logique double : UID ou NOM
-        const found = participants.find(p => {
-          const pUid = p.uid;
-          const pName = (p.name || `${p.firstName || ""} ${p.lastName || ""}`).trim().toUpperCase();
-          return pUid === myUid || pName === myFullName;
+        // On cherche le participant dont le steamId correspond au tien
+        const p = participants.find(part => {
+          const pSteam = (part.steamId || part.steamID || part.steamID64 || "").toString().trim();
+          return pSteam === mySteamId;
         });
-
-        if (found) {
+        
+        if (p) {
           racesCount++;
-          const pos = parseInt(found.position || 0, 10);
+          const pos = parseInt(p.position || 0, 10);
           if (pos === 1) winsCount++;
           if (pos >= 1 && pos <= 3) podiumsCount++;
           championships.add(champName);
@@ -87,15 +91,16 @@ async function calculatePilotStats() {
     process(snapS9, "EstaCup - Saison 9");
     process(snapS10, "EstaCup - Saison 10");
 
-    // Mise à jour UI
+    // Mise à jour de l'affichage
     if($("statRaces")) $("statRaces").textContent = racesCount;
     if($("statWins")) $("statWins").textContent = winsCount;
     if($("statPodiums")) $("statPodiums").textContent = podiumsCount;
-    
+    if($("statPoles")) $("statPoles").textContent = "0";
+
     const listEl = $("championshipList");
     if(listEl) {
       listEl.innerHTML = championships.size === 0 
-        ? `<li>Aucun historique trouvé pour ${myFullName}</li>` 
+        ? `<li>Aucun historique trouvé pour votre SteamID</li>` 
         : Array.from(championships).map(c => `<li>🏎️ <strong>${c}</strong></li>`).join("");
     }
   } catch (err) { console.error("Erreur stats:", err); }
