@@ -74,16 +74,6 @@ function firstDefined(...vals) {
   return undefined;
 }
 
-function loaderHtml(txt) {
-  const text = txt === undefined ? "Chargement…" : txt;
-  return (
-    '<div class="loading-inline">' +
-      '<div class="spinner"></div>' +
-      '<div>' + escapeHtml(text) + '</div>' +
-    '</div>'
-  );
-}
-
 function extractSteam64(input) {
   const m = String(input || "").match(/765\d{14}/);
   return m ? m[0] : "";
@@ -723,12 +713,11 @@ function getRaceKind(c) {
   return "other";
 }
 
-/* ===== VOTE CIRCUIT (2 questions, drapeaux, validation unique) ===== */
+/* ===== VOTE CIRCUIT (DÉSACTIVÉ POUR LA S10) ===== */
 async function renderVoteCircuit() {
   const host = $("voteCircuitHost");
   if (!host) return;
   
-  // Rendu propre pour indiquer qu'aucun scrutin n'a lieu cette saison
   host.innerHTML = `
     <div class="course-box" style="text-align: center; padding: 20px;">
       <p class="muted-note" style="font-size: 1.1rem;">
@@ -736,85 +725,6 @@ async function renderVoteCircuit() {
       </p>
     </div>
   `;
-}
-
-  const voteRef = doc(db, "estacup_votes", currentUid);
-  const snap = await getDoc(voteRef);
-  const existing = snap.exists() ? snap.data() : null;
-  const locked = existing?.locked === true;
-
-  const selected = {
-    round3: existing?.round3 ?? null,
-    round5: existing?.round5 ?? null
-  };
-
-  const makeCard = (q) => {
-    const selectedValue = selected[q.key];
-    const opts = q.options.map(o => {
-      const id = `vote_${q.key}_${o.value}`;
-      const checked = selectedValue === o.value ? "checked" : "";
-      const disabled = locked ? "disabled" : "";
-      return `
-        <label class="vote-option" for="${id}">
-          <input type="radio" name="${q.key}" id="${id}" value="${o.value}" ${checked} ${disabled} />
-          <div class="vote-pill">
-            <span class="fi fi-${o.cc} vote-flag" aria-hidden="true"></span>
-            <strong>${escapeHtml(o.label)}</strong>
-          </div>
-        </label>
-      `;
-    }).join("");
-
-    return `
-      <div class="vote-card">
-        <div class="vote-title">${escapeHtml(q.title)}</div>
-        <div class="vote-options">${opts}</div>
-      </div>
-    `;
-  };
-
-  const cards = questions.map(makeCard).join("");
-  const actions = locked
-    ? `<p class="muted-note">✅ Votre vote a été validé. Il n’est plus modifiable.</p>`
-    : `<button id="btnValidateVote" class="btn-validate">✅ Valider mon vote</button>`;
-
-  host.innerHTML = `
-    <div class="vote-grid">${cards}</div>
-    <div class="vote-actions">
-      ${actions}
-      <p class="muted-note" style="margin-top:8px;">Un seul envoi : vous répondez aux 2 questions et vous validez une fois. Après validation, vous ne pourrez plus modifier.</p>
-    </div>
-  `;
-
-  if (!locked) {
-    questions.forEach(q => {
-      const radios = host.querySelectorAll(`input[name="${q.key}"]`);
-      radios.forEach(r => r.addEventListener("change", () => {
-        selected[q.key] = r.value;
-      }));
-    });
-
-    $("btnValidateVote")?.addEventListener("click", async () => {
-      if (!selected.round3 || !selected.round5) {
-        alert("Merci de répondre aux deux questions avant de valider.");
-        return;
-      }
-      try {
-        await setDoc(voteRef, {
-          uid: currentUid,
-          round3: selected.round3,
-          round5: selected.round5,
-          locked: true,
-          updatedAt: new Date()
-        });
-        alert("Votre vote est enregistré et verrouillé. Merci !");
-        renderVoteCircuit();
-      } catch (e) {
-        console.error(e);
-        alert("Erreur lors de l’enregistrement du vote.");
-      }
-    });
-  }
 }
 
 /* ======================== Formulaires ESTACUP (inscription) ======================== */
