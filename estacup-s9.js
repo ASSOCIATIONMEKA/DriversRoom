@@ -146,11 +146,11 @@ function setupPilotNameHover(root) {
 }
 
 /* ======================== Caches & Synchronisation ======================== */
-const signupCache = new Map(); const raceHistoryCache = new Map(); const pilotStatsCache = new Map();
+const signupCache = new Map(); const raceHistoryCache = new Map();
 
 async function ensureSignupCache() {
   if (signupCache.size > 0) return;
-  const snap = await getDocs(collection(db, "estacup_signups")); // 🟢 Retour à la collection originale globale[cite: 2]
+  const snap = await getDocs(collection(db, "estacup_signups"));
   snap.forEach(d => {
     const x = d.data(); if (x.uid) signupCache.set(x.uid, { teamName: x.teamName || "", raceNumber: x.raceNumber, carChoice: x.carChoice });
   });
@@ -169,7 +169,9 @@ async function getRaceHistoryEntry(uid, raceId) {
   return { points: null, team: "" };
 }
 
-/* ======================== NAVIGATION SUB-MENU (FIXÉ HTML S9) ======================== */
+function toFiniteNumber(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+/* ======================== NAVIGATION SUB-MENU ======================== */
 function setupEstacupSubnav() {
   const subnav = $("estacupSubnav"); if (!subnav) return;
   subnav.querySelectorAll(".estc-sub-btn").forEach(btn => {
@@ -198,10 +200,14 @@ function showEstacupSub(key) {
 
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin"); if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
+  
   document.querySelectorAll('.menu button[data-section]').forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll('.section').forEach(s => s.classList.add("hidden"));
-      $(`section-${btn.dataset.section}`)?.classList.remove("hidden");
+      const target = $(`section-${btn.dataset.section}`);
+      if (target) target.classList.remove("hidden");
+      
+      if (btn.dataset.section === "results" && currentUid) loadResults(currentUid);
       if (btn.dataset.section === "estacup") { setupEstacupSubnav(); showEstacupSub("inscription"); }
     });
   });
@@ -212,10 +218,14 @@ onAuthStateChanged(auth, async (user) => {
   const userSnap = await getDoc(doc(db, "users", user.uid));
   if (!userSnap.exists()) return;
   currentUid = userSnap.id; lastUserData = userSnap.data();
-  $("fullName").textContent = `${lastUserData.firstName ?? ""} ${lastUserData.lastName ?? ""}`.trim();
+  
+  const fullNameEl = $("fullName");
+  if (fullNameEl) fullNameEl.textContent = `${lastUserData.firstName ?? ""} ${lastUserData.lastName ?? ""}`.trim();
+  
   setupNavigation(lastUserData.admin === true);
   await ensureSignupCache();
   await loadResults(currentUid);
+  await loadPilotStats(currentUid);
 });
 
 /* ======================== Parsers Originaux ======================== */
@@ -240,20 +250,103 @@ async function resolvePoints(uid, courseId, participant) {
 async function resolveTeam(uid, courseId, participant) {
   const local = (firstDefined(pick(participant, ["team","teamName"]), (await getRaceHistoryEntry(uid, courseId)).team) || "").trim();
   if (local) return local;
-  return signupCache.get(uid)?.teamName || "(Sans équipe)"; // 🟢 Re-liaison dynamique avec l'équipe originale[cite: 2]
+  return signupCache.get(uid)?.teamName || "(Sans équipe)";
 }
 
 function getCourseRoundKey(c) { return c.round || c.name || "round"; }
 function getCourseRoundLabel(c) { return c.round ? `Round ${c.round}` : (c.name || "Round"); }
 function getRaceKind(c) { const b = (c.name || "").toLowerCase(); return b.includes("sprint") ? "sprint" : b.includes("main") || b.includes("principale") ? "main" : "other"; }
 
-/* ======================== LISTE DES ENGAGÉS ORIGINALE ======================== */
+/* ======================== RÉSULTATS (CORRIGÉ & RESTAURÉ) ======================== */
+async function loadResults(uid) {
+  const ul = $("raceHistory"); if (!ul) return;
+  try {
+    ul.innerHTML = "<li>Chargement…</li>";
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
+    const rows = []; snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => (toDate(b.date) ?? 0) - (toDate(a.date) ?? 0));
+    ul.innerHTML = "";
+    for (const r of rows) {
+      const d = formatDateFR(r.date) || ""; const title = [d, (r.name || "Course")].filter(Boolean).join(" – ");
+      const li = document.createElement("li"); li.className = "race-item";
+      const btn = document.createElement("button"); btn.className = "race-btn"; btn.textContent = title;
+      const details = document.createElement("div"); details.id = `cls-${r.id}`; details.className = "race-classification"; details.style.display = "none";
+      btn.addEventListener("click", async () => {
+        if (details.style.display !== "none") { details.style.display = "none"; return; }
+        await renderRaceClassification(r.id, details, r); details.style.display = "block";
+      });
+      li.appendChild(btn); li.appendChild(details); ul.appendChild(li);
+    }
+  } catch (e) { ul.innerHTML = `<li>Erreur de chargement.</li>`; }
+}
+
+async function renderRaceClassification(raceId, container, raceMeta) {
+  try {
+    const courseDoc = await getDoc(doc(db, "courses", raceId)); if (!courseDoc.exists()) { container.innerHTML = "<em>Aucune donnée.</em>"; return; }
+    await ensureSignupCache(); const c = courseDoc.data() || {}; const participants = Array.isArray(c.participants) ? c.participants.slice() : [];
+    if (!participants.length) { container.innerHTML = "<em>Aucun pilote.</em>"; return; }
+    participants.sort((a, b) => (Number(pick(a, ["position"])) || 9999) - (Number(pick(b, ["position"])) || 9999));
+    const leader = participants[0]; let globalBestMs = null;
+    for (const p of participants) { const bm = pickBestLapMs(p); if (bm != null && (globalBestMs == null || bm < globalBestMs)) globalBestMs = bm; }
+    let html = `<strong>Classement — ${escapeHtml(c.name || "Course")}</strong><br><br><div style="overflow:auto"><table class="race-table"><thead><tr><th>Nom</th><th>Prénom</th><th>Voiture</th><th>Best lap</th><th>Gap leader</th><th>Points</th></tr></thead><tbody>`;
+    participants.forEach((p, index) => {
+      const { first, last } = splitNameParts(p); const uid = pickUid(p); const bestMs = pickBestLapMs(p); const pts = p.points ?? 0;
+      const rowClass = index === 0 ? "podium-1" : index === 1 ? "podium-2" : index === 2 ? "podium-3" : "";
+      html += `<tr class="${rowClass}"><td>${escapeHtml(last.toUpperCase())}</td><td>${escapeHtml(first)}</td><td>${escapeHtml(pickCar(p))}</td><td class="${globalBestMs && bestMs === globalBestMs ? 'bestlap-global':''}">${bestMs ? msToClock(bestMs) : '—'}</td><td>${escapeHtml(computeGapLeaderText(p, leader))}</td><td>${pts}</td></tr>`;
+    });
+    container.innerHTML = html + `</tbody></table></div>`;
+  } catch (e) { container.innerHTML = "<em>Erreur.</em>"; }
+}
+
+async function loadPilotStats(uid) {
+  try {
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    const positions = []; snap.forEach(d => { const p = Number(d.data().position); if (p > 0) positions.push(p); });
+    if ($("statStarts")) $("statStarts").textContent = String(positions.length);
+    if ($("statBest"))   $("statBest").textContent   = positions.length ? `${Math.min(...positions)}ᵉ` : "—";
+    if ($("statWins"))   $("statWins").textContent   = String(positions.filter(p => p === 1).length);
+  } catch {}
+}
+
+/* ======================== VOTE CIRCUIT S9 ======================== */
+async function renderVoteCircuit() {
+  const host = $("voteCircuitHost"); if (!host || !currentUid) return;
+  host.innerHTML = `<p>Chargement du vote…</p>`;
+  const questions = [
+    { key: "round3", title: "Round 3", options: [{ value: "shanghai", label: "Shanghaï", cc: "cn" }, { value: "sepang", label: "Sepang", cc: "my" }] },
+    { key: "round5", title: "Round 5", options: [{ value: "bahrain", label: "Bahrain", cc: "bh" }, { value: "losail", label: "Losail", cc: "qa" }] }
+  ];
+  const voteRef = doc(db, "estacup_votes", currentUid); const snap = await getDoc(voteRef);
+  const existing = snap.exists() ? snap.data() : null; const locked = existing?.locked === true;
+  const selected = { round3: existing?.round3 ?? null, round5: existing?.round5 ?? null };
+
+  const cards = questions.map(q => {
+    const opts = q.options.map(o => `
+      <label class="vote-option" for="vote_${q.key}_${o.value}">
+        <input type="radio" name="${q.key}" id="vote_${q.key}_${o.value}" value="${o.value}" ${selected[q.key] === o.value ? "checked" : ""} ${locked ? "disabled" : ""} />
+        <div class="vote-pill"><span class="fi fi-${o.cc} vote-flag"></span><strong>${escapeHtml(o.label)}</strong></div>
+      </label>`).join("");
+    return `<div class="vote-card"><div class="vote-title">${escapeHtml(q.title)}</div><div class="vote-options">${opts}</div></div>`;
+  }).join("");
+
+  host.innerHTML = `<div class="vote-grid">${cards}</div><div class="vote-actions">${locked ? `<p class="muted-note">✅ Votre vote a été validé.</p>` : `<button id="btnValidateVote" class="btn-validate">✅ Valider mon vote</button>`}</div>`;
+  if (!locked) {
+    questions.forEach(q => host.querySelectorAll(`input[name="${q.key}"]`).forEach(r => r.addEventListener("change", () => { selected[q.key] = r.value; })));
+    $("btnValidateVote")?.addEventListener("click", async () => {
+      if (!selected.round3 || !selected.round5) { alert("Répondez aux deux questions."); return; }
+      await setDoc(voteRef, { uid: currentUid, round3: selected.round3, round5: selected.round5, locked: true, updatedAt: new Date() });
+      renderVoteCircuit();
+    });
+  }
+}
+
+/* ======================== LISTE DES ENGAGÉS S9 ======================== */
 async function loadEstacupEngages() {
-  const container = $("estacupEngages"); // 🟢 ID d'origine sans suffixe "Host"[cite: 2]
-  if (!container) return;
+  const container = $("estacupEngages"); if (!container) return;
   container.innerHTML = loaderHtml("Chargement des engagés…");
   try {
-    const snap = await getDocs(collection(db, "estacup_signups")); // 🟢 Collection originale globale[cite: 2]
+    const snap = await getDocs(collection(db, "estacup_signups"));
     const valid = snap.docs.filter(d => d.data() && d.data().validated);
     if (valid.length === 0) { container.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'instant.</p>"; return; }
     container.innerHTML = "";
@@ -266,10 +359,9 @@ async function loadEstacupEngages() {
   } catch (e) { container.innerHTML = "<p>Erreur engagés.</p>"; }
 }
 
-/* ======================== CLASSEMENT PILOTES FORMAT ORIGINAL ======================== */
+/* ======================== CLASSEMENT PILOTES S9 ======================== */
 async function loadEstacupPilotStandings() {
-  const host = $("estacupPilotStandings"); // 🟢 ID d'origine sans suffixe "Host"[cite: 2]
-  if (!host) return;
+  const host = $("estacupPilotStandings"); if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
   try {
     await ensureSignupCache(); const snap = await getDocs(collection(db, "courses"));
@@ -320,9 +412,8 @@ async function loadEstacupPilotStandings() {
       }
     });
 
-    rows.sort((a,b) => b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
+    rows.sort((a,b) => b.displayPoints - a.displayPoints || b.wins - a.wins || b.podiums - a.podiums);
 
-    // 🟢 Reconstruction du format HTML d'affichage au pixel près de la photo[cite: 2]
     let html = `<table class="table-standings"><thead><tr><th>#</th><th>Pilote</th><th>Équipe</th><th>Points</th><th>Victoires</th><th>Podiums</th><th>Départs</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       const cleanName = `${r.last.toUpperCase()} ${r.first}`;
@@ -333,10 +424,9 @@ async function loadEstacupPilotStandings() {
   } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
 }
 
-/* ======================== CLASSEMENT ÉQUIPES FORMAT ORIGINAL ======================== */
+/* ======================== CLASSEMENT ÉQUIPES S9 ======================== */
 async function loadEstacupTeamStandings() {
-  const host = $("estacupTeamStandings"); // 🟢 ID d'origine sans suffixe "Host"[cite: 2]
-  if (!host) return;
+  const host = $("estacupTeamStandings"); if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
   try {
     await ensureSignupCache(); const snap = await getDocs(collection(db, "courses"));
@@ -360,7 +450,7 @@ async function loadEstacupTeamStandings() {
       }
 
       byTeam.forEach((arr, team) => {
-        arr.sort((a,b) => b.pts !== a.pts ? b.pts - a.pts : a.pos - b.pos);
+        arr.sort((a,b) => b.pts - a.pts || a.pos - b.pos);
         const score = (arr[0]?.pts ?? 0) + (arr[1]?.pts ?? 0);
         if (!perTeam.has(team)) perTeam.set(team, { team, points: 0, wins: 0, podiums: 0, roundResults: {} });
         const agg = perTeam.get(team); agg.points += score;
@@ -389,7 +479,7 @@ async function loadEstacupTeamStandings() {
       }
     });
 
-    rows.sort((a,b) => b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
+    rows.sort((a,b) => b.displayPoints - a.displayPoints || b.wins - a.wins || b.podiums - a.podiums);
 
     let html = `<table class="table-standings"><thead><tr><th>#</th><th>Équipe</th><th>Points</th><th>Victoires (S1)</th><th>Podiums (S1)</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
@@ -401,4 +491,3 @@ async function loadEstacupTeamStandings() {
 }
 
 function normTeamName(t) { const s = (t||"").toString().trim(); return s === "" ? "(Sans équipe)" : s; }
-async function loadResults() { /* Logique d'origine conservée */ }
