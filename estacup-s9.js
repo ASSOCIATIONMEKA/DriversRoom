@@ -179,7 +179,7 @@ onAuthStateChanged(auth, async (user) => {
   } catch (err) { console.error(err); }
 });
 
-/* ======================== VOTE CIRCUIT ACTIF S9 ======================== */
+/* ======================== VOTE CIRCUIT S9 ======================== */
 async function renderVoteCircuit() {
   const host = $("voteCircuitHost");
   if (!host || !currentUid) return;
@@ -230,7 +230,7 @@ async function renderVoteCircuit() {
   }
 }
 
-/* ======================== CLASSEMENT PILOTES S9 (FIXÉ) ======================== */
+/* ======================== CLASSEMENT PILOTES S9 Blindé ======================== */
 async function loadEstacupPilotStandings() {
   const host = $("estacupPilotStandingsHost");
   if (!host) return;
@@ -238,34 +238,51 @@ async function loadEstacupPilotStandings() {
 
   try {
     const useJoker = $("jokerTogglePilots")?.checked ?? false;
-    const [coursesSnap, usersSnap] = await Promise.all([
-      getDocs(collection(db, "raceHistory")), // 🟢 Correction : On cible l'historique S9
+    
+    // On charge en parallèle les deux collections pour être sûr de taper le bon endroit
+    const [raceHistorySnap, coursesSnap, usersSnap] = await Promise.all([
+      getDocs(collection(db, "raceHistory")),
+      getDocs(collection(db, "courses")),
       getDocs(collection(db, "users"))
     ]);
 
     const pilotsMap = new Map();
     usersSnap.forEach(d => {
       const u = d.data();
-      pilotsMap.set(d.id, { name: `${u.firstName || ""} ${u.lastName || ""}`.trim(), rounds: {}, total: 0, uid: d.id });
+      if(u) {
+        const pName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+        pilotsMap.set(d.id, { name: pName || "Pilote Inconnu", rounds: {}, total: 0, uid: d.id });
+      }
     });
 
-    coursesSnap.forEach(docSnap => {
-      const race = docSnap.data();
-      if (!race.participants) return;
-      
-      const roundKey = race.round || race.name || docSnap.id;
-      const isSprint = race.name?.toLowerCase().includes("sprint") || race.type?.toLowerCase().includes("sprint");
+    const processRaces = (snap) => {
+      snap.forEach(docSnap => {
+        try {
+          const race = docSnap.data();
+          if (!race || !race.participants) return;
 
-      race.participants.forEach(p => {
-        if (!p.uid || !pilotsMap.has(p.uid)) return;
-        const pilot = pilotsMap.get(p.uid);
-        if (!pilot.rounds[roundKey]) pilot.rounds[roundKey] = { sprint: 0, main: 0 };
-        
-        const pts = parseInt(p.points || p.posPoints || 0, 10);
-        if (isSprint) pilot.rounds[roundKey].sprint = pts;
-        else pilot.rounds[roundKey].main = pts;
+          // Détection intelligente du round
+          const roundKey = race.round || race.name || docSnap.id;
+          const raceNameLower = (race.name || "").toLowerCase();
+          const isSprint = raceNameLower.includes("sprint") || (race.type || "").toLowerCase().includes("sprint");
+
+          race.participants.forEach(p => {
+            if (!p || !p.uid || !pilotsMap.has(p.uid)) return;
+            
+            const pilot = pilotsMap.get(p.uid);
+            if (!pilot.rounds[roundKey]) pilot.rounds[roundKey] = { sprint: 0, main: 0 };
+            
+            const pts = parseInt(p.points || p.posPoints || 0, 10);
+            if (isSprint) pilot.rounds[roundKey].sprint = pts;
+            else pilot.rounds[roundKey].main = pts;
+          });
+        } catch (err) { console.warn("Erreur document course ignoré:", err); }
       });
-    });
+    };
+
+    // On traite les deux collections au cas où les données S9 soient réparties
+    processRaces(raceHistorySnap);
+    processRaces(coursesSnap);
 
     const rows = Array.from(pilotsMap.values()).map(pilot => {
       let scores = [];
@@ -280,7 +297,7 @@ async function loadEstacupPilotStandings() {
     }).filter(p => p.total > 0).sort((a, b) => b.total - a.total);
 
     if (rows.length === 0) {
-      host.innerHTML = "<p>Aucune donnée de course trouvée pour la Saison 9.</p>";
+      host.innerHTML = "<p style='color:#94a3b8;'>Aucun score enregistré trouvé pour la Saison 9.</p>";
       return;
     }
 
@@ -290,12 +307,12 @@ async function loadEstacupPilotStandings() {
     });
     host.innerHTML = html + "</tbody></table>";
   } catch (err) { 
-    console.error(err);
-    host.innerHTML = "<p>Erreur lors du calcul du classement.</p>"; 
+    console.error("Erreur générale classement pilotes:", err);
+    host.innerHTML = "<p>Erreur lors du traitement ou de la connexion Firebase.</p>"; 
   }
 }
 
-/* ======================== CLASSEMENT ÉQUIPES S9 (FIXÉ) ======================== */
+/* ======================== CLASSEMENT ÉQUIPES S9 Blindé ======================== */
 async function loadEstacupTeamStandings() {
   const host = $("estacupTeamStandingsHost");
   if (!host) return;
@@ -303,31 +320,43 @@ async function loadEstacupTeamStandings() {
 
   try {
     const useJoker = $("jokerToggleTeams")?.checked ?? false;
-    const [coursesSnap, signupsSnap] = await Promise.all([
-      getDocs(collection(db, "raceHistory")), // 🟢 Correction : On cible l'historique S9
+    const [raceHistorySnap, coursesSnap, signupsSnap] = await Promise.all([
+      getDocs(collection(db, "raceHistory")),
+      getDocs(collection(db, "courses")),
       getDocs(collection(db, "estacup_s9_signups"))
     ]);
 
     const pilotToTeam = new Map();
-    signupsSnap.forEach(d => { const s = d.data(); if (s.uid && s.teamName) pilotToTeam.set(s.uid, s.teamName.trim()); });
+    signupsSnap.forEach(d => { 
+      const s = d.data(); 
+      if (s && s.uid && s.teamName) pilotToTeam.set(s.uid, s.teamName.trim()); 
+    });
 
     const teamsMap = new Map();
 
-    coursesSnap.forEach(docSnap => {
-      const race = docSnap.data();
-      if (!race.participants) return;
+    const processTeams = (snap) => {
+      snap.forEach(docSnap => {
+        try {
+          const race = docSnap.data();
+          if (!race || !race.participants) return;
 
-      const roundKey = race.round || race.name || docSnap.id;
-      race.participants.forEach(p => {
-        if (!p.uid || !pilotToTeam.has(p.uid)) return;
-        const teamName = pilotToTeam.get(p.uid);
-        if (!teamsMap.has(teamName)) teamsMap.set(teamName, { name: teamName, rounds: {} });
-        
-        const team = teamsMap.get(teamName);
-        if (!team.rounds[roundKey]) team.rounds[roundKey] = 0;
-        team.rounds[roundKey] += parseInt(p.points || p.posPoints || 0, 10);
+          const roundKey = race.round || race.name || docSnap.id;
+          race.participants.forEach(p => {
+            if (!p || !p.uid || !pilotToTeam.has(p.uid)) return;
+            const teamName = pilotToTeam.get(p.uid);
+            
+            if (!teamsMap.has(teamName)) teamsMap.set(teamName, { name: teamName, rounds: {} });
+            
+            const team = teamsMap.get(teamName);
+            if (!team.rounds[roundKey]) team.rounds[roundKey] = 0;
+            team.rounds[roundKey] += parseInt(p.points || p.posPoints || 0, 10);
+          });
+        } catch (err) {}
       });
-    });
+    };
+
+    processTeams(raceHistorySnap);
+    processTeams(coursesSnap);
 
     const rows = Array.from(teamsMap.values()).map(team => {
       let scores = Object.values(team.rounds);
@@ -338,7 +367,7 @@ async function loadEstacupTeamStandings() {
     }).filter(t => t.total > 0).sort((a, b) => b.total - a.total);
 
     if (rows.length === 0) {
-      host.innerHTML = "<p>Aucune donnée d'équipe trouvée pour la Saison 9.</p>";
+      host.innerHTML = "<p style='color:#94a3b8;'>Aucune donnée d'équipe enregistrée pour la Saison 9.</p>";
       return;
     }
 
@@ -348,8 +377,8 @@ async function loadEstacupTeamStandings() {
     });
     host.innerHTML = html + "</tbody></table>";
   } catch (err) { 
-    console.error(err);
-    host.innerHTML = "<p>Erreur classement équipes.</p>"; 
+    console.error("Erreur générale classement équipes:", err);
+    host.innerHTML = "<p>Erreur lors du traitement ou de la connexion Firebase.</p>"; 
   }
 }
 
