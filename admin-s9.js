@@ -2242,7 +2242,7 @@ async function loadEstacupSignups() {
   if (!list) return;
   list.innerHTML = "<p>Chargement…</p>";
 
-  const snap = await getDocs(collection(db, "estacup_signups"));
+  const snap = await getDocs(collection(db, "estacup_s9_signups"));
   const usersSnap = await getDocs(collection(db, "users"));
 
   const usersById = new Map();
