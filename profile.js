@@ -58,54 +58,57 @@ async function calculatePilotStats() {
   try {
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
+    
+    // Identifiants de recherche
     const mySteamId = (userData.steamId || userData.steamID64 || "").toString().trim();
+    const myFullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim().toUpperCase();
+
+    // Récupération des deux sources
+    const [snapS9, snapS10] = await Promise.all([
+      getDocs(collection(db, "raceHistory")), 
+      getDocs(collection(db, "raceHistory_s10"))
+    ]);
 
     let racesCount = 0, winsCount = 0, podiumsCount = 0;
     let championships = new Set();
 
-    // 1. Liste des endroits où tes données peuvent être cachées
-    const sources = [
-        { col: collection(db, "raceHistory"), name: "EstaCup - Saison 9" },
-        { col: collection(db, "raceHistory_s10"), name: "EstaCup - Saison 10" },
-        { col: collection(db, "users", currentUser.uid, "raceHistory"), name: "EstaCup - Saison 9 (Perso)" },
-        { col: collection(db, "users", currentUser.uid, "raceHistory_s10"), name: "EstaCup - Saison 10 (Perso)" }
-    ];
+    const process = (snap, champName) => {
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const participants = data.participants || [];
+        
+        // 🟢 RECHERCHE HYBRIDE : SteamID EXACT OU Nom (partiel ou total)
+        const found = participants.find(p => {
+          const pSteam = (p.steamId || p.steamID || p.steamID64 || "").toString().trim();
+          const pName = (p.name || p.driverName || `${p.firstName || ""} ${p.lastName || ""}`).trim().toUpperCase();
+          
+          return (mySteamId !== "" && pSteam === mySteamId) || 
+                 (myFullName !== "" && pName.includes(myFullName)) ||
+                 (myFullName !== "" && myFullName.includes(pName));
+        });
+        
+        if (found) {
+          racesCount++;
+          const pos = parseInt(found.position || 0, 10);
+          if (pos === 1) winsCount++;
+          if (pos >= 1 && pos <= 3) podiumsCount++;
+          championships.add(champName);
+        }
+      });
+    };
 
-    // 2. Scan de toutes les sources
-    for (const src of sources) {
-        try {
-            const snap = await getDocs(src.col);
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                // Gestion des listes de participants (cas collections racines)
-                const participants = data.participants || [data]; 
-                
-                const found = participants.find(p => {
-                    const pSteam = (p.steamId || p.steamID || p.steamID64 || "").toString().trim();
-                    return pSteam === mySteamId && mySteamId !== "";
-                });
-                
-                if (found) {
-                    racesCount++;
-                    const pos = parseInt(found.position || 0, 10);
-                    if (pos === 1) winsCount++;
-                    if (pos >= 1 && pos <= 3) podiumsCount++;
-                    championships.add(src.name);
-                }
-            });
-        } catch (e) { /* Collection vide ou inexistante, on ignore */ }
-    }
+    process(snapS9, "EstaCup - Saison 9");
+    process(snapS10, "EstaCup - Saison 10");
 
-    // 3. Mise à jour UI
+    // Mise à jour UI
     if($("statRaces")) $("statRaces").textContent = racesCount;
     if($("statWins")) $("statWins").textContent = winsCount;
     if($("statPodiums")) $("statPodiums").textContent = podiumsCount;
-    if($("statPoles")) $("statPoles").textContent = "0";
-
+    
     const listEl = $("championshipList");
     if(listEl) {
       listEl.innerHTML = championships.size === 0 
-        ? `<li>Aucun historique trouvé. Vérifiez votre SteamID.</li>` 
+        ? `<li>Aucun historique trouvé pour ${myFullName}.</li>` 
         : Array.from(championships).map(c => `<li>🏎️ <strong>${c}</strong></li>`).join("");
     }
   } catch (err) { console.error("Erreur stats:", err); }
