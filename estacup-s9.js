@@ -542,14 +542,31 @@ function setupNavigation(isAdmin = false) {
 $("logout")?.addEventListener("click", () => signOut(auth).then(() => (window.location.href = "login.html")));
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "login.html"; return; }
-
-  let userSnap = await getDoc(doc(db, "users", user.uid));
-  if (!userSnap.exists()) {
-    const map = await getDoc(doc(db, "authMap", user.uid));
-    if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
+  if (!user) { 
+    localStorage.setItem("redirectAfterLogin", "estacup-s9.html");
+    window.location.href = "login.html"; 
+    return; 
   }
-  if (!userSnap.exists()) { alert("Profil introuvable."); return; }
+
+  try {
+    let userSnap = await getDoc(doc(db, "users", user.uid));
+    if (!userSnap.exists()) {
+      const map = await getDoc(doc(db, "authMap", user.uid));
+      if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
+    }
+    
+    if (!userSnap.exists()) { 
+      console.error("Profil introuvable dans la base users.");
+      window.location.href = "login.html"; 
+      return; 
+    }
+
+    currentUser = user; 
+
+  } catch (err) {
+    console.error("Erreur sécurité S9:", err);
+  }
+});
 
   const data = userSnap.data();
   currentUid   = userSnap.id;
