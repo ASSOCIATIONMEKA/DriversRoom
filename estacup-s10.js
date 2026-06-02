@@ -542,14 +542,36 @@ function setupNavigation(isAdmin = false) {
 $("logout")?.addEventListener("click", () => signOut(auth).then(() => (window.location.href = "login.html")));
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "login.html"; return; }
-
-  let userSnap = await getDoc(doc(db, "users", user.uid));
-  if (!userSnap.exists()) {
-    const map = await getDoc(doc(db, "authMap", user.uid));
-    if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
+  if (!user) { 
+    // 💾 On mémorise que le pilote voulait aller sur la S10 avant d'être éjecté vers le login
+    localStorage.setItem("redirectAfterLogin", "estacup-s10.html");
+    window.location.href = "login.html"; 
+    return; 
   }
-  if (!userSnap.exists()) { alert("Profil introuvable."); return; }
+
+  try {
+    let userSnap = await getDoc(doc(db, "users", user.uid));
+    if (!userSnap.exists()) {
+      const map = await getDoc(doc(db, "authMap", user.uid));
+      if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
+    }
+    
+    if (!userSnap.exists()) { 
+      console.error("Profil introuvable dans la base users.");
+      window.location.href = "login.html"; 
+      return; 
+    }
+
+    // Un petit témoin pour le reste de ton script S10
+    currentUser = user; 
+    
+    // 🚀 ICI : Lance tes fonctions de chargement spécifiques à la S10 !
+    // Exemple : await loadS10DashboardData();
+
+  } catch (err) {
+    console.error("Erreur sécurité S10:", err);
+  }
+});
 
   const data = userSnap.data();
   currentUid   = userSnap.id;
