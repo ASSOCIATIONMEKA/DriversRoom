@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin - ESTACUP</title>
+  <title>Admin S10 - ESTACUP</title>
   <link rel="stylesheet" href="style.css" />
-  <script type="module" src="admin-s9.js" defer></script>
+  <!-- 🟢 CORRECTION 1 : Chargement du script spécifique de la Saison 10 -->
+  <script type="module" src="admin-s10.js" defer></script>
   <style>
     /* Résumé des voitures ESTACUP */
     #estacupCarSummary {
@@ -90,9 +91,9 @@
   <script type="module" src="nav.js" defer></script>
 
   <div class="container">
-    <h2>Interface administrateur</h2>
-
+    <!-- 🟢 CORRECTION 2 : L'ID adminOnly englobe désormais le titre et les menus pour éviter le blocage visuel partiel -->
     <div id="adminOnly" class="hidden">
+      <h2>Interface administrateur S10</h2>
       <p>Bienvenue, <span id="adminName"></span></p>
 
       <nav class="admin-menu" style="display:flex;gap:10px;margin-bottom:20px;">
@@ -317,7 +318,7 @@
         </p>
       </section>
 
-      <button id="goToDashboard">Retour à la driver's room</button>
+      <button id="goToDashboard">Retour à la salle des pilotes</button>
     </div>
 
     <p id="notAdmin" class="error hidden">Accès refusé : compte non administrateur.</p>
