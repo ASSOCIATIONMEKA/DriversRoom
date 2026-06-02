@@ -103,10 +103,21 @@ $("profileForm").addEventListener("submit", async (e) => {
       lastUpdate: new Date().toISOString()
     }, { merge: true });
 
-    const signupRef = doc(db, "estacup_signups", currentUser.uid);
-    const signupSnap = await getDoc(signupRef);
-    if (signupSnap.exists()) {
-      await setDoc(signupRef, {
+    // Synchronisation sur l'inscription de la Saison 9
+    const signupRefS9 = doc(db, "estacup_signups", currentUser.uid);
+    const signupSnapS9 = await getDoc(signupRefS9);
+    if (signupSnapS9.exists()) {
+      await setDoc(signupRefS9, {
+        steamId: cleanSteamId64,
+        steamID64: cleanSteamId64
+      }, { merge: true });
+    }
+
+    // Synchronisation sur l'inscription de la Saison 10
+    const signupRefS10 = doc(db, "estacup_s10_signups", currentUser.uid);
+    const signupSnapS10 = await getDoc(signupRefS10);
+    if (signupSnapS10.exists()) {
+      await setDoc(signupRefS10, {
         steamId: cleanSteamId64,
         steamID64: cleanSteamId64
       }, { merge: true });
@@ -125,7 +136,7 @@ $("profileForm").addEventListener("submit", async (e) => {
   }
 });
 
-// 3. Calcul dynamique des Statistiques globales basé UNIQUEMENT sur le pseudo de course S9
+// 3. Calcul dynamique des Statistiques globales (Cumul S9 + S10) baseado sur le prénom
 async function calculatePilotStats() {
   try {
     let racesCount = 0;
@@ -137,54 +148,63 @@ async function calculatePilotStats() {
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
     
-    // On prend le prénom (ex: K_Z_A_H ou Kzah) nettoyé de ses espaces et mis en majuscules
+    // Nettoyage de la cible de recherche ("MARIN" par exemple)
     const pilotTargetName = (userData.firstName || "").trim().toUpperCase();
-    const cleanTarget = pilotTargetName.replace(/[^A-Z0-9]/g, ""); // "KZAH"
+    const cleanTarget = pilotTargetName.replace(/[^A-Z0-9]/g, "");
 
     if (!cleanTarget) {
       console.log("Prénom vide, calcul ignoré.");
       return;
     }
 
-    // Récupération de tous les rapports de course de la base
-    const raceHistorySnap = await getDocs(collection(db, "raceHistory"));
+    // 🏎️ RÉCUPÉRATION DES DEUX SAISONS (S9 et S10)
+    const raceHistorySnapS9 = await getDocs(collection(db, "raceHistory"));
+    const raceHistorySnapS10 = await getDocs(collection(db, "raceHistory_s10"));
 
-    raceHistorySnap.forEach((docSnap) => {
-      const raceData = docSnap.data() || {};
-      const participants = raceData.participants || [];
-      let pilotInThisRace = false;
+    // Fonction globale pour traiter les documents d'une collection de course
+    const processRaces = (querySnapshot, defaultChampionshipName) => {
+      querySnapshot.forEach((docSnap) => {
+        const raceData = docSnap.data() || {};
+        const participants = raceData.participants || [];
+        let pilotInThisRace = false;
 
-      participants.forEach((p) => {
-        // Extraction de n'importe quel texte identifiant le participant (name, firstName, etc.)
-        const pFirstName = (p.firstName || "").trim().toUpperCase();
-        const pLastName = (p.lastName || "").trim().toUpperCase();
-        const pNameProperty = (p.name || p.driverName || "").trim().toUpperCase();
-        
-        // On fusionne tout pour être sûr de ne rien rater
-        const combinedParticipantText = `${pFirstName} ${pLastName} ${pNameProperty}`.replace(/[^A-Z0-9]/g, "");
-
-        // Si "KZAH" se trouve dans le texte du participant, on valide !
-        if (combinedParticipantText.includes(cleanTarget)) {
-          pilotInThisRace = true;
-          racesCount++;
+        participants.forEach((p) => {
+          const pFirstName = (p.firstName || "").trim().toUpperCase();
+          const pLastName = (p.lastName || "").trim().toUpperCase();
+          const pNameProperty = (p.name || p.driverName || "").trim().toUpperCase();
           
-          // Lecture ultra-simple de la position finale
-          const finalPos = parseInt(p.position || p.pos || p.finishPosition || 0, 10);
-          
-          if (finalPos === 1) winsCount++;
-          if (finalPos >= 1 && finalPos <= 3) podiumsCount++;
+          const combinedParticipantText = `${pFirstName} ${pLastName} ${pNameProperty}`.replace(/[^A-Z0-9]/g, "");
+
+          if (combinedParticipantText.includes(cleanTarget)) {
+            pilotInThisRace = true;
+            racesCount++;
+            
+            const finalPos = parseInt(p.position || p.pos || p.finishPosition || 0, 10);
+            
+            if (finalPos === 1) winsCount++;
+            if (finalPos >= 1 && finalPos <= 3) podiumsCount++;
+          }
+        });
+
+        if (pilotInThisRace) {
+          registeredChampionships.add(raceData.championship || defaultChampionshipName);
         }
       });
+    };
 
-      if (pilotInThisRace) {
-        registeredChampionships.add(raceData.championship || "EstaCup - Saison 9");
-      }
-    });
+    // Analyse des rapports de course des deux saisons
+    processRaces(raceHistorySnapS9, "EstaCup - Saison 9");
+    processRaces(raceHistorySnapS10, "EstaCup - Saison 10");
 
-    // Sauvegarde de secours via l'inscription
+    // Vérifications de secours via les tables d'inscriptions directes
     const s9Signup = await getDoc(doc(db, "estacup_signups", currentUser.uid));
     if (s9Signup.exists()) {
       registeredChampionships.add("EstaCup - Saison 9");
+    }
+
+    const s10Signup = await getDoc(doc(db, "estacup_s10_signups", currentUser.uid));
+    if (s10Signup.exists()) {
+      registeredChampionships.add("EstaCup - Saison 10");
     }
 
     // Mise à jour de l'affichage HTML
@@ -192,7 +212,6 @@ async function calculatePilotStats() {
     $("statWins").textContent = winsCount;
     $("statPodiums").textContent = podiumsCount;
     
-    // Sécurité au cas où l'élément des poles existe encore dans le HTML
     if ($("statPoles")) $("statPoles").textContent = "0";
 
     const listEl = $("championshipList");
