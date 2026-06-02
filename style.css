@@ -289,7 +289,12 @@ ul li:hover::before{transform:scaleY(1)}
   border-radius: 8px;
   border: 1px solid var(--accent-primary);
   top: 100%;
-  left: 0;
+  
+  /* 🟢 CORRECTION EXPLICITE : On aligne sur le bord droit de la cellule parente,
+     ce qui force le sous-menu à se déployer vers la gauche et évite le découpage par l'écran */
+  right: 0;
+  left: auto;
+  
   margin-top: -5px; /* Supprime l'ancien espace mort pour éviter la coupure */
 }
 
@@ -338,6 +343,13 @@ ul li:hover::before{transform:scaleY(1)}
   h1, .site-header h1 {
     font-size: 2rem !important;
     word-wrap: break-word;
+  }
+  
+  /* 🟢 Sur mobile/tablette, on réaligne le dropdown par défaut pour suivre le flux centré */
+  .dropdown-content {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 
