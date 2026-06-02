@@ -726,27 +726,17 @@ function getRaceKind(c) {
 /* ===== VOTE CIRCUIT (2 questions, drapeaux, validation unique) ===== */
 async function renderVoteCircuit() {
   const host = $("voteCircuitHost");
-  if (!host || !currentUid) return;
-
-  host.innerHTML = `<div class="course-box"><p class="loading">Chargement du vote…</p></div>`;
-
-  const questions = [
-    {
-      key: "round3",
-      title: "Round 3",
-      options: [
-        { value: "shanghai", label: "Shanghaï", cc: "cn" },
-        { value: "sepang",   label: "Sepang",   cc: "my" }
-      ]
-    },
-    {
-      key: "round5",
-      title: "Round 5",
-      options: [
-        { value: "bahrain", label: "Bahrain", cc: "bh" },
-        { value: "losail",  label: "Losail",  cc: "qa" }
-      ]
-    }
+  if (!host) return;
+  
+  // Rendu propre pour indiquer qu'aucun scrutin n'a lieu cette saison
+  host.innerHTML = `
+    <div class="course-box" style="text-align: center; padding: 20px;">
+      <p class="muted-note" style="font-size: 1.1rem;">
+        🚫 Aucun vote de circuit n'est planifié pour la Saison 10.
+      </p>
+    </div>
+  `;
+}
   ];
 
   const voteRef = doc(db, "estacup_votes", currentUid);
