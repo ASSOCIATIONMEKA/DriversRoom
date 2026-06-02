@@ -29,17 +29,32 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// 🗺️ Fonction utilitaire d'aiguillage intelligent après connexion/inscription
+function redirectUser(isAdmin) {
+  const redirectPage = localStorage.getItem("redirectAfterLogin");
+  
+  if (redirectPage) {
+    // Si l'utilisateur tentait d'accéder à une page précise (ex: S9 ou S10), on l'y envoie
+    localStorage.removeItem("redirectAfterLogin"); // Nettoyage du témoin
+    window.location.href = redirectPage;
+  } else {
+    // Sinon, redirection classique par défaut selon le rôle
+    if (isAdmin) {
+      window.location.href = "admin-s10.html"; // Panel d'administration de la saison en cours
+    } else {
+      window.location.href = "estacup-s10.html"; // Tableau de bord de la saison en cours
+    }
+  }
+}
+
 // 🔄 Redirection automatique si le pilote est déjà connecté globalement
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     localStorage.setItem("isLoggedIn", "true"); // Sauvegarde l'état pour la navbar
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists() && userDoc.data().admin === true) {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "dashboard.html";
-      }
+      const isAdmin = userDoc.exists() && userDoc.data().admin === true;
+      redirectUser(isAdmin);
     } catch (err) {
       console.error("Erreur lors de la redirection automatique :", err);
     }
@@ -72,17 +87,13 @@ $("loginForm").addEventListener("submit", async (e) => {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (userDoc.exists()) {
       const data = userDoc.data();
-      if (data.admin === true) {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "dashboard.html";
-      }
+      redirectUser(data.admin === true);
       return;
     }
 
     const mapDoc = await getDoc(doc(db, "authMap", user.uid));
     if (mapDoc.exists()) {
-      window.location.href = "dashboard.html";
+      redirectUser(false);
     } else {
       setError("Profil introuvable.");
     }
@@ -147,7 +158,8 @@ $("registerForm").addEventListener("submit", async (e) => {
       });
     }
 
-    window.location.href = "dashboard.html";
+    // Un nouvel inscrit n'est pas admin par défaut
+    redirectUser(false);
   } catch (err) {
     setError(normalizeAuthError(err));
   }
