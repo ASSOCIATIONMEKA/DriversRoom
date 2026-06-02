@@ -391,7 +391,6 @@ function setupHelmetDesigner(userData) {
 async function ensureSignupCache() {
   if (signupCache.size > 0) return;
   try {
-    // 🟢 Lit les inscriptions de la Saison 9
     const snap = await getDocs(collection(db, "estacup_s9_signups"));
     snap.forEach(d => {
       const x = d.data() || {};
@@ -429,7 +428,37 @@ function toFiniteNumber(v) {
   const n = Number(v); return Number.isFinite(n) ? n : null;
 }
 
-/* ======================== Navigation ======================== */
+/* ======================== NAVIGATION ESTACUP (CORRIGÉE) ======================== */
+function setupEstacupSubnav() {
+  const subnav = $("estacupSubnav");
+  if (!subnav) return;
+  const subs = subnav.querySelectorAll(".estc-sub-btn");
+  subs.forEach(btn => {
+    btn.onclick = () => showEstacupSub(btn.dataset.sub);
+  });
+}
+
+function showEstacupSub(key) {
+  const blocks = {
+    inscription: $("estacup-sub-inscription"),
+    engages:     $("estacup-sub-engages"),
+    votecircuit: $("estacup-sub-votecircuit"),
+    reclam:      $("estacup-sub-reclam"),
+    rankpilots:  $("estacup-sub-rankpilots"),
+    rankteams:   $("estacup-sub-rankteams"),
+  };
+  
+  Object.values(blocks).forEach(b => b && b.classList.add("hidden"));
+  
+  if (blocks[key]) {
+    blocks[key].classList.remove("hidden");
+    if (key === "votecircuit") renderVoteCircuit();
+    if (key === "rankpilots") loadEstacupPilotStandings();
+    if (key === "rankteams") loadEstacupTeamStandings();
+  }
+}
+
+/* ======================== Navigation Globale ======================== */
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin");
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
@@ -579,7 +608,6 @@ async function loadResults(uid) {
   const ul = $("raceHistory"); if (!ul) return;
   try {
     ul.innerHTML = "<li>Chargement…</li>";
-    // 🟢 On scanne bien l'historique de la Saison 9
     const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
     if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
     const rows = []; snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
@@ -622,7 +650,6 @@ async function computePilotStats(uid) {
   if (pilotStatsCache.has(uid)) return pilotStatsCache.get(uid);
   const stats = { starts: 0, bestPos: null, wins: 0, top3: 0, top5: 0, top10: 0, avgPos: null };
   try {
-    // 🟢 On recompte le tableau des statistiques avec l'historique S9
     const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
     const positions = []; snap.forEach(d => { const p = Number(d.data().position); if (p > 0) positions.push(p); });
     stats.starts = positions.length;
@@ -648,19 +675,40 @@ async function loadPilotStats(uid) {
   } catch {}
 }
 
-async function initInfoComparison(currentUid) { /* ... */ }
-async function renderComparison() { /* ... */ }
-async function loadMRating(uid) { /* ... */ }
-async function loadMSafety(uid) { /* ... */ }
-function setupEstacupSubnav() { /* ... */ }
-function showEstacupSub(key) { /* ... */ }
-function getCourseRoundKey(c) { /* ... */ }
-function getCourseRoundLabel(c) { /* ... */ }
-function getRaceKind(c) { /* ... */ }
-async function renderVoteCircuit() { /* ... */ }
-function setupMekaQuestionnaire(userData) { /* ... */ }
-async function loadEstacupForm(userData, editing = false) { /* ... */ }
-async function loadEstacupEngages() { /* ... */ }
-async function loadReclamHistory() { /* ... */ }
-async function loadEstacupPilotStandings() { /* ... */ }
-async function loadEstacupTeamStandings() { /* ... */ }
+/* ======================== Données Spécifiques ESTACUP ======================== */
+async function initInfoComparison(currentUid) {}
+async function renderComparison() {}
+async function loadMRating(uid) {}
+async function loadMSafety(uid) {}
+function getCourseRoundKey(c) { return "round"; }
+function getCourseRoundLabel(c) { return "round"; }
+function getRaceKind(c) { return "other"; }
+
+async function renderVoteCircuit() {
+  const host = $("voteCircuitHost");
+  if (!host) return;
+  host.innerHTML = `<p class="muted-note">Le vote circuit pour la Saison 9 est archivé.</p>`;
+}
+
+function setupMekaQuestionnaire(userData) {
+  const select = $("mekaPaid");
+  const formContainer = $("estacupFormContainer");
+  if (!select) return;
+  select.onchange = () => {
+    if (select.value === "yes" && formContainer) {
+      formContainer.classList.remove("hidden");
+      loadEstacupForm(userData);
+    }
+  };
+}
+
+async function loadEstacupForm(userData, editing = false) {
+  const container = $("estacupFormContainer");
+  if (!container) return;
+  container.innerHTML = `<div class="course-box"><p>Inscriptions de la Saison 9 archivées.</p></div>`;
+}
+
+async function loadEstacupEngages() {}
+async function loadReclamHistory() {}
+async function loadEstacupPilotStandings() {}
+async function loadEstacupTeamStandings() {}
