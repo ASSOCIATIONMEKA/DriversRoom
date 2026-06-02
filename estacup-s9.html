@@ -5,13 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Driver's Room - ESTACUP</title>
 
-  <!-- Styles globaux -->
   <link rel="stylesheet" href="style.css" />
-  <!-- Drapeaux (flag-icons) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
 
-  <!-- App -->
-  <script type="module" src="dashboard.js" defer></script>
+  <script type="module" src="estacup-s9.js" defer></script>
 
   <style>
     /* Petits styles inline pour l’affichage déroulant des classements de course */
@@ -119,14 +116,11 @@
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <img src="meka.svg" alt="Logo MEKA" class="site-logo" />
-  </header>
+  <script type="module" src="nav.js" defer></script>
 
   <div class="container">
-    <h2>EstaCup Saison 9</h2>
+    <h2>EstaCup Saison 10</h2>
 
-    <!-- Menu principal -->
     <nav class="menu">
       <button data-section="infos">Infos</button>
       <button data-section="results">Résultats</button>
@@ -137,7 +131,6 @@
       <button id="logout" class="logout">Déconnexion</button>
     </nav>
 
-    <!-- Section Infos -->
     <section id="section-infos" class="section">
       <h3>Informations du pilote</h3>
       <p><strong>Nom :</strong> <span id="fullName">—</span></p>
@@ -156,7 +149,7 @@
         <li><strong>Top 10 :</strong> <span id="statTop10">0</span></li>
         <li><strong>Position moyenne :</strong> <span id="statAvg">—</span></li>
       </ul>
-            <div id="compareWrapper" class="compare-wrapper">
+      <div id="compareWrapper" class="compare-wrapper">
         <h4>Comparer avec d'autres pilotes</h4>
         <p class="muted-note">
           Sélectionne un ou plusieurs pilotes pour te comparer sur les stats globales.
@@ -169,17 +162,14 @@
         </p>
         <div id="compareResults" style="margin-top:10px;"></div>
       </div>
-
     </section>
 
-    <!-- Section Résultats -->
     <section id="section-results" class="section hidden">
       <h3>Résultats</h3>
       <p class="muted-note">Clique sur une course pour afficher le <strong>classement complet</strong>.</p>
       <ul id="raceHistory"><li>Chargement…</li></ul>
     </section>
 
-    <!-- Section M-Rating -->
     <section id="section-erating" class="section hidden">
       <h3>M-Rating</h3>
       <p><strong>M-Rating actuel :</strong> <span id="eloRating">—</span></p>
@@ -191,18 +181,15 @@
       </div>
     </section>
 
-    <!-- Section M-Safety -->
     <section id="section-esafety" class="section hidden">
       <h3>M-Safety</h3>
       <p><strong>Points de licence (M-Safety) :</strong> <span id="licensePoints">—</span></p>
       <div id="esafetyIncidents"></div>
     </section>
 
-    <!-- Section ESTACUP -->
     <section id="section-estacup" class="section hidden">
       <h3>ESTACUP</h3>
 
-      <!-- Sous-menu ESTACUP -->
       <nav class="menu" id="estacupSubnav" style="margin-top:-10px;margin-bottom:20px;">
         <button data-sub="inscription" class="estc-sub-btn">Inscription</button>
         <button data-sub="engages" class="estc-sub-btn">Liste des engagés</button>
@@ -212,7 +199,6 @@
         <button data-sub="rankteams" class="estc-sub-btn">Classement Équipes</button>
       </nav>
 
-      <!-- Inscription -->
       <div id="estacup-sub-inscription" class="estacup-subsection">
         <h4>Inscription ESTACUP</h4>
 
@@ -235,19 +221,16 @@
         <div id="estacupFormContainer" class="hidden"></div>
       </div>
 
-      <!-- Engagés -->
       <div id="estacup-sub-engages" class="estacup-subsection hidden">
         <h4>Liste des engagés</h4>
         <div id="estacupEngages"></div>
       </div>
 
-      <!-- Vote Circuit -->
       <div id="estacup-sub-votecircuit" class="estacup-subsection hidden">
         <h4>Vote Circuit</h4>
         <div id="voteCircuitHost"></div>
       </div>
 
-      <!-- Réclamation -->
       <div id="estacup-sub-reclam" class="estacup-subsection hidden">
         <h4>Réclamation</h4>
 
@@ -280,7 +263,6 @@
         <div id="reclamHistory" style="margin-top:20px;"></div>
       </div>
 
-      <!-- Classement Pilotes -->
       <div id="estacup-sub-rankpilots" class="estacup-subsection hidden">
         <h4>Classement Pilotes</h4>
         <div class="joker-toggle">
@@ -297,7 +279,6 @@
         </div>
       </div>
 
-      <!-- Classement Équipes -->
       <div id="estacup-sub-rankteams" class="estacup-subsection hidden">
         <h4>Classement Équipes</h4>
         <div class="joker-toggle">
