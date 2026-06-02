@@ -47,29 +47,39 @@ async function loadUserProfile() {
 // 🟢 CALCUL DES STATS PAR UID (Fiable à 100%)
 async function calculatePilotStats() {
   try {
-    let racesCount = 0;
-    let winsCount = 0;
-    let podiumsCount = 0;
-    let championships = new Set();
+    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+    const userData = userDoc.exists() ? userDoc.data() : {};
+    
+    // Normalisation des identifiants
+    const myUid = currentUser.uid;
+    const myFullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim().toUpperCase();
 
     const [snapS9, snapS10] = await Promise.all([
       getDocs(collection(db, "raceHistory")), 
       getDocs(collection(db, "raceHistory_s10"))
     ]);
 
-    const process = (snap, name) => {
+    let racesCount = 0, winsCount = 0, podiumsCount = 0;
+    let championships = new Set();
+
+    const process = (snap, champName) => {
       snap.forEach(docSnap => {
         const data = docSnap.data();
-        const parts = data.participants || [];
-        // On cherche le pilote dans la liste par son UID Firebase
-        const p = parts.find(part => part.uid === currentUser.uid);
+        const participants = data.participants || [];
         
-        if (p) {
+        // 🟢 Logique double : UID ou NOM
+        const found = participants.find(p => {
+          const pUid = p.uid;
+          const pName = (p.name || `${p.firstName || ""} ${p.lastName || ""}`).trim().toUpperCase();
+          return pUid === myUid || pName === myFullName;
+        });
+
+        if (found) {
           racesCount++;
-          const pos = parseInt(p.position || 0, 10);
+          const pos = parseInt(found.position || 0, 10);
           if (pos === 1) winsCount++;
           if (pos >= 1 && pos <= 3) podiumsCount++;
-          championships.add(name);
+          championships.add(champName);
         }
       });
     };
@@ -77,15 +87,15 @@ async function calculatePilotStats() {
     process(snapS9, "EstaCup - Saison 9");
     process(snapS10, "EstaCup - Saison 10");
 
+    // Mise à jour UI
     if($("statRaces")) $("statRaces").textContent = racesCount;
     if($("statWins")) $("statWins").textContent = winsCount;
     if($("statPodiums")) $("statPodiums").textContent = podiumsCount;
-    if($("statPoles")) $("statPoles").textContent = "0";
-
+    
     const listEl = $("championshipList");
     if(listEl) {
       listEl.innerHTML = championships.size === 0 
-        ? `<li>Nouveau pilote — Aucun championnat enregistré</li>` 
+        ? `<li>Aucun historique trouvé pour ${myFullName}</li>` 
         : Array.from(championships).map(c => `<li>🏎️ <strong>${c}</strong></li>`).join("");
     }
   } catch (err) { console.error("Erreur stats:", err); }
