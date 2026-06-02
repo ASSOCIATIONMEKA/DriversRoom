@@ -1,22 +1,3 @@
-// dashboard.js — Driver's Room : navigation + Résultats + Stats + ESTACUP
-// Corrigé : lit bien les points saisis par l'admin + équipes depuis participants, raceHistory ou estacup_signups
-// Ajout : colonne "Podiums" (seulement Split 1) dans le classement pilotes ESTACUP ; les victoires/podiums du Split 2 ne comptent pas.
-// MAJ 2025-10-06 : lecture directe de penaltyMs ; classement équipes : enlève "manches comptées", ajoute Victoires/Podiums (Split 1 uniquement)
-// MAJ 2025-10-06-d : 🧹 Supprime totalement les graphes (fonctions + appels + markup)
-// MAJ 2025-10-06-fixEstacupOnly : les classements ESTACUP ne comptent que les courses avec estacup === true
-// MAJ 2025-10-06-prioManualPoints : le dashboard affiche en priorité participants[].points (saisie admin)
-// MAJ 2025-10-15 : Sous-menu "Vote Circuit" + 2 questions (Round 3 & Round 5) + validation unique + drapeaux (flag-icons) + stockage Firestore estacup_votes
-// MAJ 2025-10-15-bis : Classement Équipes — ignore "(Sans équipe)" + loader animé pendant calcul (pilotes & équipes)
-// MAJ 2025-10-30-fix-steamid : formulaire inscription redemande SteamID, tolère URL/ID64, enregistre steamId & steamID64.
-// MAJ 2025-10-30-fix-display : suppression des backslashes dans les templates + fix escapeHtml('>').
-// MAJ 2025-12-03-joker : option "course joker" pour classements pilotes & équipes (retrait du pire week-end sprint+main du même round)
-// MAJ 2025-12-05-joker-detail : détail pilote = "round X, Split Y Sprint PX, Principale PX"
-// MAJ 2025-12-07-hoverCard : tooltip pilote après 0,5 s (nom, âge, M-Rating, M-Safety)
-// MAJ 2025-12-07-podiumColors : lignes podium colorées (résultats + classements)
-// MAJ 2025-12-07-gainFromGrid : colonne "Gain" = position grille - position finale
-// MAJ 2025-12-07-bestlapGlobal : meilleur tour global en violet
-// MAJ 2025-12-07-helmet : designer de casque (onglet Infos) + casque visible dans résultats & classement pilotes ESTACUP
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
@@ -459,7 +440,7 @@ function setupHelmetDesigner(userData) {
 async function ensureSignupCache() {
   if (signupCache.size > 0) return;
   try {
-    const snap = await getDocs(collection(db, "estacup_signups"));
+    const snap = await getDocs(collection(db, "estacup_s10_signups"));
     snap.forEach(d => {
       const x = d.data() || {};
       if (!x.uid) return;
@@ -792,7 +773,7 @@ async function loadResults(uid) {
   try {
     ul.innerHTML = "<li>Chargement…</li>";
 
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
     if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
 
     const rows = [];
@@ -981,7 +962,7 @@ async function computePilotStats(uid) {
   };
 
   try {
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
     if (!snap.empty) {
       const positions = [];
       snap.forEach(d => {
@@ -1725,7 +1706,7 @@ async function loadEstacupForm(userData, editing = false) {
   container.innerHTML = "";
 
   let existing = null, existingId = null;
-  const qs = await getDocs(query(collection(db, "estacup_signups"), where("uid", "==", auth.currentUser.uid)));
+  const qs = await getDocs(query(collection(db, "estacup_s10_signups"), where("uid", "==", auth.currentUser.uid)));
   if (!qs.empty) { existing = qs.docs[0].data(); existingId = qs.docs[0].id; }
 
   if (existing && !editing) {
@@ -1824,7 +1805,7 @@ async function loadEstacupForm(userData, editing = false) {
   });
 
   const takenNumbers = form.querySelector("#takenNumbers");
-  const nSnap = await getDocs(collection(db, "estacup_signups"));
+  const nSnap = await getDocs(collection(db, "estacup_s10_signups"));
   const taken = new Set();
   nSnap.forEach(d => { const n = d.data().raceNumber; if (n) taken.add(n); });
   takenNumbers.innerHTML = `Numéros déjà pris : ${[...taken].sort((a,b)=>a-b).join(", ") || "—"}`;
@@ -1876,7 +1857,7 @@ async function loadEstacupForm(userData, editing = false) {
         const ref = doc(db, "estacup_signups", existingId);
         await updateDoc(ref, { ...payload, validated: false, uid: auth.currentUser.uid });
       } else {
-        await addDoc(collection(db, "estacup_signups"), { ...payload, validated: false, uid: auth.currentUser.uid });
+        await addDoc(collection(db, "estacup_s10_signups"), { ...payload, validated: false, uid: auth.currentUser.uid });
       }
       signupCache.set(auth.currentUser.uid, { teamName: payload.teamName, raceNumber: payload.raceNumber, carChoice: payload.carChoice, steamID64: payload.steamID64, steamId: payload.steamId });
 
@@ -1897,7 +1878,7 @@ async function loadEstacupEngages() {
   if (!container) return;
   container.innerHTML = "<p>Chargement...</p>";
 
-  const snap = await getDocs(collection(db, "estacup_signups"));
+  const snap = await getDocs(collection(db, "estacup_s10_signups"));
   const valid = snap.docs.filter(d => d.data().validated);
 
   if (valid.length === 0) { container.innerHTML = "<p>Aucun inscrit validé pour l'instant.</p>"; return; }
