@@ -148,7 +148,7 @@ function ensureDriversRoomButton() {
   if (!menu || document.getElementById("backToDriversRoom")) return;
   const btn = document.createElement("button");
   btn.id = "backToDriversRoom"; btn.type = "button"; btn.textContent = "Driver's Room";
-  btn.addEventListener("click", () => (window.location.href = "dashboard.html"));
+  btn.addEventListener("click", () => (window.location.href = "estacup-s10.html"));
   menu.appendChild(btn);
 }
 function ensureRedLogoutButton() {
