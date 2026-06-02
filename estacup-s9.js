@@ -2,16 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  updateDoc,
-  addDoc,
-  setDoc
+  getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ======================== Firebase ======================== */
@@ -212,8 +203,6 @@ function setupNavigation(isAdmin = false) {
     if (el) el.classList.remove("hidden");
 
     if (key === "results"  && currentUid) loadResults(currentUid);
-    if (key === "erating"  && currentUid) loadMRating(currentUid);
-    if (key === "esafety"  && currentUid) loadMSafety(currentUid);
     if (key === "estacup"  && lastUserData) {
       setupEstacupSubnav();
       showEstacupSub("inscription");
@@ -261,7 +250,7 @@ onAuthStateChanged(auth, async (user) => {
   } catch (err) { console.error(err); }
 });
 
-/* ======================== Parsers originaux S9 ======================== */
+/* ======================== Parsers & Helpers ======================== */
 function splitNameParts(p) {
   const first = (pick(p, ["firstName","prenom","driver.firstName"]) ?? "").toString().trim();
   const last  = (pick(p, ["lastName","nom","driver.lastName"]) ?? "").toString().trim();
@@ -321,7 +310,7 @@ function getRaceKind(c) {
   return "other";
 }
 
-/* ======================== Résultats Originaux S9 ======================== */
+/* ======================== Résultats ======================== */
 async function loadResults(uid) {
   const ul = $("raceHistory"); if (!ul) return;
   try {
@@ -411,15 +400,20 @@ async function loadEstacupEngages() {
   container.innerHTML = loaderHtml("Chargement des engagés…");
   try {
     const snap = await getDocs(collection(db, "estacup_s9_signups"));
-    const valid = snap.docs.filter(d => d.data() && d.data().validated);
-    if (valid.length === 0) { container.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'instant (Saison 9).</p>"; return; }
+    if (snap.empty) { container.innerHTML = "<p class='muted-note'>Aucun inscrit pour la Saison 9.</p>"; return; }
     container.innerHTML = "";
-    valid.forEach(docu => {
+    
+    snap.forEach(docu => {
       const d = docu.data();
+      const name = `${d.firstName || ""} ${d.lastName || ""}`.trim();
+      const statusClass = d.validated ? "compare-best" : "compare-worst";
+      const statusLabel = d.validated ? "Validé" : "En attente";
+      
       const box = document.createElement("div"); box.className = "course-box engage-card";
       box.innerHTML = `
         <div class="engage-text">
-          <strong>${escapeHtml(`${d.firstName || ""} ${d.lastName || ""}`.trim())}</strong><br>
+          <strong>${escapeHtml(name || "Pilote")}</strong> 
+          <span class="${statusClass}" style="font-size:0.8rem; padding:2px 6px; border-radius:4px; margin-left:8px;">${statusLabel}</span><br>
           Numéro : <b style="color:#38bdf8;">${d.raceNumber ?? "—"}</b> | Équipe : ${escapeHtml(d.teamName || "—")}<br>
           Voiture : ${escapeHtml(d.carChoice || "—")}
         </div>`;
@@ -428,21 +422,21 @@ async function loadEstacupEngages() {
   } catch (e) { container.innerHTML = "<p>Erreur engagés.</p>"; }
 }
 
-/* ======================== CLASSEMENT PILOTES S9 (FILTRE HISTORIQUE RESTAURÉ) ======================== */
+/* ======================== CLASSEMENT PILOTES S9 ======================== */
 async function loadEstacupPilotStandings() {
   const host = $("estacupPilotStandingsHost") || $("estacupPilotStandings"); if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
   try {
     await ensureSignupCache();
     const snap = await getDocs(collection(db, "courses"));
-    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); }); // 🟢 Filtre d'origine strict sur estacup === true[cite: 1]
+    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); });
     courses.sort((a, b) => (toDate(a.date) ?? new Date(0)) - (toDate(b.date) ?? new Date(0)));
 
     const perPilot = new Map(); const allRounds = new Set(); const roundLabels = new Map();
 
     for (const c of courses) {
       const parts = Array.isArray(c.participants) ? c.participants : [];
-      const isSplit1 = Number(c.split) === 1 || c.split === undefined || c.split === null; // 🟢 Séparation d'origine Split 1[cite: 1]
+      const isSplit1 = Number(c.split) === 1 || c.split === undefined || c.split === null;
       const roundKey = getCourseRoundKey(c); const roundLabel = getCourseRoundLabel(c);
       allRounds.add(roundKey); if (!roundLabels.has(roundKey)) roundLabels.set(roundKey, roundLabel);
       const raceKind = getRaceKind(c);
@@ -450,11 +444,11 @@ async function loadEstacupPilotStandings() {
       for (const p of parts) {
         const uid = pickUid(p); if (!uid) continue;
         const { first, last } = splitNameParts(p);
-        const team = await resolveTeam(uid, c.id, p);
         const pts = await resolvePoints(uid, c.id, p);
+        const team = await resolveTeam(uid, c.id, p);
 
         if (!perPilot.has(uid)) {
-          perPilot.set(uid, { uid, first, last, name: `${first} ${last}`.trim() || p.name || "Pilote", team, points: 0, starts: 0, wins: 0, podiums: 0, roundResults: {} });
+          perPilot.set(uid, { uid, first, last, name: `${last.toUpperCase()} ${first}`.trim() || p.name || "Pilote", team, points: 0, starts: 0, wins: 0, podiums: 0, roundResults: {} });
         }
         const row = perPilot.get(uid); row.points += pts; row.starts += 1;
 
@@ -463,7 +457,7 @@ async function loadEstacupPilotStandings() {
         if (raceKind === "sprint") rr.sprintPoints += pts; else if (raceKind === "main") rr.mainPoints += pts;
 
         const pos = Number(p.position ?? p.stats?.position);
-        if (isSplit1 && Number.isFinite(pos)) { // 🟢 Victoires/Podiums comptés uniquement en Split 1[cite: 1]
+        if (isSplit1 && Number.isFinite(pos)) {
           if (pos === 1) row.wins += 1;
           if (pos >= 1 && pos <= 3) row.podiums += 1;
         }
@@ -477,7 +471,7 @@ async function loadEstacupPilotStandings() {
 
     rows.forEach(r => {
       r.displayPoints = r.points;
-      if (useJoker && allRounds.size > 1 && r.starts === maxStarts) { // 🟢 Logique d'origine de la course joker[cite: 1]
+      if (useJoker && allRounds.size > 1 && r.starts === maxStarts) {
         let worstPoints = Infinity; let worstKey = null;
         for (const key in r.roundResults) {
           if (r.roundResults[key].points < worstPoints) { worstPoints = r.roundResults[key].points; worstKey = key; }
@@ -488,22 +482,48 @@ async function loadEstacupPilotStandings() {
 
     rows.sort((a,b)=> b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
 
-    let html = `<table class="race-table"><thead><tr><th>#</th><th>Pilote</th><th>Équipe</th><th>Points</th><th>Victoires (S1)</th><th>Podiums (S1)</th></tr></thead><tbody>`;
+    let html = `
+      <div style="overflow:auto;">
+        <table class="table-standings compare-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Pilote</th>
+              <th>Équipe</th>
+              <th>Points</th>
+              <th>Victoires</th>
+              <th>Podiums</th>
+              <th>Départs</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
     rows.forEach((r, idx) => {
-      html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.team || "—")}</td><td><strong>${r.displayPoints}</strong></td><td>${r.wins}</td><td>${r.podiums}</td></tr>`;
+      const rank = idx + 1;
+      const rowClass = rank === 1 ? "podium-1" : rank === 2 ? "podium-2" : rank === 3 ? "podium-3" : "";
+      html += `
+        <tr class="${rowClass}">
+          <td><span class="rank-badge">${rank}</span></td>
+          <td><strong>${escapeHtml(r.name)}</strong></td>
+          <td>${escapeHtml(r.team || "(Sans équipe)")}</td>
+          <td><strong>${r.displayPoints}</strong></td>
+          <td>${r.wins}</td>
+          <td>${r.podiums}</td>
+          <td>${r.starts}</td>
+        </tr>`;
     });
-    host.innerHTML = html + "</tbody></table>";
+    host.innerHTML = html + "</tbody></table></div>";
   } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
 }
 
-/* ======================== CLASSEMENT ÉQUIPES S9 (FILTRE HISTORIQUE RESTAURÉ) ======================== */
+/* ======================== CLASSEMENT ÉQUIPES S9 ======================== */
 async function loadEstacupTeamStandings() {
   const host = $("estacupTeamStandingsHost") || $("estacupTeamStandings"); if (!host) return;
   host.innerHTML = loaderHtml("Calcul en cours…");
   try {
     await ensureSignupCache();
     const snap = await getDocs(collection(db, "courses"));
-    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); }); // 🟢 Filtre d'origine strict sur estacup === true[cite: 1]
+    const courses = []; snap.forEach(d => { const data = d.data(); if (data.estacup === true) courses.push({ id: d.id, ...data }); });
     courses.sort((a, b) => (toDate(a.date) ?? new Date(0)) - (toDate(b.date) ?? new Date(0)));
 
     const perTeam = new Map(); const allRounds = new Set();
@@ -516,7 +536,7 @@ async function loadEstacupTeamStandings() {
       for (const p of parts) {
         const uid = pickUid(p); if (!uid) continue;
         const team = normTeamName(await resolveTeam(uid, c.id, p));
-        if (team === "(Sans équipe)") continue; // 🟢 Ignore "(Sans équipe)"[cite: 1]
+        if (team === "(Sans équipe)") continue;
         const pts = await resolvePoints(uid, c.id, p);
         if (!byTeam.has(team)) byTeam.set(team, []);
         byTeam.get(team).push({ pts: Number.isFinite(pts) ? pts : 0, pos: Number(p.position ?? p.stats?.position) || 9999 });
@@ -524,13 +544,13 @@ async function loadEstacupTeamStandings() {
 
       byTeam.forEach((arr, team) => {
         arr.sort((a,b)=> b.pts !== a.pts ? b.pts - a.pts : a.pos - b.pos);
-        const score = (arr[0]?.pts ?? 0) + (arr[1]?.pts ?? 0); // 🟢 Additionne le score des 2 meilleurs pilotes[cite: 1]
+        const score = (arr[0]?.pts ?? 0) + (arr[1]?.pts ?? 0);
         if (!perTeam.has(team)) perTeam.set(team, { team, points: 0, wins: 0, podiums: 0, roundResults: {} });
         const agg = perTeam.get(team); agg.points += score;
         if (!agg.roundResults[roundKey]) agg.roundResults[roundKey] = { points: 0 };
         agg.roundResults[roundKey].points += score;
 
-        if (isSplit1) { // 🟢 Victoires/Podiums d'équipe uniquement en Split 1[cite: 1]
+        if (isSplit1) {
           arr.forEach(r => {
             if (r.pos === 1) agg.wins += 1;
             if (r.pos >= 1 && r.pos <= 3) agg.podiums += 1;
@@ -539,7 +559,7 @@ async function loadEstacupTeamStandings() {
       });
     }
 
-    const rows = [...perTeam.values()]; if (rows.length === 0) { host.innerHTML = "<p>Aucune équipe.</p>"; return; }
+    const rows = [...perTeam.values()]; if (rows.length === 0) { host.innerHTML = "<p>Aucune équipe active trouvée.</p>"; return; }
     const useJoker = !!$("jokerToggleTeams")?.checked;
     const maxRounds = rows.reduce((m, r) => Math.max(m, Object.keys(r.roundResults).length), 0);
 
@@ -556,12 +576,34 @@ async function loadEstacupTeamStandings() {
 
     rows.sort((a,b)=> b.displayPoints !== a.displayPoints ? b.displayPoints - a.displayPoints : b.wins !== a.wins ? b.wins - a.wins : b.podiums - a.podiums);
 
-    let html = `<table class="race-table"><thead><tr><th>Pos</th><th>Équipe</th><th>Points</th><th>Victoires (S1)</th><th>Podiums (S1)</th></tr></thead><tbody>`;
+    let html = `
+      <div style="overflow:auto;">
+        <table class="table-standings compare-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Équipe</th>
+              <th>Points</th>
+              <th>Victoires (S1)</th>
+              <th>Podiums (S1)</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
     rows.forEach((r, idx) => {
-      html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.team)}</td><td><strong>${r.displayPoints}</strong></td><td>${r.wins}</td><td>${r.podiums}</td></tr>`;
+      const rank = idx + 1;
+      const rowClass = rank === 1 ? "podium-1" : rank === 2 ? "podium-2" : rank === 3 ? "podium-3" : "";
+      html += `
+        <tr class="${rowClass}">
+          <td><span class="rank-badge">${rank}</span></td>
+          <td><strong>${escapeHtml(r.team)}</strong></td>
+          <td><strong>${r.displayPoints}</strong></td>
+          <td>${r.wins}</td>
+          <td>${r.podiums}</td>
+        </tr>`;
     });
-    host.innerHTML = html + "</tbody></table>";
-  } catch (e) { host.innerHTML = "<p>Erreur.</p>"; }
+    host.innerHTML = html + "</tbody></table></div>";
+  } catch (e) { host.innerHTML = "<p>Erreur lors du calcul du classement équipes.</p>"; }
 }
 
 function setupMekaQuestionnaire() {}
