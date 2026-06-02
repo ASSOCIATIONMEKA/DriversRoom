@@ -3,6 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// 🔧 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
@@ -18,6 +19,14 @@ const db = getFirestore(app);
 
 const $ = (id) => document.getElementById(id);
 let currentUser = null;
+
+function showMsg(text, type = "success") {
+  const box = $("msgBox");
+  if (!box) return;
+  box.textContent = text;
+  box.className = `msg-box msg-${type}`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = "login.html"; return; }
@@ -44,54 +53,50 @@ async function loadUserProfile() {
   } catch (err) { console.error("Erreur profil:", err); }
 }
 
-// 🟢 CALCUL DES STATS PAR UID (Fiable à 100%)
+// 🟢 CALCUL DES STATS : Scan global (collections racines) + Sous-collections (users/{uid}/)
 async function calculatePilotStats() {
   try {
-    // On récupère le SteamID du profil utilisateur actuel
     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
     const userData = userDoc.exists() ? userDoc.data() : {};
     const mySteamId = (userData.steamId || userData.steamID64 || "").toString().trim();
 
-    if (!mySteamId) {
-      console.warn("Aucun SteamID trouvé sur le profil.");
-      return;
-    }
-
-    // Récupération des deux sources de données
-    const [snapS9, snapS10] = await Promise.all([
-      getDocs(collection(db, "raceHistory")), 
-      getDocs(collection(db, "raceHistory_s10"))
-    ]);
-
     let racesCount = 0, winsCount = 0, podiumsCount = 0;
     let championships = new Set();
 
-    // Fonction de traitement basée UNIQUEMENT sur le SteamID
-    const process = (snap, champName) => {
-      snap.forEach(docSnap => {
-        const data = docSnap.data();
-        const participants = data.participants || [];
-        
-        // On cherche le participant dont le steamId correspond au tien
-        const p = participants.find(part => {
-          const pSteam = (part.steamId || part.steamID || part.steamID64 || "").toString().trim();
-          return pSteam === mySteamId;
-        });
-        
-        if (p) {
-          racesCount++;
-          const pos = parseInt(p.position || 0, 10);
-          if (pos === 1) winsCount++;
-          if (pos >= 1 && pos <= 3) podiumsCount++;
-          championships.add(champName);
-        }
-      });
-    };
+    // 1. Liste des endroits où tes données peuvent être cachées
+    const sources = [
+        { col: collection(db, "raceHistory"), name: "EstaCup - Saison 9" },
+        { col: collection(db, "raceHistory_s10"), name: "EstaCup - Saison 10" },
+        { col: collection(db, "users", currentUser.uid, "raceHistory"), name: "EstaCup - Saison 9 (Perso)" },
+        { col: collection(db, "users", currentUser.uid, "raceHistory_s10"), name: "EstaCup - Saison 10 (Perso)" }
+    ];
 
-    process(snapS9, "EstaCup - Saison 9");
-    process(snapS10, "EstaCup - Saison 10");
+    // 2. Scan de toutes les sources
+    for (const src of sources) {
+        try {
+            const snap = await getDocs(src.col);
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                // Gestion des listes de participants (cas collections racines)
+                const participants = data.participants || [data]; 
+                
+                const found = participants.find(p => {
+                    const pSteam = (p.steamId || p.steamID || p.steamID64 || "").toString().trim();
+                    return pSteam === mySteamId && mySteamId !== "";
+                });
+                
+                if (found) {
+                    racesCount++;
+                    const pos = parseInt(found.position || 0, 10);
+                    if (pos === 1) winsCount++;
+                    if (pos >= 1 && pos <= 3) podiumsCount++;
+                    championships.add(src.name);
+                }
+            });
+        } catch (e) { /* Collection vide ou inexistante, on ignore */ }
+    }
 
-    // Mise à jour de l'affichage
+    // 3. Mise à jour UI
     if($("statRaces")) $("statRaces").textContent = racesCount;
     if($("statWins")) $("statWins").textContent = winsCount;
     if($("statPodiums")) $("statPodiums").textContent = podiumsCount;
@@ -100,7 +105,7 @@ async function calculatePilotStats() {
     const listEl = $("championshipList");
     if(listEl) {
       listEl.innerHTML = championships.size === 0 
-        ? `<li>Aucun historique trouvé pour votre SteamID</li>` 
+        ? `<li>Aucun historique trouvé. Vérifiez votre SteamID.</li>` 
         : Array.from(championships).map(c => `<li>🏎️ <strong>${c}</strong></li>`).join("");
     }
   } catch (err) { console.error("Erreur stats:", err); }
