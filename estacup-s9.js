@@ -230,7 +230,7 @@ async function renderVoteCircuit() {
   }
 }
 
-/* ======================== CLASSEMENT PILOTES S9 ======================== */
+/* ======================== CLASSEMENT PILOTES S9 (FIXÉ) ======================== */
 async function loadEstacupPilotStandings() {
   const host = $("estacupPilotStandingsHost");
   if (!host) return;
@@ -239,7 +239,7 @@ async function loadEstacupPilotStandings() {
   try {
     const useJoker = $("jokerTogglePilots")?.checked ?? false;
     const [coursesSnap, usersSnap] = await Promise.all([
-      getDocs(collection(db, "courses")),
+      getDocs(collection(db, "raceHistory")), // 🟢 Correction : On cible l'historique S9
       getDocs(collection(db, "users"))
     ]);
 
@@ -251,17 +251,17 @@ async function loadEstacupPilotStandings() {
 
     coursesSnap.forEach(docSnap => {
       const race = docSnap.data();
-      if (!race.participants || !race.name?.toUpperCase().includes("SAISON 9")) return;
+      if (!race.participants) return;
       
-      const roundKey = race.round || race.name;
-      const isSprint = race.name?.toLowerCase().includes("sprint");
+      const roundKey = race.round || race.name || docSnap.id;
+      const isSprint = race.name?.toLowerCase().includes("sprint") || race.type?.toLowerCase().includes("sprint");
 
       race.participants.forEach(p => {
         if (!p.uid || !pilotsMap.has(p.uid)) return;
         const pilot = pilotsMap.get(p.uid);
         if (!pilot.rounds[roundKey]) pilot.rounds[roundKey] = { sprint: 0, main: 0 };
         
-        const pts = parseInt(p.points || 0, 10);
+        const pts = parseInt(p.points || p.posPoints || 0, 10);
         if (isSprint) pilot.rounds[roundKey].sprint = pts;
         else pilot.rounds[roundKey].main = pts;
       });
@@ -273,22 +273,29 @@ async function loadEstacupPilotStandings() {
       
       let finalTotal = scores.reduce((a, b) => a + b, 0);
       if (useJoker && scores.length > 0) {
-        const minScore = Math.min(...scores);
-        finalTotal -= minScore;
+        finalTotal -= Math.min(...scores);
       }
       pilot.total = finalTotal;
       return pilot;
     }).filter(p => p.total > 0).sort((a, b) => b.total - a.total);
+
+    if (rows.length === 0) {
+      host.innerHTML = "<p>Aucune donnée de course trouvée pour la Saison 9.</p>";
+      return;
+    }
 
     let html = `<table class="race-table"><thead><tr><th>Pos</th><th>Pilote</th><th>Points</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.name)}</td><td><strong>${r.total} pts</strong></td></tr>`;
     });
     host.innerHTML = html + "</tbody></table>";
-  } catch (err) { host.innerHTML = "<p>Erreur lors du calcul du classement.</p>"; }
+  } catch (err) { 
+    console.error(err);
+    host.innerHTML = "<p>Erreur lors du calcul du classement.</p>"; 
+  }
 }
 
-/* ======================== CLASSEMENT ÉQUIPES S9 ======================== */
+/* ======================== CLASSEMENT ÉQUIPES S9 (FIXÉ) ======================== */
 async function loadEstacupTeamStandings() {
   const host = $("estacupTeamStandingsHost");
   if (!host) return;
@@ -297,7 +304,7 @@ async function loadEstacupTeamStandings() {
   try {
     const useJoker = $("jokerToggleTeams")?.checked ?? false;
     const [coursesSnap, signupsSnap] = await Promise.all([
-      getDocs(collection(db, "courses")),
+      getDocs(collection(db, "raceHistory")), // 🟢 Correction : On cible l'historique S9
       getDocs(collection(db, "estacup_s9_signups"))
     ]);
 
@@ -308,9 +315,9 @@ async function loadEstacupTeamStandings() {
 
     coursesSnap.forEach(docSnap => {
       const race = docSnap.data();
-      if (!race.participants || !race.name?.toUpperCase().includes("SAISON 9")) return;
+      if (!race.participants) return;
 
-      const roundKey = race.round || race.name;
+      const roundKey = race.round || race.name || docSnap.id;
       race.participants.forEach(p => {
         if (!p.uid || !pilotToTeam.has(p.uid)) return;
         const teamName = pilotToTeam.get(p.uid);
@@ -318,7 +325,7 @@ async function loadEstacupTeamStandings() {
         
         const team = teamsMap.get(teamName);
         if (!team.rounds[roundKey]) team.rounds[roundKey] = 0;
-        team.rounds[roundKey] += parseInt(p.points || 0, 10);
+        team.rounds[roundKey] += parseInt(p.points || p.posPoints || 0, 10);
       });
     });
 
@@ -330,12 +337,20 @@ async function loadEstacupTeamStandings() {
       return team;
     }).filter(t => t.total > 0).sort((a, b) => b.total - a.total);
 
+    if (rows.length === 0) {
+      host.innerHTML = "<p>Aucune donnée d'équipe trouvée pour la Saison 9.</p>";
+      return;
+    }
+
     let html = `<table class="race-table"><thead><tr><th>Pos</th><th>Équipe</th><th>Points</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       html += `<tr><td>${idx + 1}</td><td>${escapeHtml(r.name)}</td><td><strong>${r.total} pts</strong></td></tr>`;
     });
     host.innerHTML = html + "</tbody></table>";
-  } catch (err) { host.innerHTML = "<p>Erreur classement équipes.</p>"; }
+  } catch (err) { 
+    console.error(err);
+    host.innerHTML = "<p>Erreur classement équipes.</p>"; 
+  }
 }
 
 function setupMekaQuestionnaire() {}
