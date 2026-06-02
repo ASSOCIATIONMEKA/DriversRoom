@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin - ESTACUP</title>
+  <title>Admin S9 - ESTACUP (Archives)</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- 🟢 CORRECTION 1 : Chargement du script spécifique de la Saison 9 -->
   <script type="module" src="admin-s9.js" defer></script>
   <style>
     /* Résumé des voitures ESTACUP */
@@ -90,13 +91,13 @@
   <script type="module" src="nav.js" defer></script>
 
   <div class="container">
-    <h2>Interface administrateur</h2>
-
+    <!-- 🟢 CORRECTION 2 : ID adminOnly englobant le titre pour GitHub Pages -->
     <div id="adminOnly" class="hidden">
+      <h2>Interface administrateur S9 (Archives)</h2>
       <p>Bienvenue, <span id="adminName"></span></p>
 
       <nav class="admin-menu" style="display:flex;gap:10px;margin-bottom:20px;">
-        <button data-section="results"> Création Résultats</button>
+        <button data-section="results">Création Résultats</button>
         <button data-section="incidents">Gestion Incidents</button>
         <button data-section="courses">Liste des Courses</button>
         <button data-section="estacup">Gestion ESTACUP</button>
@@ -253,7 +254,7 @@
       </section>
 
       <section id="section-estacup" class="admin-section hidden">
-        <h3>Inscriptions ESTACUP</h3>
+        <h3>Inscriptions ESTACUP S9</h3>
         <div id="estacupCarSummary" class="muted"></div>
         <div class="toolbar" style="margin:8px 0 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <label for="estacupSort" style="white-space:nowrap;">Tri :</label>
@@ -317,7 +318,7 @@
         </p>
       </section>
 
-      <button id="goToDashboard">Retour à la driver's room</button>
+      <button id="goToDashboard">Retour à la salle des pilotes S9</button>
     </div>
 
     <p id="notAdmin" class="error hidden">Accès refusé : compte non administrateur.</p>
