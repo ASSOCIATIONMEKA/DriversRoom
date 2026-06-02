@@ -126,6 +126,7 @@ function showEstacupSub(key) {
   if (blocks[key]) {
     blocks[key].classList.remove("hidden");
     if (key === "votecircuit") renderVoteCircuit();
+    if (key === "engages") loadEstacupEngages();
     if (key === "rankpilots") {
       const chkP = $("jokerTogglePilots");
       if (chkP) chkP.onchange = () => loadEstacupPilotStandings();
@@ -230,7 +231,56 @@ async function renderVoteCircuit() {
   }
 }
 
-/* ======================== CLASSEMENT PILOTES S9 Blindé ======================== */
+/* ======================== LISTE DES ENGAGÉS S9 (AJOUTÉE) ======================== */
+async function loadEstacupEngages() {
+  const host = $("estacupEngagesHost") || $("estacup-sub-engages");
+  if (!host) return;
+  host.innerHTML = "<p>Chargement des engagés...</p>";
+
+  try {
+    const snap = await getDocs(collection(db, "estacup_s9_signups"));
+    if (snap.empty) {
+      host.innerHTML = "<p style='color:#94a3b8;'>Aucun pilote inscrit pour la Saison 9.</p>";
+      return;
+    }
+
+    let html = `
+      <div style="overflow:auto">
+        <table class="race-table">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Pilote</th>
+              <th>Équipe</th>
+              <th>Voiture</th>
+              <th>Livrée</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+    snap.forEach(docSnap => {
+      const s = docSnap.data();
+      if (!s) return;
+      const name = `${s.firstName || ""} ${s.lastName || ""}`.trim();
+      html += `
+        <tr>
+          <td><b style="color:#38bdf8;">${s.raceNumber ?? "—"}</b></td>
+          <td><strong>${escapeHtml(name || "Pilote")}</strong></td>
+          <td>${escapeHtml(s.teamName || "—")}</td>
+          <td>${escapeHtml(s.carChoice || "—")}</td>
+          <td><span class="muted-note">${escapeHtml(s.liveryChoice || "—")}</span></td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    host.innerHTML = html;
+  } catch (err) {
+    console.error("Erreur engagés S9:", err);
+    host.innerHTML = "<p>Erreur lors de la récupération de la liste des engagés.</p>";
+  }
+}
+
+/* ======================== CLASSEMENT PILOTES S9 ======================== */
 async function loadEstacupPilotStandings() {
   const host = $("estacupPilotStandingsHost");
   if (!host) return;
@@ -238,8 +288,6 @@ async function loadEstacupPilotStandings() {
 
   try {
     const useJoker = $("jokerTogglePilots")?.checked ?? false;
-    
-    // On charge en parallèle les deux collections pour être sûr de taper le bon endroit
     const [raceHistorySnap, coursesSnap, usersSnap] = await Promise.all([
       getDocs(collection(db, "raceHistory")),
       getDocs(collection(db, "courses")),
@@ -261,7 +309,6 @@ async function loadEstacupPilotStandings() {
           const race = docSnap.data();
           if (!race || !race.participants) return;
 
-          // Détection intelligente du round
           const roundKey = race.round || race.name || docSnap.id;
           const raceNameLower = (race.name || "").toLowerCase();
           const isSprint = raceNameLower.includes("sprint") || (race.type || "").toLowerCase().includes("sprint");
@@ -276,11 +323,10 @@ async function loadEstacupPilotStandings() {
             if (isSprint) pilot.rounds[roundKey].sprint = pts;
             else pilot.rounds[roundKey].main = pts;
           });
-        } catch (err) { console.warn("Erreur document course ignoré:", err); }
+        } catch (err) {}
       });
     };
 
-    // On traite les deux collections au cas où les données S9 soient réparties
     processRaces(raceHistorySnap);
     processRaces(coursesSnap);
 
@@ -289,9 +335,7 @@ async function loadEstacupPilotStandings() {
       Object.keys(pilot.rounds).forEach(r => { scores.push(pilot.rounds[r].sprint + pilot.rounds[r].main); });
       
       let finalTotal = scores.reduce((a, b) => a + b, 0);
-      if (useJoker && scores.length > 0) {
-        finalTotal -= Math.min(...scores);
-      }
+      if (useJoker && scores.length > 0) finalTotal -= Math.min(...scores);
       pilot.total = finalTotal;
       return pilot;
     }).filter(p => p.total > 0).sort((a, b) => b.total - a.total);
@@ -307,12 +351,11 @@ async function loadEstacupPilotStandings() {
     });
     host.innerHTML = html + "</tbody></table>";
   } catch (err) { 
-    console.error("Erreur générale classement pilotes:", err);
-    host.innerHTML = "<p>Erreur lors du traitement ou de la connexion Firebase.</p>"; 
+    host.innerHTML = "<p>Erreur lors du calcul du classement.</p>"; 
   }
 }
 
-/* ======================== CLASSEMENT ÉQUIPES S9 Blindé ======================== */
+/* ======================== CLASSEMENT ÉQUIPES S9 ======================== */
 async function loadEstacupTeamStandings() {
   const host = $("estacupTeamStandingsHost");
   if (!host) return;
@@ -377,11 +420,9 @@ async function loadEstacupTeamStandings() {
     });
     host.innerHTML = html + "</tbody></table>";
   } catch (err) { 
-    console.error("Erreur générale classement équipes:", err);
-    host.innerHTML = "<p>Erreur lors du traitement ou de la connexion Firebase.</p>"; 
+    host.innerHTML = "<p>Erreur classement équipes.</p>"; 
   }
 }
 
 function setupMekaQuestionnaire() {}
-function loadEstacupEngages() {}
 function loadReclamHistory() {}
