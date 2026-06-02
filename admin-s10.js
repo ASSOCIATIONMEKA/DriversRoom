@@ -1,4 +1,4 @@
-// admin.js — Import JSON, pénalités (groupes), drag & drop inter-groupes
+// admin-s10.js — Import JSON, pénalités (groupes), drag & drop inter-groupes — SAISON 10
 // v2025-10-10 — Liste repliable + éditeur qui REMPLACE la liste (mode plein écran)
 // v2025-10-06 — FIX: Split visible en mode JSON même si ESTACUP = Non
 // v2025-10-04 — points auto vs manuel, refresh points après DnD, sections Pilotes & ESTACUP intégrées du n°1
@@ -112,7 +112,7 @@ const ImportState = {
   splitCount: 1,
   files: { sprintS1: null, mainS1: null, sprintS2: null, mainS2: null },
   parsed: { S1: { sprint: [], main: [] }, S2: { sprint: [], main: [] } },
-  lapData: {},                 // <<< nouveau : tours bruts par manche
+  lapData: {},                 
   nameMap: new Map(),
   unmatched: [],
   usersCache: []
@@ -121,24 +121,33 @@ const ImportState = {
 /* ---------------- Bootstrap ---------------- */
 onAuthStateChanged(auth, async (user) => {
   if (!user) return (window.location.href = "login.html");
-  const snap = await getDoc(doc(db, "users", user.uid));
-  if (!snap.exists() || snap.data().admin !== true) {
-    document.body.innerHTML = "<p>Accès refusé</p>"; return;
+  
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists() || snap.data().admin !== true) {
+      document.body.innerHTML = "<p>Accès refusé</p>"; return;
+    }
+    
+    document.getElementById("adminOnly")?.classList.remove("hidden");
+    document.getElementById("adminName").textContent = snap.data().firstName || "";
+
+    ensureDriversRoomButton();
+    ensureRedLogoutButton();
+    setupNavigation();
+    setupPilotsSection();
+
+    // 🟢 Chargements enveloppés individuellement pour éviter le blocage de l'interface en cas de table vide
+    try { await loadPilots(); } catch (e) { console.error("Erreur loadPilots:", e); }
+    try { await loadCourses(); } catch (e) { console.error("Erreur loadCourses:", e); }
+    try { await loadIncidentHistory(); } catch (e) { console.error("Erreur loadIncidentHistory:", e); }
+    try { await loadEstacupSignups(); } catch (e) { console.error("Erreur loadEstacupSignups:", e); }
+    try { await loadReclamations(); } catch (e) { console.error("Erreur loadReclamations:", e); }
+    
+    setupResultsUI();
+    
+  } catch (globalErr) {
+    console.error("Erreur globale au chargement de l'authentification admin :", globalErr);
   }
-  document.getElementById("adminOnly")?.classList.remove("hidden");
-  document.getElementById("adminName").textContent = snap.data().firstName || "";
-
-  ensureDriversRoomButton();
-  ensureRedLogoutButton();
-  setupNavigation();
-
-  setupPilotsSection();
-  await loadPilots();
-  await loadCourses();
-  await loadIncidentHistory();
-  await loadEstacupSignups();
-  await loadReclamations();
-  setupResultsUI();
 });
 
 /* ---------------- UI helpers ---------------- */
@@ -182,7 +191,6 @@ function setupResultsUI() {
   roundWrap.style.display = "block";
   raceNameWrap.style.display = "none";
 
-  // FIX : le nombre de splits reste visible en mode JSON même si ESTACUP = Non
   isEstacupSel.addEventListener("change", () => {
     const yes = isEstacupSel.value === "yes";
     splitCountWrap.style.display = $("modeJson").checked ? "block" : "none";
@@ -293,7 +301,6 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
   if (!description || selectedPilots.length === 0) { alert("Description et au moins un pilote requis."); return; }
 
   const adminName = (document.getElementById("adminName")?.textContent || "").trim();
-  // On stocke aussi le nom pour l’affichage, en plus de l’uid
   const payload = {
     date: new Date(),
     description,
@@ -305,9 +312,8 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
 
   await addDoc(collection(db, "incidents"), payload);
 
-  // Appliquer les points "après" sur chaque pilote
   for (const p of selectedPilots) {
-    await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
+    await updateDoc(doc(doc(db, "users", p.uid), { licensePoints: p.after });
   }
 
   selectedPilots = [];
@@ -335,7 +341,6 @@ async function loadPilots() {
   pilotLiByUid.clear();
   ImportState.usersCache = [];
 
-  // récupérer et trier A→Z
   const users = snap.docs.map(docu => {
     const d = docu.data(), uid = docu.id;
     const firstName = d.firstName || "", lastName = d.lastName || "";
@@ -373,7 +378,6 @@ async function loadPilots() {
     }
   }
 
-  // remplissage auto de tous les <select data-pilots="alpha">
   document.querySelectorAll('select[data-pilots="alpha"]').forEach(sel=>{
     const cur = sel.value;
     sel.innerHTML = `<option value="">-- Pilote --</option>` + users.map(u=>{
@@ -395,7 +399,6 @@ function updatePilotListSelections() {
 }
 
 /* ---------------- Pilotes — section (search/refresh) ---------------- */
-/* ---------- Gestion Pilotes (édition admin) — repris du n°1 ---------- */
 function setupPilotsSection() {
   const search = document.getElementById("pilotSearch");
   const list = document.getElementById("pilotAdminList");
@@ -506,7 +509,6 @@ function setupPilotsSection() {
       licenseId: f_lid.value.trim()   || prev.licenseId || prev.licenceId || "",
       licensePoints: Number(f_pts.value) || 0,
       licenseClass: f_cls.value || "Rookie"
-      // eloRating non modifié depuis ici
     };
 
     const dobStr = f_dob.value.trim();
@@ -947,7 +949,6 @@ function renderPreviewTables() {
 
   root.innerHTML = html; block.style.display = "block";
 
-  // Drag & Drop inter-groupes + gestion pénas + écouteurs "points"
   root.querySelectorAll(".course-box").forEach((box) => {
     const title = box.querySelector("h4")?.textContent || "";
     let rowsRef = null;
@@ -1062,7 +1063,7 @@ async function handleAnalyzeJson() {
   const jMainS1 = await readFileAsJson(ImportState.files.mainS1).catch(() => null);
   const jSprintS2 = (ImportState.splitCount === 2) ? await readFileAsJson(ImportState.files.sprintS2).catch(() => null) : null;
   const jMainS2 = (ImportState.splitCount === 2) ? await readFileAsJson(ImportState.files.mainS2).catch(() => null) : null;
-  // Tours bruts RealPenalty pour les graphes du dashboard
+  
   ImportState.lapData = {
     S1_sprint: Array.isArray(jSprintS1?.Laps) ? jSprintS1.Laps : [],
     S1_main : Array.isArray(jMainS1?.Laps)   ? jMainS1.Laps   : [],
@@ -1216,7 +1217,6 @@ async function saveImportedResults() {
     const { key, label, rows } = race;
     if (!rows || !rows.length) continue;
 
-    // Recalcule proprement positions / gaps / pénalités
     recomputePositions(rows);
 
     const isSprint = keyIsSprint(key);
@@ -1225,7 +1225,6 @@ async function saveImportedResults() {
       ? ImportState.lapData[key]
       : [];
 
-    // Associer chaque ligne à un uid + infos pilote
     const withUid = [];
     for (const r of rows) {
       const nameKey = buildKey(r.lastName || "", r.firstName || "");
@@ -1272,14 +1271,13 @@ async function saveImportedResults() {
       continue;
     }
 
-    // Id unique partagé entre doc "courses" et "raceHistory"
     const raceId = `${baseTs + (incr++)}_${key}`;
     const displayName = `${baseName} • ${label}`.replace(/\bFinale\b/i, "Principale");
     const lapData = rawLapsForRace.length ? { laps: rawLapsForRace } : null;
 
-    // 1) Historique de course dans users/{uid}/raceHistory/{raceId}
+    // 🟢 1) Stockage de la fiche dans l'historique S10 du pilote
     for (const p of withUid) {
-      await setDoc(doc(db, "users", p.uid, "raceHistory", raceId), {
+      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), {
         name: displayName,
         date: raceDate,
         position: p.position,
@@ -1299,7 +1297,7 @@ async function saveImportedResults() {
       });
     }
 
-    // 2) Document global de course dans "courses"
+    // 2) Document global de course
     await setDoc(doc(db, "courses", raceId), {
       id: raceId,
       name: displayName,
@@ -1328,7 +1326,6 @@ async function saveImportedResults() {
       updatedAt: new Date()
     });
 
-    // Cache local pour l’éditeur
     courseMap.set(raceId, {
       id: raceId,
       name: displayName,
@@ -1341,7 +1338,6 @@ async function saveImportedResults() {
     });
   }
 
-  // Recalcul global de l’ELO à partir de toutes les courses
   await recalcAllEloFromCourses();
 
   alert("Import terminé et résultats enregistrés (1 doc par manche).");
@@ -1380,7 +1376,6 @@ function buildBaseName() {
    COURSES — LISTE REPLIABLE + MODE ÉDITEUR EN REMPLACEMENT
 ============================================================================ */
 function ensureEditorScreen() {
-  // conteneur plein écran pour l’éditeur (remplace la liste)
   let scr = $("courseEditorScreen");
   if (!scr) {
     scr = document.createElement("div");
@@ -1434,7 +1429,6 @@ async function loadCourses() {
   if (docs.length === 0) { courseList.innerHTML = "<p>Aucune course.</p>"; return; }
   courseList.innerHTML = "";
 
-  // wrapper pour pouvoir masquer/afficher la liste facilement
   if (!document.getElementById("courseListWrap")) {
     const wrap = document.createElement("div");
     wrap.id = "courseListWrap";
@@ -1442,7 +1436,6 @@ async function loadCourses() {
     wrap.appendChild(courseList);
   }
 
-  // rendu repliable
   docs.forEach((course) => {
     const dateTxt = (course.date?.seconds ? new Date(course.date.seconds * 1000) : new Date(course.date || Date.now())).toLocaleDateString("fr-FR");
     const box = document.createElement("div");
@@ -1481,7 +1474,6 @@ async function loadCourses() {
     courseList.appendChild(box);
   });
 
-  // supprimer
   document.querySelectorAll(".delete-course").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -1490,11 +1482,11 @@ async function loadCourses() {
 
       await deleteDoc(doc(db, "courses", courseId));
 
-      // nettoyer raceHistory
       const usersSnap = await getDocs(collection(db, "users"));
       for (const user of usersSnap.docs) {
         const userId = user.id;
-        const ref = doc(db, "users", userId, "raceHistory", courseId);
+        // 🟢 Nettoyage des fiches dans raceHistory_s10 en cas de suppression
+        const ref = doc(db, "users", userId, "raceHistory_s10", courseId);
         const rh = await getDoc(ref);
         if (rh.exists()) await deleteDoc(ref);
       }
@@ -1504,7 +1496,6 @@ async function loadCourses() {
     });
   });
 
-  // éditer → mode remplacement
   document.querySelectorAll(".edit-course").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1535,7 +1526,7 @@ async function recalcAllEloFromCourses() {
 }
 
 /* ============================================================================
-   ÉDITEUR DE COURSE — maintenant en “plein écran” à la place de la liste
+   ÉDITEUR DE COURSE — plein écran
 ============================================================================ */
 function msToEditable(ms) {
   if (!Number.isFinite(ms)) return "";
@@ -1559,7 +1550,6 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
     return;
   }
 
-  // mode remplacement ?
   let root;
   if (opts.replaceList) {
     enterEditorMode();
@@ -1568,7 +1558,6 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
     root = ensureCourseEditorShell();
   }
 
-  // users pour ajout
   const usersSnap = await getDocs(collection(db, "users"));
   const users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   const byId = new Map(users.map(u=>[u.id,u]));
@@ -1635,7 +1624,6 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
     </div>
   `;
 
-  // remove row
   root.querySelectorAll(".row-del").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const tr = btn.closest("tr");
@@ -1643,7 +1631,6 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
     });
   });
 
-  // add pilot
   root.querySelector("#addPilotBtn")?.addEventListener("click", ()=>{
     const sel = root.querySelector("#addPilotSelect");
     const uid = sel?.value || "";
@@ -1679,13 +1666,11 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
     tr.querySelector(".row-del").addEventListener("click", ()=>{ tr.remove(); });
   });
 
-  // close/back
   root.querySelector("#closeEditorBtn")?.addEventListener("click", ()=>{
     if (opts.replaceList) exitEditorMode();
     else root.innerHTML = "";
   });
 
-  // save
   root.querySelector("#saveCourseBtn")?.addEventListener("click", async ()=>{
     try {
       const tbody = root.querySelector("#editTable tbody");
@@ -1732,13 +1717,15 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
 
       for (const uid of previous) {
         if (!nowUIDs.has(uid)) {
-          const ref = doc(db, "users", uid, "raceHistory", courseId);
+          // 🟢 Désengagement d'une course de l'historique S10
+          const ref = doc(db, "users", uid, "raceHistory_s10", courseId);
           const rh = await getDoc(ref);
           if (rh.exists()) await deleteDoc(ref);
         }
       }
       for (const p of participants) {
-        await setDoc(doc(db,"users",p.uid,"raceHistory",courseId), {
+        // 🟢 Mise à jour des fiches individuelles dans raceHistory_s10
+        await setDoc(doc(db,"users",p.uid,"raceHistory_s10",courseId), {
           name: c.name || "Course",
           date: c.date || new Date(),
           position: p.position,
@@ -1758,7 +1745,7 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
 
       alert("Résultats mis à jour.");
       await loadCourses();
-      openCourseEditor(courseId, opts); // rester en mode éditeur
+      openCourseEditor(courseId, opts); 
     } catch (e) {
       console.error(e);
       alert("Erreur lors de l’enregistrement des modifications.");
@@ -1766,7 +1753,6 @@ async function openCourseEditor(courseId, opts = { replaceList: false }) {
   });
 }
 
-// fallback éditeur en bas de page (si jamais)
 function ensureCourseEditorShell() {
   let panel = document.getElementById("courseEditPanel");
   if (!panel) {
@@ -1785,7 +1771,6 @@ async function loadIncidentHistory() {
   if (!box) return;
   box.innerHTML = "<p>Chargement…</p>";
 
-  // petit utilitaire
   const escapeHtmlLocal = (s) => (s||"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const toDateValLocal = (v) => v?.seconds ? new Date(v.seconds*1000) : (v ? new Date(v) : null);
   const nameByUid = (uid) => {
@@ -1794,7 +1779,6 @@ async function loadIncidentHistory() {
   };
 
   try {
-    // Map des courses: id -> libellé
     const coursesSnap = await getDocs(collection(db, "courses"));
     const courseById = new Map();
     coursesSnap.forEach(c => {
@@ -1804,7 +1788,6 @@ async function loadIncidentHistory() {
       courseById.set(c.id, `${d.name || "Course"}${whenTxt ? ` (${whenTxt})` : ""}`);
     });
 
-    // Récup incidents
     const incSnap = await getDocs(collection(db, "incidents"));
     const rows = [];
     incSnap.forEach(docu => {
@@ -1831,10 +1814,6 @@ async function loadIncidentHistory() {
 
     function renderEditable(i) {
       const d = i.date ? i.date.toLocaleString("fr-FR") : "—";
-      const courseLabel = i.courseId ? (courseById.get(i.courseId) || i.courseId) : "—";
-      const who = i.createdByName ? ` — <span style="opacity:.7">par ${escapeHtmlLocal(i.createdByName)}</span>` : "";
-
-      // lignes pilotes éditables (on ne modifie que "after" côté UI)
       const pilotsHtml = i.pilotes.map((p, idx) => {
         const delta = (Number.isFinite(p.before) && Number.isFinite(p.after)) ? (p.after - p.before) : 0;
         const deltaTxt = Number.isFinite(delta) ? ` (${delta>0?"+":""}${delta})` : "";
@@ -1850,7 +1829,7 @@ async function loadIncidentHistory() {
 
       return `
         <div class="course-box" data-id="${i.id}">
-          <div class="muted" style="margin-bottom:6px"><strong>${d}</strong>${who}</div>
+          <div class="muted" style="margin-bottom:6px"><strong>${d}</strong>${i.createdByName ? ` — <span style='opacity:.7'>par ${escapeHtmlLocal(i.createdByName)}</span>` : ""}</div>
           <label class="muted">Course</label>
           <div style="margin-bottom:6px">
             <select class="hist-course">
@@ -1878,14 +1857,12 @@ async function loadIncidentHistory() {
     html += `</details>`;
     box.innerHTML = html;
 
-    // Handlers EDIT / DELETE
     box.querySelectorAll(".course-box").forEach(el => {
       const id = el.dataset.id;
       const descEl = el.querySelector(".hist-desc");
       const courseEl = el.querySelector(".hist-course");
 
       el.querySelector(".hist-save")?.addEventListener("click", async () => {
-        // collecter les valeurs modifiées
         const inputs = [...el.querySelectorAll('input[type="number"][data-id="'+id+'"]')];
         const pilotes = inputs.map(inp => {
           const idx = +inp.dataset.idx;
@@ -1894,14 +1871,12 @@ async function loadIncidentHistory() {
           return { uid: p0.uid, name: p0.name, before: p0.before, after: Number.isFinite(after) ? after : p0.after };
         });
 
-        // MAJ doc
         await updateDoc(doc(db,"incidents",id), {
           description: descEl.value.trim(),
           courseId: courseEl.value || null,
           pilotes
         });
 
-        // Appliquer les points “après” aux users
         for (const p of pilotes) {
           if (Number.isFinite(p.after)) {
             await updateDoc(doc(db,"users",p.uid), { licensePoints: p.after });
@@ -1924,12 +1899,11 @@ async function loadIncidentHistory() {
 }
 
 
-/* ======= RÉCLAMATIONS : inclut anciennes envoyées par admins + legacy ======= */
+/* ======= RÉCLAMATIONS ======= */
 async function loadReclamations() {
   const box = document.getElementById("reclamationsBox");
   if (!box) return;
 
-  // Toolbar + container
   box.innerHTML = `
     <div id="reclamToolbar" class="toolbar" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
       <select id="reclamFilter">
@@ -1951,660 +1925,245 @@ async function loadReclamations() {
   let all = [];
 
   function toDateValLocal(v) {
-    if (!v) return null;
-    if (v?.seconds) return new Date(v.seconds * 1000);
-    const d = new Date(v);
-    return isNaN(d) ? null : d;
+    if (!v) return null; if (v?.seconds) return new Date(v.seconds * 1000);
+    const d = new Date(v); return isNaN(d) ? null : d;
   }
   const normLowerLocal = (s) => (s || "").toString().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   const escapeHtmlLocal = (s) => (s||"").toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   function normalizeRow(d, id, roleHint = "") {
-    const row = { ...(d || {}) };
-    row._id = id;
+    const row = { ...(d || {}) }; row._id = id;
+    row._created = toDateValLocal(row.date) || toDateValLocal(row.createdAt) || null;
+    const flagAdmin = row.isAdmin === true || roleHint === "admin";
+    row._authorRole = flagAdmin ? "admin" : "user";
+    row.status = row.status || "open";
+    row.uid      = row.uid || null;
+    row.pilotUid = row.pilotUid || row.uid || null;
+    row.courseId = row.courseId || null;
+    row.adminNotes = row.adminNotes || "";
+    row.description = row.description || "";
+    row._raceDate = toDateValLocal(row.raceDate);
+    row.youtubeUrl = row.youtubeUrl || "";
 
-    // date (création de la réclamation)
-    row._created =
-      toDateValLocal(row.date) || toDateValLocal(row.createdAt) || toDateValLocal(row.sentAt) ||
-      toDateValLocal(row.time) || toDateValLocal(row.timestamp) || null;
-
-    // qui a écrit ?
-    const flagAdmin = row.isAdmin === true || row.fromAdmin === true || row.admin === true ||
-                      row.senderRole === "admin" || row.createdBy === "admin" || roleHint === "admin";
-    const flagUser  = row.senderRole === "user" || row.createdBy === "user" || row.authorRole === "user";
-    row._authorRole = flagAdmin ? "admin" : (row.authorRole || (flagUser ? "user" : ""));
-
-    // statuts
-    row.status = row.status || row.state || row.etat || "open";
-
-    // identifiants utiles
-    row.uid      = row.uid || row.userId || row.authorUid || row.pilotUid || row.driverUid || null; // plaignant
-    row.pilotUid = row.pilotUid || row.uid || row.userId || row.driverUid || null;                  // cible éventuelle
-    row.courseId = row.courseId || row.raceId || row.eventId || null;
-
-    // notes admin
-    row.adminNotes = row.adminNotes || row.notes || row.comment || "";
-
-    // champs saisis côté pilote (legacy)
-    row.courseText  = row.courseText  || row.raceName || row.course || "";
-    row.pilotsText  = row.pilotsText  || row.pilots  || "";
-    row.momentText  = row.momentText  || row.moment  || "";
-    row.description = row.description || row.reason  || row.text || row.body || row.content || "";
-
-    // nouveaux champs réclamation (V2)
-    const rawRaceDate = row.raceDate || row.courseDate || row.dateCourse || row.race_date;
-    row._raceDate = toDateValLocal(rawRaceDate);
-    if (row.split === undefined || row.split === null) {
-      row.split = row.splitNum ?? row.splitNumber ?? row.split_text ?? null;
-    }
-    row.youtubeUrl = row.youtubeUrl || row.videoUrl || row.link || row.video || row.youtube || "";
-
-    // message synthèse (pour l’aperçu carte)
     if (!row.message || !row.message.trim()) {
       const parts = [];
       if (row._raceDate) parts.push(`Date: ${dateOnlyStr(row._raceDate)}`);
       if (row.split != null) parts.push(`Split ${row.split}`);
-      if (row.courseText) parts.push(`Course: ${row.courseText}`);
-      if (row.pilotsText) parts.push(`Pilote(s): ${row.pilotsText}`);
-      if (row.momentText) parts.push(`Moment: ${row.momentText}`);
       if (row.description) parts.push(row.description);
-      if (row.youtubeUrl) parts.push(`YouTube: ${row.youtubeUrl}`);
       row.message = parts.join(" • ");
     }
-
     return row;
   }
 
   async function fetchCollection(name, roleHint = "") {
-    try {
-      const snap = await getDocs(collection(db, name));
-      return snap.docs.map(d => normalizeRow(d.data(), d.id, roleHint));
-    } catch {
-      return [];
-    }
+    try { const snap = await getDocs(collection(db, name)); return snap.docs.map(d => normalizeRow(d.data(), d.id, roleHint)); } catch { return []; }
   }
 
   async function fetchAll() {
-    const main          = await fetchCollection("reclamations", "");
-    const adminA        = await fetchCollection("admin_reclamations", "admin");
-    const adminB        = await fetchCollection("reclamations_admin", "admin");
-    const legacyClaims  = await fetchCollection("claims", "");
-    const legacyTickets = await fetchCollection("tickets", "");
-    all = [...main, ...adminA, ...adminB, ...legacyClaims, ...legacyTickets]
-      .sort((a, b) => (b._created?.getTime?.() || 0) - (a._created?.getTime?.() || 0));
+    const main = await fetchCollection("reclamations", "");
+    all = [...main].sort((a, b) => (b._created?.getTime?.() || 0) - (a._created?.getTime?.() || 0));
   }
 
   function statusLabel(s) {
     const v = (s || "").toLowerCase();
-    if (["in_progress","progress","en_cours"].includes(v)) return "En cours";
-    if (["closed","close","fermee","résolue","resolved"].includes(v)) return "Close";
+    if (["in_progress","en_cours"].includes(v)) return "En cours";
+    if (["closed","fermee","resolved"].includes(v)) return "Close";
     return "Ouverte";
   }
 
   function pilotNameById(uid) {
-    const p = (ImportState.usersCache || []).find(x => x.id === uid);
-    return p ? `${p.firstName} ${p.lastName}`.trim() : "";
+    const p = (ImportState.usersCache || []).find(x => x.id === uid); return p ? `${p.firstName} ${p.lastName}`.trim() : "";
   }
 
   function dateStr(d) {
-    if (!d) return "—";
-    const dd = new Date(d);
-    const y  = dd.getFullYear();
-    const m  = String(dd.getMonth() + 1).padStart(2, "0");
-    const da = String(dd.getDate()).padStart(2, "0");
-    const hh = String(dd.getHours()).padStart(2, "0");
-    const mi = String(dd.getMinutes()).padStart(2, "0");
-    return `${da}/${m}/${y} ${hh}h${mi}`;
+    if (!d) return "—"; const dd = new Date(d);
+    return `${String(dd.getDate()).padStart(2,"0")}/${String(dd.getMonth()+1).padStart(2,"0")}/${dd.getFullYear()} ${String(dd.getHours()).padStart(2,"0")}h${String(dd.getMinutes()).padStart(2,"0")}`;
   }
 
   function dateOnlyStr(d) {
-    if (!d) return "—";
-    const dd = new Date(d);
-    const y  = dd.getFullYear();
-    const m  = String(dd.getMonth() + 1).padStart(2, "0");
-    const da = String(dd.getDate()).padStart(2, "0");
-    return `${da}/${m}/${y}`;
+    if (!d) return "—"; const dd = new Date(d);
+    return `${String(dd.getDate()).padStart(2,"0")}/${String(dd.getMonth()+1).padStart(2,"0")}/${dd.getFullYear()}`;
   }
 
   function applyFilters() {
-    const q = normLowerLocal(searchEl.value);
-    const mode = filterEl.value;
-    let rows = all.slice();
+    const q = normLowerLocal(searchEl.value); const mode = filterEl.value; let rows = all.slice();
     if (mode === "user")  rows = rows.filter(r => r._authorRole !== "admin");
     if (mode === "admin") rows = rows.filter(r => r._authorRole === "admin");
-    if (q) rows = rows.filter(r => {
-      const pile = [
-        r.message, r.status, pilotNameById(r.uid), pilotNameById(r.pilotUid),
-        r.adminNotes, r.courseText, r.pilotsText, r.momentText, r.description,
-        r.youtubeUrl, r.split, dateOnlyStr(r._raceDate)
-      ].join(" ");
-      return normLowerLocal(pile).includes(q);
-    });
+    if (q) rows = rows.filter(r => normLowerLocal([r.message, r.status, pilotNameById(r.uid), r.adminNotes].join(" ")).includes(q));
     renderList(rows);
   }
 
   function renderList(rows) {
-    listEl.innerHTML = "";
-    if (!rows.length) {
-      listEl.innerHTML = '<p class="muted">Aucune réclamation.</p>';
-      return;
-    }
+    listEl.innerHTML = ""; if (!rows.length) { listEl.innerHTML = '<p class="muted">Aucune réclamation.</p>'; return; }
     for (const r of rows) {
-      const card = document.createElement("div");
-      card.className = "card";
-      card.style.cursor = "pointer";
-      card.style.marginBottom = "8px";
-      const author = pilotNameById(r.uid) || "Inconnu";
-      card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
-          <div>
-            <div style="font-weight:600">${escapeHtmlLocal(r.message).slice(0,140)}${r.message.length>140?'…':''}</div>
-            <div class="muted" style="margin-top:4px">${escapeHtmlLocal(author)} • ${escapeHtmlLocal(statusLabel(r.status))}</div>
-          </div>
-          <div class="muted">${escapeHtmlLocal(dateStr(r._created))}</div>
-        </div>
-      `;
-      card.addEventListener("click", () => openDetailCard(r));
-      listEl.appendChild(card);
+      const card = document.createElement("div"); card.className = "card"; card.style.cursor = "pointer"; card.style.marginBottom = "8px";
+      card.innerHTML = `<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-weight:600">${escapeHtmlLocal(r.message).slice(0,140)}</div><div class="muted" style="margin-top:4px">${escapeHtmlLocal(pilotNameById(r.uid))} • ${escapeHtmlLocal(statusLabel(r.status))}</div></div><div class="muted">${escapeHtmlLocal(dateStr(r._created))}</div></div>`;
+      card.addEventListener("click", () => openDetailCard(r)); listEl.appendChild(card);
     }
   }
 
   function courseOptionsHtml(selectedId) {
-    // options de courses préchargées dans courseMap (via loadCourses)
-    const keys = Array.from(courseMap?.keys?.() || []);
-    const opts = ['<option value="">— Course —</option>'];
+    const keys = Array.from(courseMap?.keys?.() || []); const opts = ['<option value="">— Course —</option>'];
     for (const id of keys) {
-      const c = courseMap.get(id);
-      const d = (c?.date?.seconds ? new Date(c.date.seconds * 1000) : new Date(c?.date || Date.now())).toLocaleDateString("fr-FR");
-      const line = `${d} — ${c?.name || "Course"}`;
-      opts.push(`<option value="${id}" ${id===selectedId?'selected':''}>${escapeHtmlLocal(line)}</option>`);
+      const c = courseMap.get(id); const d = (c?.date?.seconds ? new Date(c.date.seconds * 1000) : new Date(c?.date || Date.now())).toLocaleDateString("fr-FR");
+      opts.push(`<option value="${id}" ${id===selectedId?'selected':''}>${escapeHtmlLocal(`${d} — ${c?.name || "Course"}`)}</option>`);
     }
     return opts.join("");
   }
 
   function openDetailCard(row) {
-    const author = pilotNameById(row.uid) || pilotNameById(row.pilotUid) || row.authorName || row.author || row._authorRole || "";
-    const html = `
+    listEl.innerHTML = `
       <div class="card" style="padding:12px">
         <button type="button" id="reclamBack" class="muted" style="margin-bottom:12px">← Retour</button>
-
-        <div class="muted" style="margin-bottom:6px"><strong>Réclamation #${escapeHtmlLocal(row._id)}</strong> — ${escapeHtmlLocal(dateStr(row._created))}</div>
-
+        <div class="muted" style="margin-bottom:6px"><strong>Réclamation #${escapeHtmlLocal(row._id)}</strong></div>
         <label style="display:block;margin-bottom:6px;font-weight:600">Message</label>
-<div class="muted" style="background:#1113; padding:8px; border-radius:8px; margin-bottom:12px">
-  <div><strong>Date de la course :</strong> ${escapeHtmlLocal(dateOnlyStr(row._raceDate))}</div>
-  <div><strong>Split :</strong> ${row.split != null ? escapeHtmlLocal("Split " + row.split) : "—"}</div>
-  <div><strong>Description :</strong> ${escapeHtmlLocal(row.description || "—")}</div>
-  <div><strong>Vidéo :</strong> ${
-    row.youtubeUrl
-      ? `<a href="${escapeHtmlLocal(row.youtubeUrl)}" target="_blank" rel="noopener">Ouvrir la vidéo</a>`
-      : "—"
-  }</div>
-</div>
-
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label class="muted">Pilote concerné</label>
-            <select id="reclamPilot" data-pilots="alpha"></select>
-          </div>
-          <div>
-            <label class="muted">Course liée</label>
-            <select id="reclamCourse">${courseOptionsHtml(row.courseId || "")}</select>
-          </div>
+        <div class="muted" style="background:#1113; padding:8px; border-radius:8px; margin-bottom:12px">
+          <div><strong>Date de la course :</strong> ${escapeHtmlLocal(dateOnlyStr(row._raceDate))}</div>
+          <div><strong>Split :</strong> ${row.split != null ? escapeHtmlLocal("Split " + row.split) : "—"}</div>
+          <div><strong>Description :</strong> ${escapeHtmlLocal(row.description || "—")}</div>
+          <div><strong>Vidéo :</strong> ${row.youtubeUrl ? `<a href="${escapeHtmlLocal(row.youtubeUrl)}" target="_blank" rel="noopener">Ouvrir la vidéo</a>` : "—"}</div>
         </div>
-
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label class="muted">Pilote concerné</label><select id="reclamPilot"></select></div>
+          <div><label class="muted">Course liée</label><select id="reclamCourse">${courseOptionsHtml(row.courseId || "")}</select></div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-          <div>
-            <label class="muted">Statut</label>
-            <select id="reclamStatus">
-              <option value="open">Ouverte</option>
-              <option value="in_progress">En cours</option>
-              <option value="closed">Close</option>
-            </select>
-          </div>
-          <div>
-            <label class="muted">Auteur</label>
-            <input type="text" id="reclamAuthor" disabled value="${escapeHtmlLocal(author)}" />
-          </div>
+          <div><label class="muted">Statut</label><select id="reclamStatus"><option value="open">Ouverte</option><option value="in_progress">En cours</option><option value="closed">Close</option></select></div>
+          <div><label class="muted">Auteur</label><input type="text" disabled value="${escapeHtmlLocal(pilotNameById(row.uid))}" /></div>
         </div>
+        <div style="margin-top:12px"><label class="muted" style="display:block">Notes admin</label><textarea id="reclamNotes" rows="4" style="width:100%"></textarea></div>
+        <div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="reclamSave">Enregistrer</button><button type="button" id="reclamDelete" class="danger">Supprimer</button></div>
+      </div>`;
 
-        <div style="margin-top:12px">
-          <label class="muted" style="display:block">Notes admin</label>
-          <textarea id="reclamNotes" rows="4" style="width:100%"></textarea>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button type="button" id="reclamSave">Enregistrer</button>
-          <button type="button" id="reclamDelete" class="danger">Supprimer</button>
-        </div>
-      </div>
-    `;
-    listEl.innerHTML = html;
-
-    // alimenter select pilotes (A→Z)
     const pilotSel = document.getElementById("reclamPilot");
-    pilotSel.setAttribute("data-pilots","alpha");
     pilotSel.innerHTML = '<option value="">-- Pilote --</option>';
     (ImportState.usersCache || []).forEach(p => {
-      const o = document.createElement("option");
-      const label = `${p.firstName} ${p.lastName}`.trim() || p.email || p.id;
-      o.value = p.id; o.textContent = label; pilotSel.appendChild(o);
+      const o = document.createElement("option"); o.value = p.id; o.textContent = `${p.firstName} ${p.lastName}`.trim(); pilotSel.appendChild(o);
     });
     if (row.pilotUid) pilotSel.value = row.pilotUid;
+    document.getElementById("reclamStatus").value = row.status;
+    document.getElementById("reclamNotes").value = row.adminNotes;
 
-    // autres champs
-    document.getElementById("reclamStatus").value = (row.status || "open");
-    document.getElementById("reclamNotes").value = row.adminNotes || "";
-
-    // handlers
     document.getElementById("reclamBack").addEventListener("click", applyFilters);
     document.getElementById("reclamSave").addEventListener("click", async () => {
-      const payload = {
-        pilotUid: pilotSel.value || null,
-        courseId: (document.getElementById("reclamCourse").value || "") || null,
-        status: document.getElementById("reclamStatus").value || "open",
-        adminNotes: document.getElementById("reclamNotes").value || "",
-        updatedAt: new Date()
-      };
-      // sauvegarder dans la collection qui contient l'item
-      const guessColl = row._id.includes("/") ? row._id.split("/")[0] : null;
-      try {
-        await updateDoc(doc(db, guessColl ? guessColl : "reclamations", row._id.replace(/^.*\//, "")), payload);
-      } catch (e) {
-        await updateDoc(doc(db, "reclamations", row._id), payload);
-      }
-      await fetchAll(); applyFilters();
+      const payload = { pilotUid: pilotSel.value || null, courseId: document.getElementById("reclamCourse").value || null, status: document.getElementById("reclamStatus").value, adminNotes: document.getElementById("reclamNotes").value, updatedAt: new Date() };
+      await updateDoc(doc(db, "reclamations", row._id), payload); await fetchAll(); applyFilters();
     });
     document.getElementById("reclamDelete").addEventListener("click", async () => {
-      if (!confirm("Supprimer cette réclamation ?")) return;
-      try {
-        const guessColl = row._id.includes("/") ? row._id.split("/")[0] : null;
-        await deleteDoc(doc(db, guessColl ? guessColl : "reclamations", row._id.replace(/^.*\//, "")));
-      } catch (e) {
-        await deleteDoc(doc(db, "reclamations", row._id));
-      }
-      await fetchAll(); applyFilters();
+      if (confirm("Supprimer ?")) { await deleteDoc(doc(db, "reclamations", row._id)); await fetchAll(); applyFilters(); }
     });
   }
 
   refreshEl.addEventListener("click", async () => { await fetchAll(); applyFilters(); });
-  filterEl.addEventListener("change", applyFilters);
-  searchEl.addEventListener("input", applyFilters);
-
-  // premier chargement
-  await fetchAll();
-  applyFilters();
+  filterEl.addEventListener("change", applyFilters); searchEl.addEventListener("input", applyFilters);
+  await fetchAll(); applyFilters();
 }
 
 
-/* ---------------- ESTACUP : listing & édition inscriptions ---------------- */
+/* ---------------- ESTACUP : listing inscriptions S10 ---------------- */
 async function loadEstacupSignups() {
-  const list = document.getElementById("estacupList");
-  if (!list) return;
+  const list = document.getElementById("estacupList"); if (!list) return;
   list.innerHTML = "<p>Chargement…</p>";
 
+  // 🟢 Lecture des fiches d'engagés de la Saison 10
   const snap = await getDocs(collection(db, "estacup_s10_signups"));
   const usersSnap = await getDocs(collection(db, "users"));
-
-  const usersById = new Map();
-  usersSnap.forEach(u => usersById.set(u.id, u.data()));
-
+  const usersById = new Map(); usersSnap.forEach(u => usersById.set(u.id, u.data()));
   const carCount = new Map();
 
   if (snap.empty) {
     list.innerHTML = "<p>Aucune inscription.</p>";
-    const carSummaryElEmpty = document.getElementById("estacupCarSummary");
-    if (carSummaryElEmpty) {
-      carSummaryElEmpty.textContent = "Aucune voiture sélectionnée pour l'instant.";
-    }
-    return;
+    if ($("estacupCarSummary")) $("estacupCarSummary").textContent = "Aucune voiture."; return;
   }
 
-  const pending = [];
-  const validated = [];
+  const pending = []; const validated = [];
   snap.forEach(docu => {
-    const d = docu.data();
-    (d.validated ? validated : pending).push({ id: docu.id, d });
-
-    const u = usersById.get(d.uid) || {};
-    const rawCar = d.carChoice || u.carChoice || "";
-    if (rawCar) {
-      const normalized = normalizeCarName(rawCar);
-      const key = normalized || rawCar;
-      carCount.set(key, (carCount.get(key) || 0) + 1);
-    }
+    const d = docu.data(); (d.validated ? validated : pending).push({ id: docu.id, d });
+    const u = usersById.get(d.uid) || {}; const rawCar = d.carChoice || u.carChoice || "";
+    if (rawCar) { const norm = normalizeCarName(rawCar); carCount.set(norm, (carCount.get(norm) || 0) + 1); }
   });
 
-  // Résumé voitures avec affichage en "pills" triées du plus choisi au moins choisi
-  const carSummaryEl = document.getElementById("estacupCarSummary");
-  if (carSummaryEl) {
-    if (carCount.size === 0) {
-      carSummaryEl.textContent = "Aucune voiture sélectionnée pour l'instant.";
-    } else {
-      const itemsHtml = [...carCount.entries()]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr", { sensitivity: "base" }))
-        .map(([name, count]) => `
-          <div class="car-summary-item">
-            <span class="car-summary-label">${escapeHtml(name)}</span>
-            <span class="car-summary-count">×${count}</span>
-          </div>`).join("");
-      carSummaryEl.innerHTML = `<div class="car-summary-grid">${itemsHtml}</div>`;
-    }
+  if ($("estacupCarSummary")) {
+    $("estacupCarSummary").innerHTML = `<div class="car-summary-grid">` + [...carCount.entries()].sort((a,b)=>b[1]-a[1]).map(([n,c]) => `<div class="car-summary-item"><span class="car-summary-label">${escapeHtml(n)}</span><span class="car-summary-count">×${c}</span></div>`).join("") + `</div>`;
   }
 
-  const sortSel = document.getElementById("estacupSort");
-  const mode = sortSel?.value || "arrival";
-
-  const timeKey = (d) =>
-    (toDateVal(d.validatedAt) || toDateVal(d.updatedAt) || toDateVal(d.createdAt) || new Date(0)).getTime();
-
-  const lastUpdateDate = (d) =>
-    toDateVal(d.updatedAt) || toDateVal(d.validatedAt) || toDateVal(d.createdAt) || null;
-
-  const lastUpdateKey = (d) => {
-    const dt = lastUpdateDate(d);
-    return dt ? dt.getTime() : 0;
-  };
-
-  const formatLastUpdate = (d) => {
-    const dt = lastUpdateDate(d);
-    if (!dt) return "—";
-    return dt.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-  };
-
-  const byArrival = (a, b) => timeKey(b.d) - timeKey(a.d);
-  const byUpdated = (a, b) => lastUpdateKey(b.d) - lastUpdateKey(a.d);
-  const byName = (a, b) => {
-    const la = `${a.d.lastName || ""}`.toLowerCase();
-    const lb = `${b.d.lastName || ""}`.toLowerCase();
-    if (la !== lb) return la.localeCompare(lb);
-    const fa = `${a.d.firstName || ""}`.toLowerCase();
-    const fb = `${b.d.firstName || ""}`.toLowerCase();
-    return fa.localeCompare(fb);
-  };
-  const byNumber = (a, b) => (Number(a.d.raceNumber ?? 9999) - Number(b.d.raceNumber ?? 9999));
-
-  const applySort = (arr) => {
-    switch (mode) {
-      case "updated":
-        arr.sort(byUpdated); break;
-      case "name":
-        arr.sort(byName);   break;
-      case "number":
-        arr.sort(byNumber); break;
-      default:
-        arr.sort(byArrival);
-    }
-  };
-
-  applySort(pending);
-  applySort(validated);
+  const sortSel = document.getElementById("estacupSort"); const mode = sortSel?.value || "arrival";
+  const byName = (a, b) => `${a.d.lastName}`.toLowerCase().localeCompare(`${b.d.lastName}`.toLowerCase());
+  
+  if (mode === "name") { pending.sort(byName); validated.sort(byName); }
   sortSel?.addEventListener("change", () => loadEstacupSignups());
 
   const cardHtml = (id, d) => {
-    const u = usersById.get(d.uid) || {};
-    const fullName = `${u.firstName || d.firstName || ""} ${u.lastName || d.lastName || ""}`.trim() || d.uid;
-
-    const mSafety  = Number.isFinite(u.licensePoints) ? u.licensePoints : (d.licensePoints ?? 10);
-    const mRating  = Number.isFinite(u.eloRating) ? u.eloRating : (d.eloRating ?? 1000);
-
-    const rawLicense = u.licenseClass || d.licenseClass || "Rookie";
-    const lcNorm = String(rawLicense || "").toLowerCase();
-    const mLicense = lcNorm.includes("chall") ? "Challenger"
-                     : lcNorm.includes("pro") ? "Pro"
-                     : "Rookie";
-    const licCss = mLicense.toLowerCase();
-
-    const liveryChoice = d.liveryChoice || "Livrée perso";
-    const liveryDone   = d.liveryDone === true;
-
-    const colors = d.liveryColors || {};
-
-    const lastUpdateText = formatLastUpdate(d);
-
+    const u = usersById.get(d.uid) || {}; const fullName = `${u.firstName || d.firstName || ""} ${u.lastName || d.lastName || ""}`.trim();
+    const lic = u.licenseClass || "Rookie";
     return `
       <div class="course-box" data-id="${id}" data-uid="${d.uid}">
-        <div class="estacup-card-header">
-          <h4>${fullName}</h4>
-          <label class="livery-pill">
-            <input type="checkbox" class="edit-liveryDone" ${liveryDone ? "checked" : ""} />
-            Livrée réalisée
-          </label>
+        <div class="estacup-card-header"><h4>${fullName}</h4><label class="livery-pill"><input type="checkbox" class="edit-liveryDone" ${d.liveryDone ? "checked":""} /> Livrée faite</label></div>
+        <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+          <input class="edit-first" value="${d.firstName || ""}" /><input class="edit-last" value="${d.lastName || ""}" />
+          <input class="edit-email" value="${d.email || ""}" /><input class="edit-steam" value="${d.steamId || ""}" />
+          <input class="edit-team" value="${d.teamName || ""}" /><input class="edit-car" value="${d.carChoice || ""}" />
+          <input class="edit-number" type="number" value="${d.raceNumber ?? ""}" />
+          <select class="edit-licenseClass"><option value="Rookie" ${lic==="Rookie"?'selected':''}>Rookie</option><option value="Challenger" ${lic==="Challenger"?'selected':''}>Challenger</option><option value="Pro" ${lic==="Pro"?'selected':''}>Pro</option></select>
         </div>
-
-        <div class="muted" style="margin-bottom:4px">Inscription</div>
-        <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));align-items:center">
-          <input class="edit-first" value="${d.firstName || ""}" placeholder="Prénom" />
-          <input class="edit-last"  value="${d.lastName || ""}"  placeholder="Nom" />
-          <input class="edit-age"   type="number" value="${d.age || ""}"    placeholder="Âge" />
-          <input class="edit-email" value="${d.email || ""}"  placeholder="Email" />
-          <input class="edit-steam" value="${d.steamId || ""}" placeholder="SteamID64 (765… 17 chiffres)" />
-          <input class="edit-team"  value="${d.teamName || ""}" placeholder="Équipe" />
-          <input class="edit-car"   value="${d.carChoice || ""}" placeholder="Voiture" />
-          <input class="edit-number" type="number" min="1" max="999" value="${d.raceNumber ?? ""}" placeholder="N° de course (1-999)" />
-          <select class="edit-livery">
-            <option value="Livrée perso" ${liveryChoice === "Livrée perso" ? "selected" : ""}>Livrée perso</option>
-            <option value="Livrée semi-perso" ${liveryChoice === "Livrée semi-perso" ? "selected" : ""}>Livrée semi-perso</option>
-            <option value="Livrée MEKA" ${liveryChoice === "Livrée MEKA" ? "selected" : ""}>Livrée MEKA</option>
-          </select>
-          <div class="colors" ${liveryChoice !== "Livrée semi-perso" ? "style='display:none'" : ""}>
-            <input type="color" class="edit-color1" value="${colors.color1 || "#000000"}" />
-            <input type="color" class="edit-color2" value="${colors.color2 || "#01234A"}" />
-            <input type="color" class="edit-color3" value="${colors.color3 || "#6BDAEC"}" />
-          </div>
-        </div>
-
-        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #1f2937">
-          <div class="muted" style="margin-bottom:4px">Licence</div>
-          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
-            <span>M Safety : <strong>${mSafety}</strong></span>
-            <span>M Rating : <strong>${mRating}</strong></span>
-            <span>Licence :
-              <select class="edit-licenseClass license-pill license-pill-${licCss}">
-                <option value="Rookie" ${mLicense === "Rookie" ? "selected" : ""}>Rookie</option>
-                <option value="Challenger" ${mLicense === "Challenger" ? "selected" : ""}>Challenger</option>
-                <option value="Pro" ${mLicense === "Pro" ? "selected" : ""}>Pro</option>
-              </select>
-            </span>
-          </div>
-        </div>
-
-        <div class="muted" style="margin-top:6px">Dernière mise à jour : ${escapeHtml(lastUpdateText)}</div>
-
-        <p style="margin-top:10px">Statut : ${d.validated ? "✅ Validé" : "⏳ En attente"}</p>
-        <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          ${d.validated ? "" : `<button class="validate-signup" data-id="${id}">✅ Valider</button>`}
-          <button class="save-signup" data-id="${id}">💾 Enregistrer</button>
-          <button class="delete-signup" data-id="${id}">🗑️ Supprimer</button>
-        </div>
-      </div>
-    `;
+        <div class="actions" style="margin-top:8px;"><button class="save-signup" data-id="${id}">💾 Sauver</button>${d.validated ? '':`<button class="validate-signup" data-id="${id}">✅ Valider</button>`}</div>
+      </div>`;
   };
 
-  list.innerHTML = `
-    <section style="margin-bottom:20px">
-      <h3>⏳ En attente (${pending.length})</h3>
-      <div id="estacupListPending" style="display:flex;flex-direction:column;gap:12px"></div>
-    </section>
-    <section>
-      <h3>✅ Validées (${validated.length})</h3>
-      <div id="estacupListValidated" style="display:flex;flex-direction:column;gap:12px"></div>
-    </section>
-  `;
+  list.innerHTML = `<section><h3>⏳ En attente (${pending.length})</h3><div id="estacupListPending"></div></section><section style="margin-top:15px;"><h3>✅ Validées (${validated.length})</h3><div id="estacupListValidated"></div></section>`;
+  pending.forEach(({ id, d }) => $("estacupListPending").insertAdjacentHTML("beforeend", cardHtml(id, d)));
+  validated.forEach(({ id, d }) => $("estacupListValidated").insertAdjacentHTML("beforeend", cardHtml(id, d)));
 
-  const pendingRoot = document.getElementById("estacupListPending");
-  const validatedRoot = document.getElementById("estacupListValidated");
-
-  pending.forEach(({ id, d }) => pendingRoot.insertAdjacentHTML("beforeend", cardHtml(id, d)));
-  validated.forEach(({ id, d }) => validatedRoot.insertAdjacentHTML("beforeend", cardHtml(id, d)));
-
-  // handlers
-  list.querySelectorAll(".save-signup").forEach((btn) => {
+  list.querySelectorAll(".save-signup").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const card = btn.closest(".course-box");
+      const card = btn.closest(".course-box"); const id = btn.dataset.id;
+      const payload = { firstName: card.querySelector(".edit-first").value.trim(), lastName: card.querySelector(".edit-last").value.trim(), email: card.querySelector(".edit-email").value.trim(), steamId: card.querySelector(".edit-steam").value.trim(), teamName: card.querySelector(".edit-team").value.trim(), carChoice: card.querySelector(".edit-car").value.trim(), raceNumber: Number(card.querySelector(".edit-number").value) || null, liveryDone: card.querySelector(".edit-liveryDone").checked, updatedAt: new Date() };
+      // 🟢 Enregistrement des modifications dans la table S10
+      await updateDoc(doc(db, "estacup_s10_signups", id), payload);
+      await updateDoc(doc(db, "users", card.dataset.uid), { licenseClass: card.querySelector(".edit-licenseClass").value });
+      alert("Enregistré."); loadEstacupSignups();
+    });
+  });
 
-      const steamId = (card.querySelector(".edit-steam").value || "").trim();
-      if (steamId && !/^765\d{14}$/.test(steamId)) {
-        alert("⚠️ SteamID64 invalide. Il doit faire 17 chiffres et commencer par 765.");
-        return;
-      }
-
-      const licenseClassInput = card.querySelector(".edit-licenseClass");
-      const licenseClass = licenseClassInput ? (licenseClassInput.value || "").trim() : "";
-
-      const payload = {
-        firstName: card.querySelector(".edit-first").value.trim(),
-        lastName:  card.querySelector(".edit-last").value.trim(),
-        age:       Number(card.querySelector(".edit-age").value) || null,
-        email:     card.querySelector(".edit-email").value.trim(),
-        steamId:   steamId,
-        teamName:  card.querySelector(".edit-team").value.trim(),
-        carChoice: card.querySelector(".edit-car").value.trim(),
-        raceNumber: Number(card.querySelector(".edit-number").value) || null,
-        liveryChoice: card.querySelector(".edit-livery").value,
-        liveryColors: null,
-        liveryDone: card.querySelector(".edit-liveryDone")?.checked === true,
-        licenseClass: licenseClass || null,
-        updatedAt: new Date()
-      };
-
-      if (payload.liveryChoice === "Livrée semi-perso") {
-        payload.liveryColors = {
-          color1: card.querySelector(".edit-color1").value,
-          color2: card.querySelector(".edit-color2").value,
-          color3: card.querySelector(".edit-color3").value
-        };
-      }
-
-      await updateDoc(doc(db, "estacup_signups", id), payload);
-
-      const uid = card.dataset.uid;
-      if (uid && licenseClass) {
-        try {
-          await updateDoc(doc(db, "users", uid), { licenseClass });
-        } catch (e) {
-          console.warn("Impossible de mettre à jour la licence du pilote", e);
-        }
-      }
-
-      alert("Inscription mise à jour.");
+  list.querySelectorAll(".validate-signup").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      // 🟢 Validation de l'inscription S10
+      await updateDoc(doc(db, "estacup_s10_signups", btn.dataset.id), { validated: true, validatedAt: new Date() });
       loadEstacupSignups();
-    });
-  });
-
-  list.querySelectorAll(".edit-livery").forEach(sel => {
-    sel.addEventListener("change", (e) => {
-      const card = e.target.closest(".course-box");
-      const colors = card.querySelector(".colors");
-      if (e.target.value === "Livrée semi-perso") {
-        colors.style.display = "block";
-      } else {
-        colors.style.display = "none";
-      }
-    });
-  });
-
-  // couleur de la licence (Rookie / Challenger / Pro)
-  list.querySelectorAll(".edit-licenseClass").forEach(sel => {
-    const applyClass = (el) => {
-      el.classList.remove("license-pill-rookie","license-pill-challenger","license-pill-pro");
-      const v = (el.value || "").toLowerCase();
-      if (v === "rookie") el.classList.add("license-pill-rookie");
-      else if (v === "challenger") el.classList.add("license-pill-challenger");
-      else if (v === "pro") el.classList.add("license-pill-pro");
-    };
-    applyClass(sel);
-    sel.addEventListener("change", () => applyClass(sel));
-  });
-
-  list.querySelectorAll(".validate-signup").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      await updateDoc(doc(db, "estacup_signups", id), { validated: true, validatedAt: new Date() });
-      loadEstacupSignups();
-    });
-  });
-
-  list.querySelectorAll(".delete-signup").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      if (confirm("Supprimer cette inscription ?")) {
-        await deleteDoc(doc(db, "estacup_signups", id));
-        loadEstacupSignups();
-      }
     });
   });
 }
 
-/* =======================================================================
-   👇 AJOUT — VOTES (admin) : lecture et agrégation estacup_votes
-   Compat : q3/q5 (ancien) OU round3/round5 (nouveau Dashboard)
-======================================================================= */
-function normVote(val) {
-  if (!val) return "";
-  return String(val).trim().toLowerCase().replace(/[^a-z]/g,"");
-}
+/* ---------------- VOTES (admin) S10 ---------------- */
+function normVote(val) { return String(val || "").trim().toLowerCase().replace(/[^a-z]/g,""); }
 function isShanghai(v){ const s=normVote(v); return s.startsWith("shang") || s.includes("shanghai"); }
 function isSepang(v){ const s=normVote(v); return s.includes("sepang"); }
 function isBahrain(v){ const s=normVote(v); return s.includes("bahrain"); }
 function isLosail(v){ const s=normVote(v); return s.includes("losail") || s.includes("qatar"); }
 
 function setVoteRow(prefix, aCnt, bCnt) {
-  const total = aCnt + bCnt;
-  const aPct = total ? Math.round((aCnt/total)*100) : 0;
-  const bPct = total ? 100 - aPct : 0;
-
-  const aCntEl = document.getElementById(`${prefix}_a_cnt`); 
-  const bCntEl = document.getElementById(`${prefix}_b_cnt`);
-  const aPctEl = document.getElementById(`${prefix}_a_pct`); 
-  const bPctEl = document.getElementById(`${prefix}_b_pct`);
-  const aBarEl = document.getElementById(`${prefix}_a_bar`);
-  const bBarEl = document.getElementById(`${prefix}_b_bar`);
-  const totEl  = document.getElementById(`${prefix}_total`);
-
-  if (aCntEl) aCntEl.textContent = String(aCnt);
-  if (bCntEl) bCntEl.textContent = String(bCnt);
-  if (aPctEl) aPctEl.textContent = `${aPct}%`;
-  if (bPctEl) bPctEl.textContent = `${bPct}%`;
-  if (aBarEl) aBarEl.style.width = `${aPct}%`;
-  if (bBarEl) bBarEl.style.width = `${bPct}%`;
-  if (totEl)  totEl.textContent  = `Total : ${total}`;
+  const total = aCnt + bCnt; const aPct = total ? Math.round((aCnt/total)*100) : 0; const bPct = total ? 100 - aPct : 0;
+  if ($(`${prefix}_a_cnt`)) $(`${prefix}_a_cnt`).textContent = String(aCnt);
+  if ($(`${prefix}_b_cnt`)) $(`${prefix}_b_cnt`).textContent = String(bCnt);
+  if ($(`${prefix}_a_pct`)) $(`${prefix}_a_pct`).textContent = `${aPct}%`;
+  if ($(`${prefix}_b_pct`)) $(`${prefix}_b_pct`).textContent = `${bPct}%`;
+  if ($(`${prefix}_a_bar`)) $(`${prefix}_a_bar`).style.width = `${aPct}%`;
+  if ($(`${prefix}_b_bar`)) $(`${prefix}_b_bar`).style.width = `${bPct}%`;
+  if ($(`${prefix}_total`)) $(`${prefix}_total`).textContent  = `Total : ${total}`;
 }
 
 async function loadVotesResults() {
-  const q3 = { a:0, b:0 };  // a=Shanghai, b=Sepang
-  const q5 = { a:0, b:0 };  // a=Bahrain,  b=Losail
-
+  const q3 = { a:0, b:0 }; const q5 = { a:0, b:0 };
   const snap = await getDocs(collection(db, "estacup_votes"));
   for (const d of snap.docs) {
-    const v = d.data() || {};
-    // ✅ compat : nouveau (round3/round5) prioritaire, sinon ancien (q3/q5)
-    const r3 = (v.round3 !== undefined && v.round3 !== null) ? v.round3 : v.q3;
-    const r5 = (v.round5 !== undefined && v.round5 !== null) ? v.round5 : v.q5;
-
-    if (r3 !== undefined && r3 !== null) {
-      if (isShanghai(r3)) q3.a++;
-      else if (isSepang(r3)) q3.b++;
-    }
-    if (r5 !== undefined && r5 !== null) {
-      if (isBahrain(r5)) q5.a++;
-      else if (isLosail(r5)) q5.b++;
-    }
+    const v = d.data() || {}; const r3 = v.round3 ?? v.q3; const r5 = v.round5 ?? v.q5;
+    if (r3 != null) { if (isShanghai(r3)) q3.a++; else if (isSepang(r3)) q3.b++; }
+    if (r5 != null) { if (isBahrain(r5)) q5.a++; else if (isLosail(r5)) q5.b++; }
   }
-
-  setVoteRow("q3", q3.a, q3.b);
-  setVoteRow("q5", q5.a, q5.b);
+  setVoteRow("q3", q3.a, q3.b); setVoteRow("q5", q5.a, q5.b);
 }
 
-/* ---------------- Expose + Auto-load ---------------- */
 window.loadCourses = loadCourses;
-
 document.addEventListener("DOMContentLoaded", () => {
-  if (
-    document.querySelector("#section-courses") &&
-    !document.querySelector("#section-courses").classList.contains("hidden")
-  ) {
-    loadCourses();
-  }
+  if (document.querySelector("#section-courses") && !document.querySelector("#section-courses").classList.contains("hidden")) { loadCourses(); }
 });
