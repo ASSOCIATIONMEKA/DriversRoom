@@ -459,7 +459,7 @@ function setupHelmetDesigner(userData) {
 async function ensureSignupCache() {
   if (signupCache.size > 0) return;
   try {
-    const snap = await getDocs(collection(db, "estacup_signups"));
+    const snap = await getDocs(collection(db, "estacup_s9_signups"));
     snap.forEach(d => {
       const x = d.data() || {};
       if (!x.uid) return;
@@ -787,7 +787,7 @@ async function loadResults(uid) {
   try {
     ul.innerHTML = "<li>Chargement…</li>";
 
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s9"));
     if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
 
     const rows = [];
@@ -976,7 +976,7 @@ async function computePilotStats(uid) {
   };
 
   try {
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s9"));
     if (!snap.empty) {
       const positions = [];
       snap.forEach(d => {
@@ -1720,7 +1720,7 @@ async function loadEstacupForm(userData, editing = false) {
   container.innerHTML = "";
 
   let existing = null, existingId = null;
-  const qs = await getDocs(query(collection(db, "estacup_signups"), where("uid", "==", auth.currentUser.uid)));
+  const qs = await getDocs(query(collection(db, "estacup_s9_signups"), where("uid", "==", auth.currentUser.uid)));
   if (!qs.empty) { existing = qs.docs[0].data(); existingId = qs.docs[0].id; }
 
   if (existing && !editing) {
@@ -1819,7 +1819,7 @@ async function loadEstacupForm(userData, editing = false) {
   });
 
   const takenNumbers = form.querySelector("#takenNumbers");
-  const nSnap = await getDocs(collection(db, "estacup_signups"));
+  const nSnap = await getDocs(collection(db, "estacup_s9_signups"));
   const taken = new Set();
   nSnap.forEach(d => { const n = d.data().raceNumber; if (n) taken.add(n); });
   takenNumbers.innerHTML = `Numéros déjà pris : ${[...taken].sort((a,b)=>a-b).join(", ") || "—"}`;
@@ -1871,7 +1871,7 @@ async function loadEstacupForm(userData, editing = false) {
         const ref = doc(db, "estacup_signups", existingId);
         await updateDoc(ref, { ...payload, validated: false, uid: auth.currentUser.uid });
       } else {
-        await addDoc(collection(db, "estacup_signups"), { ...payload, validated: false, uid: auth.currentUser.uid });
+        await addDoc(collection(db, "estacup_s9_signups"), { ...payload, validated: false, uid: auth.currentUser.uid });
       }
       signupCache.set(auth.currentUser.uid, { teamName: payload.teamName, raceNumber: payload.raceNumber, carChoice: payload.carChoice, steamID64: payload.steamID64, steamId: payload.steamId });
 
@@ -1892,7 +1892,7 @@ async function loadEstacupEngages() {
   if (!container) return;
   container.innerHTML = "<p>Chargement...</p>";
 
-  const snap = await getDocs(collection(db, "estacup_signups"));
+  const snap = await getDocs(collection(db, "estacup_s9_signups"));
   const valid = snap.docs.filter(d => d.data().validated);
 
   if (valid.length === 0) { container.innerHTML = "<p>Aucun inscrit validé pour l'instant.</p>"; return; }
