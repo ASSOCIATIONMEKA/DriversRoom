@@ -580,7 +580,7 @@ async function loadResults(uid) {
   try {
     ul.innerHTML = "<li>Chargement…</li>";
     // 🟢 On scanne bien l'historique de la Saison 9
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s9"));
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
     if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
     const rows = []; snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
     rows.sort((a, b) => (toDate(b.date) ?? 0) - (toDate(a.date) ?? 0));
@@ -623,7 +623,7 @@ async function computePilotStats(uid) {
   const stats = { starts: 0, bestPos: null, wins: 0, top3: 0, top5: 0, top10: 0, avgPos: null };
   try {
     // 🟢 On recompte le tableau des statistiques avec l'historique S9
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s9"));
+    const snap = await getDocs(collection(db, "users", uid, "raceHistory"));
     const positions = []; snap.forEach(d => { const p = Number(d.data().position); if (p > 0) positions.push(p); });
     stats.starts = positions.length;
     if (positions.length) {
