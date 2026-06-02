@@ -143,12 +143,12 @@ onAuthStateChanged(auth, async (user) => {
 
 /* ---------------- UI helpers ---------------- */
 function ensureDriversRoomButton() {
-  document.getElementById("goToDashboard")?.remove();
+  document.getElementById("goToDashboard")?.remove();[cite: 1, 4]
   const menu = document.querySelector(".admin-menu");
   if (!menu || document.getElementById("backToDriversRoom")) return;
   const btn = document.createElement("button");
   btn.id = "backToDriversRoom"; btn.type = "button"; btn.textContent = "Driver's Room";
-  btn.addEventListener("click", () => (window.location.href = "dashboard.html"));
+  btn.addEventListener("click", () => (window.location.href = "estacup-s9.html"));
   menu.appendChild(btn);
 }
 function ensureRedLogoutButton() {
