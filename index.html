@@ -100,38 +100,8 @@
 
   <!-- BANDEAU DÉFILANT FIXE EN BAS -->
   <div class="scrolling-banner">
-    <div class="scrolling-banner-track">
-      <!-- BLOC 1 -->
-      <div class="banner-items">
-        <span><img src="logos/insta-logo.png" alt="Instagram"> Instagram</span>
-        <span><img src="logos/tiktok-logo.png" alt="TikTok"> TikTok</span>
-        <span><img src="logos/twitch-logo.png" alt="Twitch"> Twitch</span>
-        <span><img src="logos/youtube-logo.png" alt="YouTube"> YouTube</span>
-        <span><img src="logos/partenaire1.png" alt="Partenaire 1"></span>
-        <span><img src="logos/partenaire2.png" alt="Partenaire 2"></span>
-      </div>
-      
-      <!-- BLOC 2 -->
-      <div class="banner-items">
-        <span><img src="logos/insta-logo.png" alt="Instagram"> Instagram</span>
-        <span><img src="logos/tiktok-logo.png" alt="TikTok"> TikTok</span>
-        <span><img src="logos/twitch-logo.png" alt="Twitch"> Twitch</span>
-        <span><img src="logos/youtube-logo.png" alt="YouTube"> YouTube</span>
-        <span><img src="logos/partenaire1.png" alt="Partenaire 1"></span>
-        <span><img src="logos/partenaire2.png" alt="Partenaire 2"></span>
-      </div>
-
-      <!-- BLOC 3 -->
-      <div class="banner-items">
-        <span><img src="logos/insta-logo.png" alt="Instagram"> Instagram</span>
-        <span><img src="logos/tiktok-logo.png" alt="TikTok"> TikTok</span>
-        <span><img src="logos/twitch-logo.png" alt="Twitch"> Twitch</span>
-        <span><img src="logos/youtube-logo.png" alt="YouTube"> YouTube</span>
-        <span><img src="logos/partenaire1.png" alt="Partenaire 1"></span>
-        <span><img src="logos/partenaire2.png" alt="Partenaire 2"></span>
-      </div>
-
-      <!-- BLOC 4 -->
+    <div class="scrolling-banner-track" id="bannerTrack">
+      <!-- BLOC UNIQUE À MODIFIER (Le JavaScript le clonera automatiquement) -->
       <div class="banner-items">
         <span><img src="logos/insta-logo.png" alt="Instagram"> Instagram</span>
         <span><img src="logos/tiktok-logo.png" alt="TikTok"> TikTok</span>
@@ -142,6 +112,20 @@
       </div>
     </div>
   </div>
+
+  <!-- Script pour dupliquer le bloc de logos (Boucle) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const track = document.getElementById("bannerTrack");
+      const blockToClone = track.querySelector(".banner-items");
+      
+      // On clone le bloc 3 fois supplémentaires pour avoir 4 blocs au total
+      for (let i = 0; i < 3; i++) {
+        const clone = blockToClone.cloneNode(true);
+        track.appendChild(clone);
+      }
+    });
+  </script>
 
 </body>
 </html>
