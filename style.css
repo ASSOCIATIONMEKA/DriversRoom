@@ -424,3 +424,61 @@ ul li:hover::before{transform:scaleY(1)}
 .dropdown-content a[href="admin-users.html"] {
   border-top: 1px dashed var(--border-primary);
 }
+
+/* =======================================================================
+   📢 BANDEAU DÉFILANT FIXE (ACCUEIL)
+   ======================================================================= */
+.scrolling-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  background: rgba(10, 14, 26, 0.95); /* Assorti à la navbar */
+  border-top: 2px solid var(--accent-primary); /* Ligne violette/bleue comme la navbar */
+  overflow: hidden;
+  z-index: 1000; 
+  padding: 8px 0;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.scrolling-banner-track {
+  display: flex;
+  width: max-content;
+  animation: scrollBanner 25s linear infinite; /* Temps de l'animation */
+}
+
+/* Met l'animation en pause si on passe la souris dessus */
+.scrolling-banner-track:hover {
+  animation-play-state: paused;
+}
+
+.banner-items {
+  display: flex;
+  align-items: center;
+}
+
+.banner-items span {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 40px; /* Espacement horizontal entre chaque logo/texte */
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.banner-items img {
+  height: 24px; /* Hauteur des logos */
+  width: auto;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1));
+}
+
+@keyframes scrollBanner {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
