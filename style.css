@@ -433,8 +433,8 @@ ul li:hover::before{transform:scaleY(1)}
   bottom: 0;
   left: 0;
   width: 100vw;
-  background: rgba(10, 14, 26, 0.95); /* Assorti à la navbar */
-  border-top: 2px solid var(--accent-primary); /* Ligne violette/bleue comme la navbar */
+  background: rgba(10, 14, 26, 0.95);
+  border-top: 2px solid var(--accent-primary);
   overflow: hidden;
   z-index: 1000; 
   padding: 8px 0;
@@ -444,10 +444,10 @@ ul li:hover::before{transform:scaleY(1)}
 .scrolling-banner-track {
   display: flex;
   width: max-content;
-  animation: scrollBanner 25s linear infinite; /* Temps de l'animation */
+  /* J'ai mis 15s pour que ça soit dynamique, tu peux ajuster ce chiffre */
+  animation: scrollBanner 15s linear infinite; 
 }
 
-/* Met l'animation en pause si on passe la souris dessus */
 .scrolling-banner-track:hover {
   animation-play-state: paused;
 }
@@ -455,13 +455,14 @@ ul li:hover::before{transform:scaleY(1)}
 .banner-items {
   display: flex;
   align-items: center;
+  flex-shrink: 0; /* Très important : empêche les logos de s'écraser sur les petits écrans */
 }
 
 .banner-items span {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 40px; /* Espacement horizontal entre chaque logo/texte */
+  margin: 0 40px; 
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.9rem;
@@ -469,7 +470,7 @@ ul li:hover::before{transform:scaleY(1)}
 }
 
 .banner-items img {
-  height: 24px; /* Hauteur des logos */
+  height: 24px; 
   width: auto;
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1));
 }
@@ -479,6 +480,7 @@ ul li:hover::before{transform:scaleY(1)}
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    /* Translate exactement de la taille d'1 bloc sur les 4 (-25%) */
+    transform: translateX(-25%); 
   }
 }
