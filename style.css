@@ -444,18 +444,13 @@ ul li:hover::before{transform:scaleY(1)}
 .scrolling-banner-track {
   display: flex;
   width: max-content;
-  /* J'ai mis 15s pour que ça soit dynamique, tu peux ajuster ce chiffre */
   animation: scrollBanner 15s linear infinite; 
-}
-
-.scrolling-banner-track:hover {
-  animation-play-state: paused;
 }
 
 .banner-items {
   display: flex;
   align-items: center;
-  flex-shrink: 0; /* Très important : empêche les logos de s'écraser sur les petits écrans */
+  flex-shrink: 0; 
 }
 
 .banner-items span {
@@ -480,7 +475,6 @@ ul li:hover::before{transform:scaleY(1)}
     transform: translateX(0);
   }
   100% {
-    /* Translate exactement de la taille d'1 bloc sur les 4 (-25%) */
     transform: translateX(-25%); 
   }
 }
