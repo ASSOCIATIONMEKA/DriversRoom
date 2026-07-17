@@ -146,6 +146,8 @@ function setupPilotNameHover(root) {
 }
 
 /* ======================== Caches & Synchronisation ======================== */
+let currentUid = null;
+let lastUserData = null;
 const signupCache = new Map(); const raceHistoryCache = new Map();
 
 async function ensureSignupCache() {
@@ -211,6 +213,16 @@ function setupNavigation(isAdmin = false) {
       if (btn.dataset.section === "estacup") { setupEstacupSubnav(); showEstacupSub("inscription"); }
     });
   });
+
+  // Activation du bouton Déconnexion
+  const logoutBtn = document.getElementById("logout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    });
+  }
 }
 
 onAuthStateChanged(auth, async (user) => {
