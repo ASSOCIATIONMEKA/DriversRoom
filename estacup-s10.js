@@ -400,12 +400,6 @@ async function renderComparison() { /* Inchangé */ }
 async function loadMRating(uid) { /* Inchangé */ }
 async function loadMSafety(uid) { /* Inchangé */ }
 
-/* ===== VOTE CIRCUIT ===== */
-async function renderVoteCircuit() {
-  const host = $("voteCircuitHost"); if (!host) return;
-  host.innerHTML = `<div class="course-box" style="text-align: center; padding: 20px;"><p class="muted-note" style="font-size: 1.1rem;">🚫 Aucun vote de circuit n'est planifié pour la Saison 10.</p></div>`;
-}
-
 /* ======================== Formulaires ESTACUP (inscription) ======================== */
 function setupMekaQuestionnaire(userData) {
   const select = $("mekaPaid"); const nextStep = $("mekaNextStep"); const formContainer = $("estacupFormContainer");
@@ -427,16 +421,136 @@ async function loadReclamHistory() { /* Inchangé */ }
 async function loadEstacupPilotStandings() { /* Inchangé */ }
 async function loadEstacupTeamStandings() { /* Inchangé */ }
 
-/* ======================== GLOBE 3D (CALENDRIER) ======================== */
+/* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
+async function renderVoteCircuit() {
+  const host = $("voteCircuitHost");
+  if (!host) return;
+
+  if (!currentUid) {
+    host.innerHTML = `<div class="course-box"><p class="muted-note">Connectez-vous pour voter.</p></div>`;
+    return;
+  }
+
+  host.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement des votes...</div>`;
+
+  try {
+    const voteDocRef = doc(db, "estacup_s10_circuit_votes", currentUid);
+    const voteSnap = await getDoc(voteDocRef);
+    const userVotes = voteSnap.exists() ? voteSnap.data() : {};
+
+    host.innerHTML = `
+      <div class="course-box">
+        <p class="muted-note" style="margin-bottom: 1.5rem;">
+          Votez pour vos tracés préférés pour les manches 3 et 5. Vous pouvez modifier votre sélection à tout moment.
+        </p>
+
+        <!-- DUEL MANCHE 3 -->
+        <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-primary);">
+          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 3 (24/11/2026)</h4>
+          <p class="muted-note" style="margin-bottom: 1rem;">Choisissez entre les deux tracés américains :</p>
+          
+          <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
+              <input type="radio" name="vote_round_3" value="Indianapolis" ${userVotes.round3 === 'Indianapolis' ? 'checked' : ''}>
+              <div class="vote-pill">
+                <span class="fi fi-us"></span>
+                <strong>Indianapolis</strong> (Road Course)
+              </div>
+            </label>
+
+            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
+              <input type="radio" name="vote_round_3" value="Virginia" ${userVotes.round3 === 'Virginia' ? 'checked' : ''}>
+              <div class="vote-pill">
+                <span class="fi fi-us"></span>
+                <strong>Virginia (VIR)</strong>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- DUEL MANCHE 5 -->
+        <div style="margin-bottom: 2rem;">
+          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2026)</h4>
+          <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre destination européenne :</p>
+          
+          <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
+              <input type="radio" name="vote_round_5" value="Barcelone" ${userVotes.round5 === 'Barcelone' ? 'checked' : ''}>
+              <div class="vote-pill">
+                <span class="fi fi-es"></span>
+                <strong>Barcelone-Catalunya</strong>
+              </div>
+            </label>
+
+            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
+              <input type="radio" name="vote_round_5" value="Dijon-Prenois" ${userVotes.round5 === 'Dijon-Prenois' ? 'checked' : ''}>
+              <div class="vote-pill">
+                <span class="fi fi-fr"></span>
+                <strong>Dijon-Prenois</strong>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="vote-actions" style="text-align: right;">
+          <button id="btnSaveCircuitVotes" class="btn-validate">💾 Enregistrer mes votes</button>
+        </div>
+      </div>
+    `;
+
+    $("btnSaveCircuitVotes").onclick = async () => {
+      const r3 = document.querySelector('input[name="vote_round_3"]:checked')?.value || null;
+      const r5 = document.querySelector('input[name="vote_round_5"]:checked')?.value || null;
+
+      if (!r3 || !r5) {
+        alert("Veuillez faire un choix pour chaque manche avant de valider.");
+        return;
+      }
+
+      try {
+        const btn = $("btnSaveCircuitVotes");
+        btn.disabled = true;
+        btn.textContent = "Enregistrement...";
+
+        await setDoc(doc(db, "estacup_s10_circuit_votes", currentUid), {
+          round3: r3,
+          round5: r5,
+          userName: $("fullName")?.textContent || "Pilote",
+          updatedAt: new Date()
+        }, { merge: true });
+
+        alert("✅ Vos votes ont été pris en compte avec succès !");
+        btn.textContent = "💾 Votes enregistrés !";
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = "💾 Enregistrer mes votes";
+        }, 2000);
+      } catch (err) {
+        console.error("Erreur enregistrement vote:", err);
+        alert("Erreur lors de l'enregistrement du vote.");
+        $("btnSaveCircuitVotes").disabled = false;
+      }
+    };
+
+  } catch (e) {
+    console.error("Erreur chargement vote:", e);
+    host.innerHTML = `<div class="course-box"><p class="impact-bad">Impossible de charger le module de vote.</p></div>`;
+  }
+}
+
+/* ======================== GLOBE 3D & CALENDRIER ======================== */
 let globeInitialized = false;
 
-// Coordonnées GPS pour le Globe
 const circuitsSaison10 = [
-  { name: "Spa-Francorchamps", country: "Belgique", lat: 50.4372, lng: 5.9714 },
-  { name: "Sakhir (Bahrain)", country: "Bahreïn", lat: 26.0325, lng: 50.5106 },
-  { name: "Sepang", country: "Malaisie", lat: 2.7608, lng: 101.7381 },
-  { name: "Zandvoort", country: "Pays-Bas", lat: 52.3888, lng: 4.5446 },
-  { name: "Charlotte Roval", country: "USA", lat: 35.3515, lng: -80.6826 }
+  { round: "PROLOGUE", name: "Silverstone", country: "Royaume-Uni", flag: "gb", date: "15/09/2026", lat: 52.0786, lng: -1.0169, status: "confirm" },
+  { round: "Manche 1", name: "Portimão (Algarve)", country: "Portugal", flag: "pt", date: "29/09/2026", lat: 37.2270, lng: -8.6267, status: "confirm" },
+  { round: "Manche 2", name: "Dubaï Autodrome", country: "Émirats Arabes Unis", flag: "ae", date: "20/10/2026", lat: 25.0483, lng: 55.2346, status: "confirm" },
+  { round: "Manche 3 (Vote)", name: "Indianapolis", country: "USA", flag: "us", date: "24/11/2026", lat: 39.7950, lng: -86.2348, status: "vote" },
+  { round: "Manche 3 (Vote)", name: "Virginia (VIR)", country: "USA", flag: "us", date: "24/11/2026", lat: 36.5658, lng: -79.2069, status: "vote" },
+  { round: "Manche 4", name: "Brno", country: "République Tchèque", flag: "cz", date: "08/12/2026", lat: 49.2031, lng: 16.4444, status: "confirm" },
+  { round: "Manche 5 (Vote)", name: "Barcelone-Catalunya", country: "Espagne", flag: "es", date: "19/01/2026", lat: 41.5700, lng: 2.2611, status: "vote" },
+  { round: "Manche 5 (Vote)", name: "Dijon-Prenois", country: "France", flag: "fr", date: "19/01/2026", lat: 47.3625, lng: 4.8986, status: "vote" },
+  { round: "Manche 6", name: "Fuji Speedway", country: "Japon", flag: "jp", date: "09/02/2026", lat: 35.3717, lng: 138.9267, status: "confirm" }
 ];
 
 function init3DGlobe() {
@@ -451,40 +565,73 @@ function init3DGlobe() {
     (container)
     .width(width)
     .height(height)
-    // 🟢 C'est ici qu'on change la texture pour un globe coloré réaliste :
-    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg') 
+    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
     .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-    .backgroundColor('#050810') 
+    .backgroundColor('#050810')
     .pointsData(circuitsSaison10)
     .pointLat('lat')
     .pointLng('lng')
-    .pointColor(() => '#38bdf8') // Les points restent en bleu fluo MEKA
-    .pointAltitude(0.05)
-    .pointRadius(0.8)
+    .pointColor(d => d.status === 'vote' ? '#f59e0b' : '#38bdf8')
+    .pointAltitude(0.06)
+    .pointRadius(0.9)
     .pointsMerge(true)
     .labelsData(circuitsSaison10)
     .labelLat('lat')
     .labelLng('lng')
-    .labelText('name')
-    .labelSize(1.5)
-    .labelDotRadius(0.3)
-    .labelColor(() => 'white')
+    .labelText(d => `${d.name} (${d.round})`)
+    .labelSize(1.3)
+    .labelDotRadius(0.35)
+    .labelColor(d => d.status === 'vote' ? '#fde68a' : '#ffffff')
     .labelResolution(2);
 
   world.controls().autoRotate = true;
-  world.controls().autoRotateSpeed = 0.5;
-  world.pointOfView({ lat: 45, lng: 10, altitude: 2 });
+  world.controls().autoRotateSpeed = 0.6;
+  world.pointOfView({ lat: 46, lng: 2, altitude: 2.2 });
 
   const listContainer = document.getElementById('circuitTextList');
   if (listContainer) {
-    circuitsSaison10.forEach((c, index) => {
-      listContainer.innerHTML += `
-        <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
-          <strong style="color: var(--accent-primary);">Manche ${index + 1}</strong><br>
-          ${c.name} <br>
-          <span style="font-size: 0.85rem; color: var(--text-muted);">${c.country}</span>
-        </div>
-      `;
-    });
+    listContainer.innerHTML = `
+      <div style="background: rgba(15,23,42,0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+        <strong style="color: var(--accent-primary);">PROLOGUE — 15/09/2026</strong><br>
+        <span class="fi fi-gb"></span> <strong>Silverstone</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Royaume-Uni</span>
+      </div>
+
+      <div style="background: rgba(15,23,42,0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+        <strong style="color: var(--accent-primary);">Manche 1 — 29/09/2026</strong><br>
+        <span class="fi fi-pt"></span> <strong>Portimão</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Portugal</span>
+      </div>
+
+      <div style="background: rgba(15,23,42,0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+        <strong style="color: var(--accent-primary);">Manche 2 — 20/10/2026</strong><br>
+        <span class="fi fi-ae"></span> <strong>Dubaï Autodrome</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Émirats Arabes Unis</span>
+      </div>
+
+      <div style="background: rgba(245,158,11,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(245,158,11,0.4);">
+        <strong style="color: #f59e0b;">Manche 3 (Vote) — 24/11/2026</strong><br>
+        <span class="fi fi-us"></span> <strong>Indianapolis</strong> <em>ou</em> <strong>Virginia</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">États-Unis</span>
+      </div>
+
+      <div style="background: rgba(15,23,42,0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+        <strong style="color: var(--accent-primary);">Manche 4 — 08/12/2026</strong><br>
+        <span class="fi fi-cz"></span> <strong>Brno</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">République Tchèque</span>
+      </div>
+
+      <div style="background: rgba(245,158,11,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(245,158,11,0.4);">
+        <strong style="color: #f59e0b;">Manche 5 (Vote) — 19/01/2026</strong><br>
+        <span class="fi fi-es"></span> <strong>Barcelone</strong> <em>ou</em> <span class="fi fi-fr"></span> <strong>Dijon-Prenois</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Espagne / France</span>
+      </div>
+
+      <div style="background: rgba(15,23,42,0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+        <strong style="color: var(--accent-primary);">Manche 6 — 09/02/2026</strong><br>
+        <span class="fi fi-jp"></span> <strong>Fuji Speedway</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Japon</span>
+      </div>
+    `;
   }
 }
