@@ -2,16 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  updateDoc,
-  addDoc,
-  setDoc
+  getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ======================== Firebase ======================== */
@@ -35,26 +26,17 @@ const clamp = (x,min,max)=>Math.max(min,Math.min(max,x));
 function toDate(value) {
   if (!value) return null;
   if (value && typeof value.seconds === "number") return new Date(value.seconds * 1000);
-  if (value && typeof value.toDate === "function") {
-    try { return value.toDate(); } catch {}
-  }
+  if (value && typeof value.toDate === "function") { try { return value.toDate(); } catch {} }
   const d = new Date(value);
   return isNaN(d) ? null : d;
 }
 
 function formatDateFR(v) {
-  const d = toDate(v);
-  return d ? d.toLocaleDateString("fr-FR") : "";
+  const d = toDate(v); return d ? d.toLocaleDateString("fr-FR") : "";
 }
 
 function escapeHtml(s) {
-  return (s || "").replace(/[&<>"']/g, c => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  }[c]));
+  return (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 function msToClock(ms) {
@@ -75,8 +57,7 @@ function firstDefined(...vals) {
 }
 
 function extractSteam64(input) {
-  const m = String(input || "").match(/765\d{14}/);
-  return m ? m[0] : "";
+  const m = String(input || "").match(/765\d{14}/); return m ? m[0] : "";
 }
 
 function getByPath(obj, path) {
@@ -84,11 +65,7 @@ function getByPath(obj, path) {
   const parts = path.split(".");
   let cur = obj;
   for (const k of parts) {
-    if (cur && Object.prototype.hasOwnProperty.call(cur, k)) {
-      cur = cur[k];
-    } else {
-      return undefined;
-    }
+    if (cur && Object.prototype.hasOwnProperty.call(cur, k)) { cur = cur[k]; } else { return undefined; }
   }
   return cur;
 }
@@ -138,9 +115,7 @@ function ensurePilotTooltip() {
 }
 
 function hidePilotTooltip() {
-  if (pilotTooltipEl) {
-    pilotTooltipEl.style.display = "none";
-  }
+  if (pilotTooltipEl) pilotTooltipEl.style.display = "none";
   pilotTooltipAnchor = null;
   pilotTooltipCurrentUid = null;
 }
@@ -206,9 +181,7 @@ function attachPilotHover(el, uid, fallbackName) {
   if (!el || !uid) return;
   el.addEventListener("mouseenter", () => {
     clearTimeout(pilotHoverTimeout);
-    pilotHoverTimeout = setTimeout(() => {
-      showPilotTooltipFor(uid, fallbackName, el);
-    }, 500);
+    pilotHoverTimeout = setTimeout(() => { showPilotTooltipFor(uid, fallbackName, el); }, 500);
   });
   el.addEventListener("mouseleave", () => {
     clearTimeout(pilotHoverTimeout);
@@ -369,7 +342,7 @@ function setupNavigation(isAdmin = false) {
     // Chargement dynamique des sous-sections
     if (key === "championship" && lastUserData) {
       setupChampionshipSubnav();
-      showChampionshipSub("inscription");
+      showChampionshipSub("vehicule"); // 🟢 La page s'ouvre sur le véhicule par défaut
       setupMekaQuestionnaire(lastUserData);
       loadEstacupEngages();
       renderVoteCircuit();
@@ -390,7 +363,7 @@ function setupNavigation(isAdmin = false) {
 
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
   
-  // 🟢 CORRECTION : Ouvre par défaut l'onglet "Mes informations" au chargement
+  // Ouvre par défaut l'onglet "Mes informations" au chargement
   showSection("infos");
 }
 
@@ -424,7 +397,6 @@ function showResultsSub(key) {
   const block = $("res-sub-" + key);
   if (block) block.classList.remove("hidden");
 
-  // Charge les classements uniquement si l'onglet est demandé
   if (key === "rankpilots") loadEstacupPilotStandings();
   if (key === "rankteams") loadEstacupTeamStandings();
 }
