@@ -101,7 +101,7 @@ function pick(obj, paths) {
   return undefined;
 }
 
-/* ======================== Tooltip pilote (Fonctionnement interne conservé) ======================== */
+/* ======================== Tooltip pilote ======================== */
 let pilotHoverTimeout = null;
 let pilotTooltipEl = null;
 let pilotTooltipAnchor = null;
@@ -235,7 +235,7 @@ const raceHistoryCache = new Map();
 const helmetCache = new Map();
 const pilotStatsCache = new Map();
 
-/* === Helmet design (Interne conservé pour affichage) === */
+/* === Helmet design === */
 function normalizeHelmet(raw) {
   const h = raw || {};
   const allowedStyles = ["stripe", "half", "diag", "clean"];
@@ -390,8 +390,8 @@ function setupNavigation(isAdmin = false) {
 
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
   
-  // Ouvre par défaut l'onglet du championnat au chargement
-  showSection("championship");
+  // 🟢 CORRECTION : Ouvre par défaut l'onglet "Mes informations" au chargement
+  showSection("infos");
 }
 
 /* --- Sous-menus Le Championnat --- */
