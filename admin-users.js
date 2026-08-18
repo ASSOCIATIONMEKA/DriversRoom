@@ -38,7 +38,6 @@ function getLicenseStyle(license) {
   } else if (license === "Challenger") {
     return "background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; font-weight: 600;";
   } else {
-    // Rookie (par défaut)
     return "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; font-weight: 600;";
   }
 }
@@ -73,7 +72,6 @@ async function loadAllUsers() {
     const tbody = $("usersTableBody");
     tbody.innerHTML = "";
 
-    // Trier les utilisateurs par ordre alphabétique (Nom)
     const usersList = [];
     querySnapshot.forEach((doc) => {
       usersList.push({ uid: doc.id, ...doc.data() });
@@ -87,14 +85,12 @@ async function loadAllUsers() {
       const lastName = data.lastName || "";
       const email = data.email || "Non renseigné";
       const isAdmin = data.admin === true;
+      const role = data.role || "Pilote"; // Récupération du rôle
       const license = data.licenseClass || data.licenceClass || data.licence || "Rookie";
       const licenseStyle = getLicenseStyle(license);
 
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid var(--border-primary)";
-      
-      const badgeClass = isAdmin ? "badge-license licence-pro" : "badge-license licence-rookie";
-      const badgeText = isAdmin ? "👑 Admin" : "📋 Pilote";
 
       const isSelf = (uid === currentUser.uid);
       const disabledAttribute = isSelf ? "disabled" : "";
@@ -110,11 +106,12 @@ async function loadAllUsers() {
         </button>
       `;
 
-      /* Utilisation de Flexbox dans toutes les cellules (<td>) pour un centrage vertical impeccable */
       tr.innerHTML = `
         <td style="padding: 1rem 1rem 1rem 0;">
           <div style="display: flex; align-items: center; height: 100%; font-weight: 600;">
-            ${firstName} ${lastName} ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem; margin-left: 8px;">(Vous)</span>' : ''}
+            ${firstName} ${lastName} 
+            ${isAdmin ? '<span title="Administrateur" style="margin-left: 6px; font-size: 1.1rem;">👑</span>' : ''}
+            ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem; margin-left: 8px;">(Vous)</span>' : ''}
           </div>
         </td>
         <td style="padding: 1rem;">
@@ -124,7 +121,14 @@ async function loadAllUsers() {
         </td>
         <td style="padding: 1rem;">
           <div style="display: flex; align-items: center; height: 100%;">
-            <span class="${badgeClass}" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">${badgeText}</span>
+            <select class="role-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; background: #0f172a; color: var(--text-secondary); border: 1px solid var(--border-primary); cursor: pointer; outline: none; margin: 0; width: 100%;">
+              <option value="Pilote" ${role === 'Pilote' ? 'selected' : ''}>🏎️ Pilote</option>
+              <option value="Ingénieur / Stratège" ${role === 'Ingénieur / Stratège' ? 'selected' : ''}>💻 Ingénieur</option>
+              <option value="Spectateur / Fan" ${role === 'Spectateur / Fan' ? 'selected' : ''}>🏁 Spectateur</option>
+              <option value="Streamer / Commentateur" ${role === 'Streamer / Commentateur' ? 'selected' : ''}>🎙️ Streamer</option>
+              <option value="Staff / Orga" ${role === 'Staff / Orga' ? 'selected' : ''}>🛠️ Staff</option>
+              <option value="Autre" ${role === 'Autre' ? 'selected' : ''}>Autre</option>
+            </select>
           </div>
         </td>
         <td style="padding: 1rem;">
@@ -149,7 +153,7 @@ async function loadAllUsers() {
       tbody.appendChild(tr);
     });
 
-    // Écouteurs pour le bouton "Rendre Admin"
+    // 1️⃣ Écouteurs pour le bouton "Rendre Admin"
     document.querySelectorAll(".btn-toggle-admin").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
@@ -158,20 +162,28 @@ async function loadAllUsers() {
       });
     });
 
-    // Écouteurs pour la modification de la licence
+    // 2️⃣ Écouteurs pour la modification du Rôle
+    document.querySelectorAll(".role-select").forEach(select => {
+      select.addEventListener("change", async (e) => {
+        const targetUid = e.target.getAttribute("data-uid");
+        const newRole = e.target.value;
+        await updateRole(targetUid, newRole);
+      });
+    });
+
+    // 3️⃣ Écouteurs pour la modification de la licence
     document.querySelectorAll(".license-select").forEach(select => {
       select.addEventListener("change", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
         const newLicense = e.target.value;
         
-        // Met à jour la couleur du select visuellement tout de suite
         e.target.style.cssText = `padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; margin: 0; width: 140px; ${getLicenseStyle(newLicense)}`;
         
         await updateLicense(targetUid, newLicense);
       });
     });
 
-    // Écouteurs pour le bouton de suppression (Poubelle)
+    // 4️⃣ Écouteurs pour le bouton de suppression (Poubelle)
     document.querySelectorAll(".btn-delete-user").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const targetUid = e.currentTarget.getAttribute("data-uid");
@@ -210,6 +222,20 @@ async function toggleAdminStatus(uid, currentStatus) {
   }
 }
 
+// 🔄 Modifier le Rôle (Pilote, Ingé, etc.)
+async function updateRole(uid, newRole) {
+  try {
+    const userRef = doc(db, "users", uid);
+    await updateDoc(userRef, {
+      role: newRole
+    });
+    showMsg(`Rôle mis à jour avec succès : ${newRole}`);
+  } catch (err) {
+    console.error("Erreur lors de la modification du rôle :", err);
+    showMsg("Erreur lors de la mise à jour du rôle.", "error");
+  }
+}
+
 // 🔄 Modifier la licence du pilote
 async function updateLicense(uid, newLicense) {
   try {
@@ -224,7 +250,7 @@ async function updateLicense(uid, newLicense) {
   }
 }
 
-// 🗑️ Supprimer un pilote de la base de données
+// 🗑️ Supprimer un membre de la base de données
 async function deleteUserAccount(uid) {
   try {
     await deleteDoc(doc(db, "users", uid));
