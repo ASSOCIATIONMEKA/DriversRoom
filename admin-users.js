@@ -89,6 +89,10 @@ async function loadAllUsers() {
       const license = data.licenseClass || data.licenceClass || data.licence || "Rookie";
       const licenseStyle = getLicenseStyle(license);
 
+      // 🟢 Récupération du M-Rating et M-Safety (Valeurs par défaut si inexistant)
+      const eloRating = data.eloRating ?? 1000;
+      const licensePoints = data.licensePoints ?? 10;
+
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid var(--border-primary)";
 
@@ -140,6 +144,18 @@ async function loadAllUsers() {
             </select>
           </div>
         </td>
+        
+        <!-- 🟢 NOUVELLES COLONNES MODIFIABLES (M-RATING & M-SAFETY) -->
+        <td style="padding: 1rem; text-align: center;">
+          <input type="number" class="admin-elo-input" data-uid="${uid}" value="${eloRating}" 
+                 style="width: 70px; padding: 0.4rem; text-align: center; color: #38bdf8; font-weight: bold; background: rgba(15,23,42,0.8); border: 1px solid var(--border-primary); border-radius: 6px; margin: 0; display: inline-block;">
+        </td>
+        <td style="padding: 1rem; text-align: center;">
+          <input type="number" step="0.1" class="admin-safety-input" data-uid="${uid}" value="${licensePoints}" 
+                 style="width: 70px; padding: 0.4rem; text-align: center; color: #34d399; font-weight: bold; background: rgba(15,23,42,0.8); border: 1px solid var(--border-primary); border-radius: 6px; margin: 0; display: inline-block;">
+        </td>
+        <!-- ======================================================== -->
+
         <td style="padding: 1rem 0 1rem 1rem; text-align: right;">
           <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; height: 100%;">
             <button class="btn-toggle-admin" data-uid="${uid}" data-status="${isAdmin}" ${disabledAttribute} style="${buttonStyle}; margin: 0; height: 35px; display: flex; align-items: center;">
@@ -193,6 +209,40 @@ async function loadAllUsers() {
         
         if (confirmation) {
           await deleteUserAccount(targetUid);
+        }
+      });
+    });
+
+    // 🟢 5️⃣ Écouteurs pour la modification du M-RATING
+    document.querySelectorAll('.admin-elo-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const uid = e.target.getAttribute('data-uid');
+        const newElo = Number(e.target.value);
+        try {
+          e.target.style.borderColor = '#38bdf8'; // Feedback visuel (Bleu)
+          await updateDoc(doc(db, "users", uid), { eloRating: newElo });
+          showMsg("M-Rating mis à jour !");
+          setTimeout(() => e.target.style.borderColor = 'var(--border-primary)', 1000);
+        } catch (err) {
+          console.error("Erreur màj M-Rating", err);
+          showMsg("Erreur lors de la mise à jour du M-Rating.", "error");
+        }
+      });
+    });
+
+    // 🟢 6️⃣ Écouteurs pour la modification du M-SAFETY
+    document.querySelectorAll('.admin-safety-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const uid = e.target.getAttribute('data-uid');
+        const newSafety = Number(e.target.value);
+        try {
+          e.target.style.borderColor = '#34d399'; // Feedback visuel (Vert)
+          await updateDoc(doc(db, "users", uid), { licensePoints: newSafety });
+          showMsg("M-Safety mis à jour !");
+          setTimeout(() => e.target.style.borderColor = 'var(--border-primary)', 1000);
+        } catch (err) {
+          console.error("Erreur màj M-Safety", err);
+          showMsg("Erreur lors de la mise à jour du M-Safety.", "error");
         }
       });
     });
