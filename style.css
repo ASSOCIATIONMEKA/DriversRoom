@@ -478,3 +478,15 @@ ul li:hover::before{transform:scaleY(1)}
     transform: translateX(-25%); 
   }
 }
+
+/* Tableaux d'administration avec layout fixe et alignement parfait */
+.admin-table {
+  table-layout: fixed; 
+  width: 100%;
+}
+.admin-table th {
+  white-space: nowrap;
+}
+.admin-table td {
+  height: 60px; /* Impose une hauteur fixe pour stabiliser le rendu */
+}
