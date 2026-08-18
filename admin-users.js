@@ -26,7 +26,6 @@ function showMsg(text, type = "success") {
   box.className = `msg-box msg-${type}`;
   box.classList.remove("hidden");
   
-  // Cache le message après 4 secondes
   setTimeout(() => {
     box.classList.add("hidden");
   }, 4000);
@@ -44,13 +43,12 @@ function getLicenseStyle(license) {
   }
 }
 
-// 🔐 SÉCURITÉ : Vérification des droits d'accès au chargement
+// 🔐 SÉCURITÉ
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "login.html";
     return;
   }
-
   try {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const userData = userDoc.exists() ? userDoc.data() : null;
@@ -60,10 +58,8 @@ onAuthStateChanged(auth, async (user) => {
       window.location.href = "index.html";
       return;
     }
-
     currentUser = user;
     await loadAllUsers();
-
   } catch (err) {
     console.error("Erreur de vérification des droits :", err);
     window.location.href = "index.html";
@@ -108,30 +104,41 @@ async function loadAllUsers() {
         ? "background: linear-gradient(135deg, var(--accent-danger), #dc2626); font-size: 0.8rem; padding: 0.5rem 1rem;" 
         : "background: linear-gradient(135deg, var(--accent-success), #16a34a); font-size: 0.8rem; padding: 0.5rem 1rem;";
 
-      // On cache le bouton poubelle pour son propre compte
       const deleteButtonHtml = isSelf ? '' : `
-        <button class="btn-delete-user" data-uid="${uid}" data-name="${firstName} ${lastName}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; padding: 0.4rem 0.6rem; transition: 0.2s; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center;" title="Supprimer le compte">
+        <button class="btn-delete-user" data-uid="${uid}" data-name="${firstName} ${lastName}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; padding: 0.4rem 0.6rem; transition: 0.2s; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; height: 35px;" title="Supprimer le compte">
           🗑️
         </button>
       `;
 
-      // AJOUT DE vertical-align: middle; sur tous les <td>
+      /* Utilisation de Flexbox dans toutes les cellules (<td>) pour un centrage vertical impeccable */
       tr.innerHTML = `
-        <td style="padding: 1rem; font-weight: 600; vertical-align: middle;">${firstName} ${lastName} ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem;"><br>(Vous)</span>' : ''}</td>
-        <td style="padding: 1rem; color: var(--text-secondary); font-size: 0.9rem; vertical-align: middle;">${email}</td>
-        <td style="padding: 1rem; text-align: center; vertical-align: middle;">
-          <span class="${badgeClass}" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; display: inline-block;">${badgeText}</span>
+        <td style="padding: 1rem 1rem 1rem 0;">
+          <div style="display: flex; align-items: center; height: 100%; font-weight: 600;">
+            ${firstName} ${lastName} ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem; margin-left: 8px;">(Vous)</span>' : ''}
+          </div>
         </td>
-        <td style="padding: 1rem; text-align: center; vertical-align: middle;">
-          <select class="license-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; display: inline-block; ${licenseStyle}">
-            <option value="Rookie" style="background: #0f172a; color: #34d399;" ${license === 'Rookie' ? 'selected' : ''}>Rookie</option>
-            <option value="Challenger" style="background: #0f172a; color: #fbbf24;" ${license === 'Challenger' ? 'selected' : ''}>Challenger</option>
-            <option value="Pro" style="background: #0f172a; color: #f87171;" ${license === 'Pro' ? 'selected' : ''}>Pro</option>
-          </select>
+        <td style="padding: 1rem;">
+          <div style="display: flex; align-items: center; height: 100%; color: var(--text-secondary); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis;">
+            ${email}
+          </div>
         </td>
-        <td style="padding: 1rem; text-align: right; vertical-align: middle;">
+        <td style="padding: 1rem;">
+          <div style="display: flex; align-items: center; height: 100%;">
+            <span class="${badgeClass}" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">${badgeText}</span>
+          </div>
+        </td>
+        <td style="padding: 1rem;">
+          <div style="display: flex; align-items: center; height: 100%;">
+            <select class="license-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; margin: 0; width: 140px; ${licenseStyle}">
+              <option value="Rookie" style="background: #0f172a; color: #34d399;" ${license === 'Rookie' ? 'selected' : ''}>Rookie</option>
+              <option value="Challenger" style="background: #0f172a; color: #fbbf24;" ${license === 'Challenger' ? 'selected' : ''}>Challenger</option>
+              <option value="Pro" style="background: #0f172a; color: #f87171;" ${license === 'Pro' ? 'selected' : ''}>Pro</option>
+            </select>
+          </div>
+        </td>
+        <td style="padding: 1rem 0 1rem 1rem; text-align: right;">
           <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; height: 100%;">
-            <button class="btn-toggle-admin" data-uid="${uid}" data-status="${isAdmin}" ${disabledAttribute} style="${buttonStyle}">
+            <button class="btn-toggle-admin" data-uid="${uid}" data-status="${isAdmin}" ${disabledAttribute} style="${buttonStyle}; margin: 0; height: 35px; display: flex; align-items: center;">
               ${buttonText}
             </button>
             ${deleteButtonHtml}
@@ -142,7 +149,7 @@ async function loadAllUsers() {
       tbody.appendChild(tr);
     });
 
-    // 1️⃣ Écouteurs pour le bouton "Rendre Admin"
+    // Écouteurs pour le bouton "Rendre Admin"
     document.querySelectorAll(".btn-toggle-admin").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
@@ -151,20 +158,20 @@ async function loadAllUsers() {
       });
     });
 
-    // 2️⃣ Écouteurs pour la modification de la licence
+    // Écouteurs pour la modification de la licence
     document.querySelectorAll(".license-select").forEach(select => {
       select.addEventListener("change", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
         const newLicense = e.target.value;
         
         // Met à jour la couleur du select visuellement tout de suite
-        e.target.style.cssText = `padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; display: inline-block; ${getLicenseStyle(newLicense)}`;
+        e.target.style.cssText = `padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; margin: 0; width: 140px; ${getLicenseStyle(newLicense)}`;
         
         await updateLicense(targetUid, newLicense);
       });
     });
 
-    // 3️⃣ Écouteurs pour le bouton de suppression (Poubelle)
+    // Écouteurs pour le bouton de suppression (Poubelle)
     document.querySelectorAll(".btn-delete-user").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const targetUid = e.currentTarget.getAttribute("data-uid");
