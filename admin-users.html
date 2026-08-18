@@ -16,7 +16,7 @@
   <div class="container" style="margin-top: 3rem; max-width: 1300px;">
     <h2>🛠️ Gestion des Utilisateurs & Licences</h2>
     <p style="text-align: center; margin-bottom: 2rem; color: var(--text-muted);">
-      Liste complète des membres inscrits. Définissez le rôle, la licence, ou accordez les accès administrateur.
+      Liste complète des membres inscrits. Définissez le rôle, la licence, le M-Rating, le M-Safety, ou accordez les accès administrateur.
     </p>
 
     <div id="msgBox" class="msg-box hidden"></div>
@@ -26,15 +26,20 @@
     </div>
 
     <div id="usersSection" class="hidden">
+      <!-- 🟢 On augmente légèrement la largeur minimale pour faire place aux deux nouvelles colonnes -->
       <div style="overflow-x: auto; width: 100%; background: rgba(15, 23, 42, 0.6); border-radius: 12px; border: 1px solid var(--border-primary); padding: 1rem;">
-        <table class="admin-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <table class="admin-table" style="width: 100%; min-width: 1000px; border-collapse: collapse; margin-top: 1rem;">
           <thead>
             <tr style="border-bottom: 2px solid var(--border-primary); text-align: left;">
-              <th style="padding: 1rem; color: var(--text-muted); width: 22%;">Membre</th>
-              <th style="padding: 1rem; color: var(--text-muted); width: 25%;">Email</th>
-              <th style="padding: 1rem; color: var(--text-muted); width: 17%;">Rôle</th>
-              <th style="padding: 1rem; color: var(--text-muted); width: 16%;">Licence</th>
-              <th style="padding: 1rem; color: var(--text-muted); text-align: right; width: 20%;">Actions</th>
+              <th style="padding: 1rem; color: var(--text-muted); width: 20%;">Membre</th>
+              <th style="padding: 1rem; color: var(--text-muted); width: 22%;">Email</th>
+              <th style="padding: 1rem; color: var(--text-muted); width: 15%;">Rôle</th>
+              <th style="padding: 1rem; color: var(--text-muted); width: 15%;">Licence</th>
+              <!-- 🟢 NOUVELLES COLONNES M-RATING & M-SAFETY -->
+              <th style="padding: 1rem; color: var(--text-muted); text-align: center; width: 8%;">M-Rating</th>
+              <th style="padding: 1rem; color: var(--text-muted); text-align: center; width: 8%;">M-Safety</th>
+              <!-- ========================================= -->
+              <th style="padding: 1rem; color: var(--text-muted); text-align: right; width: 12%;">Actions</th>
             </tr>
           </thead>
           <tbody id="usersTableBody">
