@@ -1,4 +1,4 @@
-// estacup-s9.js — Archives S9 (Résultats et classements uniquement)
+// estacup-s9.js — Archives S9 (Résultats groupés et classements finaux uniquement)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -173,47 +173,136 @@ function computeGapLeaderText(p, leader) {
   return "—";
 }
 
-/* ======================== RÉSULTATS DES COURSES ======================== */
+/* ======================== RÉSULTATS DES COURSES (VUE GROUPÉE) ======================== */
 async function loadAllCoursesArchive() {
   const ul = $("raceHistory"); 
   if (!ul) return;
+
   try {
-    ul.innerHTML = "<li>Chargement…</li>";
+    ul.innerHTML = loaderHtml("Chargement des résultats…");
     const snap = await getDocs(collection(db, "courses"));
-    if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
+    if (snap.empty) { ul.innerHTML = "<p class='muted-note'>Aucun résultat pour l’instant.</p>"; return; }
     
     const rows = []; 
     snap.forEach(d => {
         const data = d.data();
-        if (data.estacup === true) { // On ne garde que les manches ESTACUP de la S9
+        if (data.estacup === true) {
             rows.push({ id: d.id, ...data });
         }
     });
     
+    // Tri global par date décroissante
     rows.sort((a, b) => (toDate(b.date) ?? 0) - (toDate(a.date) ?? 0));
-    ul.innerHTML = "";
     
-    for (const r of rows) {
-      const d = formatDateFR(r.date) || ""; 
-      const title = [d, (r.name || "Course")].filter(Boolean).join(" – ");
-      const li = document.createElement("li"); 
-      li.className = "race-item";
-      const btn = document.createElement("button"); 
-      btn.className = "race-btn"; 
-      btn.textContent = title;
-      const details = document.createElement("div"); 
-      details.id = `cls-${r.id}`; 
-      details.className = "race-classification"; 
-      details.style.display = "none";
+    // 1. Groupement intelligent par Manche (Round)
+    const roundsMap = new Map();
+
+    rows.forEach(r => {
+      const name = r.name || "Course inconnue";
+      let roundLabel = "Autre Manche";
+      let raceType = name;
+
+      // Découpage du nom (ex: "ESTACUP • ROUND 6 • SPA-FRANCORCHAMPS • SPRINT S1")
+      const parts = name.split("•").map(p => p.trim());
       
-      btn.addEventListener("click", async () => {
-        if (details.style.display !== "none") { details.style.display = "none"; return; }
-        await renderRaceClassification(r.id, details, r); 
-        details.style.display = "block";
+      const roundIndex = parts.findIndex(p => p.toLowerCase().includes("round"));
+      if (roundIndex !== -1 && parts.length > roundIndex + 1) {
+          roundLabel = `${parts[roundIndex]} - ${parts[roundIndex + 1]}`;
+          raceType = parts.slice(roundIndex + 2).join(" • ") || "Classement";
+      } else if (parts.length >= 2) {
+          roundLabel = parts[0];
+          raceType = parts.slice(1).join(" • ");
+      }
+
+      const dateStr = formatDateFR(r.date);
+      const groupKey = `${roundLabel}_${dateStr}`; 
+
+      if (!roundsMap.has(groupKey)) {
+        roundsMap.set(groupKey, { roundLabel, dateStr, races: [] });
+      }
+      roundsMap.get(groupKey).races.push({ ...r, raceType });
+    });
+
+    // 2. Construction de l'interface (Création des cartes)
+    ul.innerHTML = "";
+    ul.style.listStyle = "none";
+    ul.style.padding = "0";
+
+    roundsMap.forEach((group) => {
+      const card = document.createElement("li");
+      card.className = "course-box";
+      card.style.marginBottom = "1.5rem";
+      card.style.padding = "1.5rem";
+
+      const header = document.createElement("div");
+      header.style.display = "flex";
+      header.style.justifyContent = "space-between";
+      header.style.alignItems = "center";
+      header.style.borderBottom = "1px solid rgba(148, 163, 184, 0.2)";
+      header.style.paddingBottom = "0.75rem";
+      header.style.marginBottom = "1rem";
+      header.innerHTML = `
+          <h4 style="margin:0; font-size: 1.25rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px;">
+            🏁 ${escapeHtml(group.roundLabel)}
+          </h4>
+          <span style="color: #94a3b8; font-weight: 600; font-size: 0.9rem;">${group.dateStr}</span>
+      `;
+      card.appendChild(header);
+
+      const btnGroup = document.createElement("div");
+      btnGroup.style.display = "flex";
+      btnGroup.style.gap = "0.5rem";
+      btnGroup.style.flexWrap = "wrap";
+
+      const detailsContainer = document.createElement("div");
+      detailsContainer.style.marginTop = "1rem";
+
+      group.races.sort((a, b) => a.raceType.localeCompare(b.raceType));
+
+      group.races.forEach(race => {
+        const btn = document.createElement("button");
+        btn.className = "race-btn";
+        btn.style.flex = "1";
+        btn.style.textAlign = "center";
+        btn.style.fontWeight = "600";
+        btn.textContent = escapeHtml(race.raceType);
+
+        const raceDetails = document.createElement("div");
+        raceDetails.className = "race-classification";
+        raceDetails.style.display = "none";
+        raceDetails.style.marginTop = "1rem";
+        detailsContainer.appendChild(raceDetails);
+
+        btn.addEventListener("click", async () => {
+          const isOpening = raceDetails.style.display === "none";
+          
+          detailsContainer.querySelectorAll(".race-classification").forEach(d => d.style.display = "none");
+          btnGroup.querySelectorAll(".race-btn").forEach(b => b.style.borderColor = "#1e293b");
+
+          if (isOpening) {
+            btn.style.borderColor = "#38bdf8"; 
+            if (raceDetails.innerHTML === "") {
+                raceDetails.innerHTML = loaderHtml("Chargement du classement...");
+                raceDetails.style.display = "block";
+                await renderRaceClassification(race.id, raceDetails, race);
+            } else {
+                raceDetails.style.display = "block";
+            }
+          }
+        });
+
+        btnGroup.appendChild(btn);
       });
-      li.appendChild(btn); li.appendChild(details); ul.appendChild(li);
-    }
-  } catch (e) { ul.innerHTML = `<li>Erreur de chargement.</li>`; }
+
+      card.appendChild(btnGroup);
+      card.appendChild(detailsContainer);
+      ul.appendChild(card);
+    });
+
+  } catch (e) { 
+    ul.innerHTML = `<li class="error">Erreur de chargement des courses.</li>`; 
+    console.error("Erreur loadAllCoursesArchive:", e);
+  }
 }
 
 async function renderRaceClassification(raceId, container, raceMeta) {
@@ -232,7 +321,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     let globalBestMs = null;
     for (const p of participants) { const bm = pickBestLapMs(p); if (bm != null && (globalBestMs == null || bm < globalBestMs)) globalBestMs = bm; }
     
-    let html = `<strong>Classement — ${escapeHtml(c.name || "Course")}</strong><br><br><div style="overflow:auto"><table class="race-table"><thead><tr><th>Nom</th><th>Prénom</th><th>Voiture</th><th>Best lap</th><th>Gap leader</th><th>Points</th></tr></thead><tbody>`;
+    let html = `<strong>Classement final </strong><br><br><div style="overflow:auto"><table class="race-table"><thead><tr><th>Nom</th><th>Prénom</th><th>Voiture</th><th>Best lap</th><th>Gap leader</th><th>Points</th></tr></thead><tbody>`;
     participants.forEach((p, index) => {
       const { first, last } = splitNameParts(p); 
       const bestMs = pickBestLapMs(p); 
