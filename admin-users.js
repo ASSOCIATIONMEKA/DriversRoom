@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // 🔧 Config Firebase
 const firebaseConfig = {
@@ -30,6 +30,18 @@ function showMsg(text, type = "success") {
   setTimeout(() => {
     box.classList.add("hidden");
   }, 4000);
+}
+
+// 🎨 Fonction pour générer le style du menu déroulant selon la licence
+function getLicenseStyle(license) {
+  if (license === "Pro") {
+    return "background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; font-weight: 600;";
+  } else if (license === "Challenger") {
+    return "background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; font-weight: 600;";
+  } else {
+    // Rookie (par défaut)
+    return "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; font-weight: 600;";
+  }
 }
 
 // 🔐 SÉCURITÉ : Vérification des droits d'accès au chargement
@@ -80,6 +92,7 @@ async function loadAllUsers() {
       const email = data.email || "Non renseigné";
       const isAdmin = data.admin === true;
       const license = data.licenseClass || data.licenceClass || data.licence || "Rookie";
+      const licenseStyle = getLicenseStyle(license);
 
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid var(--border-primary)";
@@ -89,10 +102,18 @@ async function loadAllUsers() {
 
       const isSelf = (uid === currentUser.uid);
       const disabledAttribute = isSelf ? "disabled" : "";
+      
       const buttonText = isAdmin ? "Retirer Admin" : "Rendre Admin";
       const buttonStyle = isAdmin 
         ? "background: linear-gradient(135deg, var(--accent-danger), #dc2626); font-size: 0.8rem; padding: 0.5rem 1rem;" 
         : "background: linear-gradient(135deg, var(--accent-success), #16a34a); font-size: 0.8rem; padding: 0.5rem 1rem;";
+
+      // On cache le bouton poubelle pour son propre compte (pour éviter qu'un admin se supprime par erreur)
+      const deleteButtonHtml = isSelf ? '' : `
+        <button class="btn-delete-user" data-uid="${uid}" data-name="${firstName} ${lastName}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; padding: 0.4rem 0.6rem; transition: 0.2s; font-size: 1.1rem;" title="Supprimer le compte">
+          🗑️
+        </button>
+      `;
 
       tr.innerHTML = `
         <td style="padding: 1rem; font-weight: 600;">${firstName} ${lastName} ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem;"><br>(Vous)</span>' : ''}</td>
@@ -101,23 +122,26 @@ async function loadAllUsers() {
           <span class="${badgeClass}" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">${badgeText}</span>
         </td>
         <td style="padding: 1rem; text-align: center;">
-          <select class="license-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; background: #0f172a; color: white; border: 1px solid var(--border-primary); cursor: pointer; outline: none;">
-            <option value="Rookie" ${license === 'Rookie' ? 'selected' : ''}>Rookie</option>
-            <option value="Challenger" ${license === 'Challenger' ? 'selected' : ''}>Challenger</option>
-            <option value="Pro" ${license === 'Pro' ? 'selected' : ''}>Pro</option>
+          <select class="license-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; ${licenseStyle}">
+            <option value="Rookie" style="background: #0f172a; color: #34d399;" ${license === 'Rookie' ? 'selected' : ''}>Rookie</option>
+            <option value="Challenger" style="background: #0f172a; color: #fbbf24;" ${license === 'Challenger' ? 'selected' : ''}>Challenger</option>
+            <option value="Pro" style="background: #0f172a; color: #f87171;" ${license === 'Pro' ? 'selected' : ''}>Pro</option>
           </select>
         </td>
         <td style="padding: 1rem; text-align: right;">
-          <button class="btn-toggle-admin" data-uid="${uid}" data-status="${isAdmin}" ${disabledAttribute} style="${buttonStyle}">
-            ${buttonText}
-          </button>
+          <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+            <button class="btn-toggle-admin" data-uid="${uid}" data-status="${isAdmin}" ${disabledAttribute} style="${buttonStyle}">
+              ${buttonText}
+            </button>
+            ${deleteButtonHtml}
+          </div>
         </td>
       `;
 
       tbody.appendChild(tr);
     });
 
-    // Écouteurs pour le bouton "Rendre Admin"
+    // 1️⃣ Écouteurs pour le bouton "Rendre Admin"
     document.querySelectorAll(".btn-toggle-admin").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
@@ -126,12 +150,31 @@ async function loadAllUsers() {
       });
     });
 
-    // Écouteurs pour la modification de la licence
+    // 2️⃣ Écouteurs pour la modification de la licence
     document.querySelectorAll(".license-select").forEach(select => {
       select.addEventListener("change", async (e) => {
         const targetUid = e.target.getAttribute("data-uid");
         const newLicense = e.target.value;
+        
+        // Met à jour la couleur du select visuellement tout de suite
+        e.target.style.cssText = `padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; ${getLicenseStyle(newLicense)}`;
+        
         await updateLicense(targetUid, newLicense);
+      });
+    });
+
+    // 3️⃣ Écouteurs pour le bouton de suppression (Poubelle)
+    document.querySelectorAll(".btn-delete-user").forEach(btn => {
+      // On utilise currentTarget pour bien cibler le bouton même si on clique sur l'émoji
+      btn.addEventListener("click", async (e) => {
+        const targetUid = e.currentTarget.getAttribute("data-uid");
+        const pilotName = e.currentTarget.getAttribute("data-name");
+        
+        const confirmation = confirm(`⚠️ ATTENTION ⚠️\n\nÊtes-vous sûr de vouloir supprimer DÉFINITIVEMENT le profil de ${pilotName} de la base de données ?\n\nCette action est irréversible.`);
+        
+        if (confirmation) {
+          await deleteUserAccount(targetUid);
+        }
       });
     });
 
@@ -171,5 +214,19 @@ async function updateLicense(uid, newLicense) {
   } catch (err) {
     console.error("Erreur lors de la modification de la licence :", err);
     showMsg("Erreur lors de la mise à jour de la licence.", "error");
+  }
+}
+
+// 🗑️ Supprimer un pilote de la base de données
+async function deleteUserAccount(uid) {
+  try {
+    // Note : Cela supprime le document du pilote dans Firestore.
+    // Le pilote ne pourra plus interagir avec le site (M-Rating, M-Safety, Inscription...).
+    await deleteDoc(doc(db, "users", uid));
+    showMsg("Le profil a été supprimé avec succès.");
+    await loadAllUsers();
+  } catch (err) {
+    console.error("Erreur lors de la suppression :", err);
+    showMsg("Erreur lors de la suppression du compte.", "error");
   }
 }
