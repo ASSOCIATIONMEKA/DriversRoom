@@ -108,28 +108,29 @@ async function loadAllUsers() {
         ? "background: linear-gradient(135deg, var(--accent-danger), #dc2626); font-size: 0.8rem; padding: 0.5rem 1rem;" 
         : "background: linear-gradient(135deg, var(--accent-success), #16a34a); font-size: 0.8rem; padding: 0.5rem 1rem;";
 
-      // On cache le bouton poubelle pour son propre compte (pour éviter qu'un admin se supprime par erreur)
+      // On cache le bouton poubelle pour son propre compte
       const deleteButtonHtml = isSelf ? '' : `
-        <button class="btn-delete-user" data-uid="${uid}" data-name="${firstName} ${lastName}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; padding: 0.4rem 0.6rem; transition: 0.2s; font-size: 1.1rem;" title="Supprimer le compte">
+        <button class="btn-delete-user" data-uid="${uid}" data-name="${firstName} ${lastName}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; padding: 0.4rem 0.6rem; transition: 0.2s; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center;" title="Supprimer le compte">
           🗑️
         </button>
       `;
 
+      // AJOUT DE vertical-align: middle; sur tous les <td>
       tr.innerHTML = `
-        <td style="padding: 1rem; font-weight: 600;">${firstName} ${lastName} ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem;"><br>(Vous)</span>' : ''}</td>
-        <td style="padding: 1rem; color: var(--text-secondary); font-size: 0.9rem;">${email}</td>
-        <td style="padding: 1rem; text-align: center;">
-          <span class="${badgeClass}" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">${badgeText}</span>
+        <td style="padding: 1rem; font-weight: 600; vertical-align: middle;">${firstName} ${lastName} ${isSelf ? '<span style="color:var(--accent-primary); font-size:0.8rem;"><br>(Vous)</span>' : ''}</td>
+        <td style="padding: 1rem; color: var(--text-secondary); font-size: 0.9rem; vertical-align: middle;">${email}</td>
+        <td style="padding: 1rem; text-align: center; vertical-align: middle;">
+          <span class="${badgeClass}" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; display: inline-block;">${badgeText}</span>
         </td>
-        <td style="padding: 1rem; text-align: center;">
-          <select class="license-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; ${licenseStyle}">
+        <td style="padding: 1rem; text-align: center; vertical-align: middle;">
+          <select class="license-select" data-uid="${uid}" style="padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; display: inline-block; ${licenseStyle}">
             <option value="Rookie" style="background: #0f172a; color: #34d399;" ${license === 'Rookie' ? 'selected' : ''}>Rookie</option>
             <option value="Challenger" style="background: #0f172a; color: #fbbf24;" ${license === 'Challenger' ? 'selected' : ''}>Challenger</option>
             <option value="Pro" style="background: #0f172a; color: #f87171;" ${license === 'Pro' ? 'selected' : ''}>Pro</option>
           </select>
         </td>
-        <td style="padding: 1rem; text-align: right;">
-          <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+        <td style="padding: 1rem; text-align: right; vertical-align: middle;">
+          <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; height: 100%;">
             <button class="btn-toggle-admin" data-uid="${uid}" data-status="${isAdmin}" ${disabledAttribute} style="${buttonStyle}">
               ${buttonText}
             </button>
@@ -157,7 +158,7 @@ async function loadAllUsers() {
         const newLicense = e.target.value;
         
         // Met à jour la couleur du select visuellement tout de suite
-        e.target.style.cssText = `padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; ${getLicenseStyle(newLicense)}`;
+        e.target.style.cssText = `padding: 0.4rem; border-radius: 6px; cursor: pointer; outline: none; display: inline-block; ${getLicenseStyle(newLicense)}`;
         
         await updateLicense(targetUid, newLicense);
       });
@@ -165,7 +166,6 @@ async function loadAllUsers() {
 
     // 3️⃣ Écouteurs pour le bouton de suppression (Poubelle)
     document.querySelectorAll(".btn-delete-user").forEach(btn => {
-      // On utilise currentTarget pour bien cibler le bouton même si on clique sur l'émoji
       btn.addEventListener("click", async (e) => {
         const targetUid = e.currentTarget.getAttribute("data-uid");
         const pilotName = e.currentTarget.getAttribute("data-name");
@@ -220,8 +220,6 @@ async function updateLicense(uid, newLicense) {
 // 🗑️ Supprimer un pilote de la base de données
 async function deleteUserAccount(uid) {
   try {
-    // Note : Cela supprime le document du pilote dans Firestore.
-    // Le pilote ne pourra plus interagir avec le site (M-Rating, M-Safety, Inscription...).
     await deleteDoc(doc(db, "users", uid));
     showMsg("Le profil a été supprimé avec succès.");
     await loadAllUsers();
