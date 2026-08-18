@@ -20,24 +20,42 @@
 }
 
 /* =======================================================================
-   🔥 LE SECRET DU DIAPORAMA FLUIDE SANS COUPURE (FUSION DE COULEUR)
+   🔥 LE SECRET DU DIAPORAMA FLUIDE SANS COUPURE (OPTIMISÉ GPU POUR LA 3D)
    =======================================================================
 */
 html {
   min-height: 100vh;
-  /* Teinte sombre globale de sécurité pour assombrir les photos */
-  background-color: rgba(10, 14, 26, 0.85); 
-  
+  background-color: #0A0E1A; /* Couleur de fond de sécurité */
+}
+
+/* Calque 1 : Le diaporama en arrière-plan fixe optimisé */
+html::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
   background-repeat: no-repeat;
-  
-  /* Permet de fusionner l'image de fond et la couleur sombre de manière fluide */
-  background-blend-mode: overlay; 
-  
-  /* Diaporama sur 66 secondes (6s par image : 4s fixe + 2s de transition fluide) */
   animation: globalSlideshow 66s infinite ease-in-out;
+  /* Indique au navigateur d'optimiser cette animation sur la carte graphique */
+  will-change: background-image; 
+}
+
+/* Calque 2 : Le filtre sombre par-dessus (Remplace le blend-mode ultra gourmand) */
+html::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-color: rgba(10, 14, 26, 0.85); /* Assombrit les photos en douceur */
+  pointer-events: none; /* Laisse passer les clics */
 }
 
 body {
@@ -53,45 +71,22 @@ body {
   align-items:center;
   padding:0;
   position:relative;
-  background: transparent; /* Laisse transparaître le diaporama du HTML */
+  background: transparent; /* Laisse transparaître les calques fixes */
 }
 
-/* === CHEMINS ET EXTENSIONS DES 11 IMAGES AVEC TRANSITIONS FLUIDES INTERNES === */
+/* === CHEMINS ET EXTENSIONS DES 11 IMAGES === */
 @keyframes globalSlideshow {
-  /* Photo 1 : bg_ec_1.jpg */
   0%, 6% { background-image: url('bg/bg_ec_1.jpg'); }
-  
-  /* Photo 2 : bg_ec_2.jpg */
   9%, 15% { background-image: url('bg/bg_ec_2.jpg'); }
-  
-  /* Photo 3 : bg_ec_3.jpg */
   18%, 24% { background-image: url('bg/bg_ec_3.jpg'); }
-  
-  /* Photo 4 : bg_ec_4.png */
   27%, 33% { background-image: url('bg/bg_ec_4.png'); }
-  
-  /* Photo 5 : bg_ec_6.jpg */
   36%, 42% { background-image: url('bg/bg_ec_6.jpg'); }
-  
-  /* Photo 6 : bg_ec_7.jpg */
   45%, 51% { background-image: url('bg/bg_ec_7.jpg'); }
-  
-  /* Photo 7 : bg_es_1.jpg */
   54%, 60% { background-image: url('bg/bg_es_1.jpg'); }
-  
-  /* Photo 8 : bg_es_2.png */
   63%, 69% { background-image: url('bg/bg_es_2.png'); }
-  
-  /* Photo 9 : bg_es_3.png */
   72%, 78% { background-image: url('bg/bg_es_3.png'); }
-  
-  /* Photo 10 : bg_es_4.png */
   81%, 87% { background-image: url('bg/bg_es_4.png'); }
-  
-  /* Photo 11 : bg_es_5.png */
   90%, 96% { background-image: url('bg/bg_es_5.png'); }
-  
-  /* Rebouclage propre */
   100% { background-image: url('bg/bg_ec_1.jpg'); }
 }
 
@@ -161,7 +156,7 @@ button:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .menu button:hover,.admin-menu button:hover{background:var(--accent-success);color:#fff;transform:translateY(-1px);box-shadow:0 0 20px rgba(16,185,129,.3)}
 
 .section,.admin-section{margin-bottom:3rem;animation:fadeInUp .6s ease-out}
-.hidden{display:none}
+.hidden{display:none !important;}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
 /* Lists & Cards */
@@ -214,279 +209,81 @@ ul li:hover::before{transform:scaleY(1)}
 ::-webkit-scrollbar-thumb:hover{background:linear-gradient(135deg,var(--accent-secondary),var(--accent-primary))}
 ::selection{background:rgba(99,102,241,.3);color:var(--text-primary)}
 
-/* Podiums (lignes de tableau) */
-.podium-1 {
-  background: linear-gradient(90deg, rgba(234,179,8,0.18), rgba(15,23,42,0.0));
-}
-.podium-2 {
-  background: linear-gradient(90deg, rgba(148,163,184,0.18), rgba(15,23,42,0.0));
-}
-.podium-3 {
-  background: linear-gradient(90deg, rgba(244,114,182,0.18), rgba(15,23,42,0.0));
-}
-.bestlap-global {
-  color: #a855f7;  /* violet */
-  font-weight: 600;
-}
+/* Podiums */
+.podium-1 { background: linear-gradient(90deg, rgba(234,179,8,0.18), rgba(15,23,42,0.0)); }
+.podium-2 { background: linear-gradient(90deg, rgba(148,163,184,0.18), rgba(15,23,42,0.0)); }
+.podium-3 { background: linear-gradient(90deg, rgba(244,114,182,0.18), rgba(15,23,42,0.0)); }
+.bestlap-global { color: #a855f7; font-weight: 600; }
 
-/* === BARRE DE NAVIGATION GLOBALE (Univers MEKA) === */
+/* === BARRE DE NAVIGATION GLOBALE === */
 .top-navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100vw; /* Force la navbar à faire 100% de la largeur de l'écran visible */
-  max-width: 100%; /* Évite les bugs de défilement horizontal */
-  padding: 1rem 2rem;
-  background: rgba(10, 14, 26, 0.95);
-  border-bottom: 2px solid var(--accent-primary);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-sizing: border-box; /* Assure que le padding ne fait pas déborder la barre */
+  display: flex; justify-content: space-between; align-items: center; width: 100vw; max-width: 100%;
+  padding: 1rem 2rem; background: rgba(10, 14, 26, 0.95); border-bottom: 2px solid var(--accent-primary);
+  position: sticky; top: 0; z-index: 1000; box-sizing: border-box;
 }
-
-.nav-logo { 
-  height: 40px; 
-  transition: transform 0.2s;
-}
-.nav-logo:hover {
-  transform: scale(1.05);
-}
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-  margin-left: auto;
-  margin-right: 2rem;
-  align-items: center;
-}
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: color 0.2s;
-  white-space: nowrap; /* Évite que les liens se coupent en deux sur tablette */
-}
+.nav-logo { height: 40px; transition: transform 0.2s; }
+.nav-logo:hover { transform: scale(1.05); }
+.nav-links { display: flex; gap: 2rem; margin-left: auto; margin-right: 2rem; align-items: center; }
+.nav-links a { color: white; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: color 0.2s; white-space: nowrap; }
 .nav-links a:hover { color: var(--accent-primary); }
 
-/* === CONFIGURATION DU MENU DÉROULANT ULTRA-STABLE === */
-.dropdown { 
-  position: relative; 
-  display: inline-block; 
-  /* Astuce cruciale : zone invisible de contact sous le texte */
-  padding-bottom: 20px; 
-  margin-bottom: -20px; /* Conserve l'alignement parfait de la barre */
-}
-
+.dropdown { position: relative; display: inline-block; padding-bottom: 20px; margin-bottom: -20px; }
 .dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: rgba(10, 14, 26, 0.95);
-  min-width: 220px;
-  box-shadow: 0px 8px 16px rgba(0,0,0,0.5);
-  z-index: 1005; /* Passe proprement par-dessus toutes les cartes */
-  border-radius: 8px;
-  border: 1px solid var(--accent-primary);
-  top: 100%;
-  
-  /* 🟢 CORRECTION EXPLICITE : On aligne sur le bord droit de la cellule parente,
-     ce qui force le sous-menu à se déployer vers la gauche et évite le découpage par l'écran */
-  right: 0;
-  left: auto;
-  
-  margin-top: -5px; /* Supprime l'ancien espace mort pour éviter la coupure */
+  display: none; position: absolute; background-color: rgba(10, 14, 26, 0.95); min-width: 220px;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.5); z-index: 1005; border-radius: 8px; border: 1px solid var(--accent-primary);
+  top: 100%; right: 0; left: auto; margin-top: -5px;
 }
-
 .dropdown-content a { padding: 12px 16px; display: block; }
 .dropdown-content a:hover { background-color: rgba(99, 102, 241, 0.2); color: var(--accent-primary); border-radius: 8px; }
 .dropdown:hover .dropdown-content { display: block; }
 
-/* Bouton Connexion */
 .nav-btn-login {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  font-weight: 600;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white;
+  padding: 0.5rem 1.5rem; border-radius: var(--radius-md); text-decoration: none; font-weight: 600;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.nav-btn-login:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-glow);
-}
+.nav-btn-login:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
 
-
-/* =======================================================================
-   📱 LE RESPONSIVE INTELLIGENT (SANS MODIFIER L'AFFICHAGE PC)
-   =======================================================================
-*/
 @media (max-width: 900px) {
-  /* Fix de la Navbar mobile : On bascule en colonne ou en menu empilé */
-  .top-navbar {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    text-align: center;
-  }
-  
-  .nav-links {
-    flex-wrap: wrap; /* Autorise les liens de navigation à passer à la ligne */
-    justify-content: center;
-    gap: 1rem;
-    margin: 0 auto;
-    width: 100%;
-  }
-
-  /* Ajustement global des gros titres pour éviter le débordement écran */
-  h1, .site-header h1 {
-    font-size: 2rem !important;
-    word-wrap: break-word;
-  }
-  
-  /* 🟢 Sur mobile/tablette, on réaligne le dropdown par défaut pour suivre le flux centré */
-  .dropdown-content {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
+  .top-navbar { flex-direction: column; gap: 1rem; padding: 1rem; text-align: center; }
+  .nav-links { flex-wrap: wrap; justify-content: center; gap: 1rem; margin: 0 auto; width: 100%; }
+  h1, .site-header h1 { font-size: 2rem !important; word-wrap: break-word; }
+  .dropdown-content { right: auto; left: 50%; transform: translateX(-50%); }
 }
 
 @media (max-width: 768px) {
-  .container {
-    margin: 1rem 0.5rem;
-    padding: 1.5rem;
-    width: calc(100% - 1rem); /* Évite le débordement horizontal à droite sur smartphone */
-    box-sizing: border-box;
-  }
-  
+  .container { margin: 1rem 0.5rem; padding: 1.5rem; width: calc(100% - 1rem); box-sizing: border-box; }
   h2 { font-size: 1.8rem; }
-  
-  /* On bascule les grilles de profil et de vote en une colonne fluide */
-  .profile-grid, .vote-grid {
-    grid-template-columns: 1fr !important;
-    gap: 1.5rem;
-  }
-
-  .menu, .admin-menu {
-    gap: 0.5rem;
-    padding: 0.5rem;
-  }
-  
-  .menu button, .admin-menu button {
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
-    flex: 1 1 calc(50% - 0.5rem); /* Les boutons se placent par paires de deux */
-  }
-  
-  .car-thumb {
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  .engage-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
+  .profile-grid, .vote-grid { grid-template-columns: 1fr !important; gap: 1.5rem; }
+  .menu, .admin-menu { gap: 0.5rem; padding: 0.5rem; }
+  .menu button, .admin-menu button { padding: 0.6rem 1rem; font-size: 0.8rem; flex: 1 1 calc(50% - 0.5rem); }
+  .car-thumb { width: 100%; max-width: 100%; }
+  .engage-row { flex-direction: column; align-items: flex-start; gap: 1rem; }
 }
 
 @media (max-width: 480px) {
-  .container {
-    padding: 1rem;
-  }
+  .container { padding: 1rem; }
   h2 { font-size: 1.5rem; }
   .site-logo { max-width: 120px; }
   button { width: 100%; padding: 0.875rem 1rem; font-size: 0.9rem; }
-  
-  /* Configuration en 2 colonnes compactes pour les badges de stats profil sur mobile */
-  .stat-badge-grid {
-    grid-template-columns: 1fr 1fr !important;
-  }
+  .stat-badge-grid { grid-template-columns: 1fr 1fr !important; }
 }
 
-.admin-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-.admin-table td {
-  vertical-align: middle;
-}
+.admin-table { table-layout: fixed; width: 100%; }
+.admin-table th { white-space: nowrap; }
+.admin-table td { height: 60px; }
+.admin-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.admin-table td { vertical-align: middle; }
 
-/* Style du nom d'utilisateur non cliquable dans la navbar */
-.dropdown-content .dropdown-user-name {
-  user-select: none; /* Empêche la sélection de texte accidentelle */
-  cursor: default;   /* Curseur normal au lieu du pointeur de lien */
-  background: rgba(255, 255, 255, 0.02);
-}
+.dropdown-content .dropdown-user-name { user-select: none; cursor: default; background: rgba(255, 255, 255, 0.02); }
+.dropdown-content a[href="admin-users.html"] { border-top: 1px dashed var(--border-primary); }
 
-/* Petit ajustement visuel pour séparer le lien admin s'il apparaît */
-.dropdown-content a[href="admin-users.html"] {
-  border-top: 1px dashed var(--border-primary);
-}
-
-/* =======================================================================
-   📢 BANDEAU DÉFILANT FIXE (ACCUEIL)
-   ======================================================================= */
 .scrolling-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100vw;
-  background: rgba(10, 14, 26, 0.95);
-  border-top: 2px solid var(--accent-primary);
-  overflow: hidden;
-  z-index: 1000; 
-  padding: 8px 0;
-  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
+  position: fixed; bottom: 0; left: 0; width: 100vw; background: rgba(10, 14, 26, 0.95);
+  border-top: 2px solid var(--accent-primary); overflow: hidden; z-index: 1000; padding: 8px 0; box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
 }
-
-.scrolling-banner-track {
-  display: flex;
-  width: max-content;
-  animation: scrollBanner 15s linear infinite; 
-}
-
-.banner-items {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0; 
-}
-
-.banner-items span {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 40px; 
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.banner-items img {
-  height: 24px; 
-  width: auto;
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1));
-}
-
-@keyframes scrollBanner {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-25%); 
-  }
-}
-
-/* Tableaux d'administration avec layout fixe et alignement parfait */
-.admin-table {
-  table-layout: fixed; 
-  width: 100%;
-}
-.admin-table th {
-  white-space: nowrap;
-}
-.admin-table td {
-  height: 60px; /* Impose une hauteur fixe pour stabiliser le rendu */
-}
+.scrolling-banner-track { display: flex; width: max-content; animation: scrollBanner 15s linear infinite; }
+.banner-items { display: flex; align-items: center; flex-shrink: 0; }
+.banner-items span { display: flex; align-items: center; gap: 12px; margin: 0 40px; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
+.banner-items img { height: 24px; width: auto; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
+@keyframes scrollBanner { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
