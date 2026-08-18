@@ -151,13 +151,29 @@
         <button data-sub="votecircuit" class="champ-sub-btn">Votes des circuits</button>
       </nav>
 
-      <!-- NOUVEAU : LE VÉHICULE -->
+      <!-- NOUVEAU : LE VÉHICULE (AVEC SKETCHFAB) -->
       <div id="champ-sub-vehicule" class="champ-subsection">
         <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
         <div class="course-box" style="text-align: center;">
-          <!-- Pense à mettre une vraie image dans ton dossier cars/ligier-lmp3.jpg -->
-          <img src="cars/ligier-lmp3.jpg" alt="Ligier JS P320" style="max-width: 100%; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); box-shadow: var(--shadow-lg);">
           
+          <!-- LECTEUR 3D SKETCHFAB -->
+          <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); box-shadow: var(--shadow-lg);">
+            <iframe 
+              title="Ligier JSP325 LMP3" 
+              frameborder="0" 
+              allowfullscreen 
+              mozallowfullscreen="true" 
+              webkitallowfullscreen="true" 
+              allow="autoplay; fullscreen; xr-spatial-tracking" 
+              src="https://sketchfab.com/models/f3f799b94c764601a4b773a93ebb97c0/embed?autostart=0&ui_theme=dark&dnt=1" 
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+            </iframe>
+          </div>
+          
+          <p class="muted-note" style="margin-top: -10px; margin-bottom: 15px;">
+            🖱️ <em>Cliquez sur le bouton Play pour charger le modèle, puis faites glisser pour tourner autour de la voiture</em>
+          </p>
+
           <p style="font-size: 1.15rem; margin-bottom: 2rem; color: var(--text-primary);">Pour cette 10ème saison de l'ESTACUP, nous passons à la vitesse supérieure avec un prototype taillé pour l'endurance et la performance pure : la <strong>Ligier JS P320</strong>.</p>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 2rem;">
