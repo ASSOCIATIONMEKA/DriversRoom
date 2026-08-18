@@ -29,28 +29,26 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 🗺️ Fonction utilitaire d'aiguillage intelligent après connexion/inscription
+// 🗺️ Fonction utilitaire d'aiguillage
 function redirectUser(isAdmin) {
   const redirectPage = localStorage.getItem("redirectAfterLogin");
   
   if (redirectPage) {
-    // Si l'utilisateur tentait d'accéder à une page précise (ex: S9 ou S10), on l'y envoie
-    localStorage.removeItem("redirectAfterLogin"); // Nettoyage du témoin
+    localStorage.removeItem("redirectAfterLogin");
     window.location.href = redirectPage;
   } else {
-    // Sinon, redirection classique par défaut selon le rôle
     if (isAdmin) {
-      window.location.href = "admin-s10.html"; // Panel d'administration de la saison en cours
+      window.location.href = "admin-s10.html";
     } else {
-      window.location.href = "estacup-s10.html"; // Tableau de bord de la saison en cours
+      window.location.href = "estacup-s10.html";
     }
   }
 }
 
-// 🔄 Redirection automatique si le pilote est déjà connecté globalement
+// 🔄 Redirection automatique
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    localStorage.setItem("isLoggedIn", "true"); // Sauvegarde l'état pour la navbar
+    localStorage.setItem("isLoggedIn", "true");
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const isAdmin = userDoc.exists() && userDoc.data().admin === true;
@@ -70,7 +68,26 @@ const successBox = $("success");
 function setError(msg = "") { if (errorBox) errorBox.textContent = msg; }
 function setSuccess(msg = "") { if (successBox) successBox.textContent = msg; if (msg) setError(""); }
 
-// Connexion
+// ================= GESTION DE L'AFFICHAGE (BASCULE CONNEXION/INSCRIPTION) =================
+const loginSection = $("loginSection");
+const registerSection = $("registerSection");
+const formTitle = $("formTitle");
+
+$("showRegister").addEventListener("click", () => {
+  loginSection.classList.add("hidden");
+  registerSection.classList.remove("hidden");
+  if (formTitle) formTitle.textContent = "Création de compte";
+  setError(""); setSuccess("");
+});
+
+$("showLogin").addEventListener("click", () => {
+  registerSection.classList.add("hidden");
+  loginSection.classList.remove("hidden");
+  if (formTitle) formTitle.textContent = "Connexion";
+  setError(""); setSuccess("");
+});
+
+// ================= CONNEXION =================
 $("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("loginEmail").value.trim();
@@ -81,7 +98,6 @@ $("loginForm").addEventListener("submit", async (e) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Mémorisation immédiate de la session pour devancer l'asynchronisme de Firebase
     localStorage.setItem("isLoggedIn", "true");
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -102,19 +118,14 @@ $("loginForm").addEventListener("submit", async (e) => {
   }
 });
 
-// Afficher / cacher section inscription
-$("showRegister").addEventListener("click", () => {
-  $("registerSection").classList.toggle("hidden");
-  setError(""); setSuccess("");
-});
-
-// Inscription
+// ================= INSCRIPTION =================
 $("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const rawFirstName = $("firstName").value;
   const rawLastName = $("lastName").value;
   const dob = $("dob").value;
+  const role = $("registerRole").value; // Récupération du rôle
   const email = $("registerEmail").value.trim();
   const password = $("registerPassword").value;
   const confirm = $("confirmPassword").value;
@@ -141,7 +152,12 @@ $("registerForm").addEventListener("submit", async (e) => {
 
     if (existing) {
       await setDoc(doc(db, "authMap", firebaseUser.uid), { pilotUid: existing.id });
-      await setDoc(doc(db, "users", existing.id), { ...existing.data(), email, uid: existing.id });
+      await setDoc(doc(db, "users", existing.id), { 
+        ...existing.data(), 
+        email, 
+        uid: existing.id,
+        role: role // Mise à jour du rôle si compte relié
+      });
     } else {
       await setDoc(doc(db, "users", firebaseUser.uid), {
         uid: firebaseUser.uid,
@@ -149,6 +165,7 @@ $("registerForm").addEventListener("submit", async (e) => {
         firstName,
         lastName,
         dob,
+        role: role, // Enregistrement du nouveau rôle
         licenseId: "PILOT-" + Math.random().toString(36).substring(2, 6).toUpperCase(),
         eloRating: 1000,
         licensePoints: 8,
@@ -158,14 +175,13 @@ $("registerForm").addEventListener("submit", async (e) => {
       });
     }
 
-    // Un nouvel inscrit n'est pas admin par défaut
     redirectUser(false);
   } catch (err) {
     setError(normalizeAuthError(err));
   }
 });
 
-// 🔁 Mot de passe oublié
+// ================= MOT DE PASSE OUBLIÉ =================
 $("forgotPassword").addEventListener("click", async () => {
   setError(""); setSuccess("");
   const email = $("loginEmail").value.trim();
@@ -212,6 +228,10 @@ function normalizeAuthError(err) {
       return "Trop de tentatives. Réessaie plus tard.";
     case "auth/email-not-found":
       return "Aucun compte avec cet email.";
+    case "auth/weak-password":
+      return "Le mot de passe doit faire au moins 6 caractères.";
+    case "auth/email-already-in-use":
+      return "Cette adresse email est déjà utilisée.";
     default:
       return err && err.message ? err.message : "Une erreur est survenue.";
   }
