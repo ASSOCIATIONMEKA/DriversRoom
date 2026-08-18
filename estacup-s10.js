@@ -430,7 +430,7 @@ async function loadEstacupTeamStandings() { /* Inchangé */ }
 /* ======================== GLOBE 3D (CALENDRIER) ======================== */
 let globeInitialized = false;
 
-// Coordonnées GPS pour le Globe (Tu peux ajouter des circuits ici)
+// Coordonnées GPS pour le Globe
 const circuitsSaison10 = [
   { name: "Spa-Francorchamps", country: "Belgique", lat: 50.4372, lng: 5.9714 },
   { name: "Sakhir (Bahrain)", country: "Bahreïn", lat: 26.0325, lng: 50.5106 },
@@ -451,13 +451,14 @@ function init3DGlobe() {
     (container)
     .width(width)
     .height(height)
-    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg') 
+    // 🟢 C'est ici qu'on change la texture pour un globe coloré réaliste :
+    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg') 
     .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
     .backgroundColor('#050810') 
     .pointsData(circuitsSaison10)
     .pointLat('lat')
     .pointLng('lng')
-    .pointColor(() => '#38bdf8') 
+    .pointColor(() => '#38bdf8') // Les points restent en bleu fluo MEKA
     .pointAltitude(0.05)
     .pointRadius(0.8)
     .pointsMerge(true)
