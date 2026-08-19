@@ -48,6 +48,12 @@
     
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
+    /* Couleurs de podium strictes : Or, Argent, Bronze */
+    .pos-p1 { color: #ffd700; font-weight: bold; } /* Or */
+    .pos-p2 { color: #c0c0c0; font-weight: bold; } /* Argent */
+    .pos-p3 { color: #cd7f32; font-weight: bold; } /* Bronze */
+    .pos-other { color: #94a3b8; }
+
     /* Ligne cliquable (Championnat) */
     .clickable-row {
       cursor: pointer;
@@ -185,7 +191,7 @@
               <td>Ferrari 296 GT3</td>
               <td>Split 12</td>
               <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
-              <td><strong style="color: #10b981;">🏆 Vainqueur (P1)</strong></td>
+              <td><strong class="pos-p1">🏆 Vainqueur (P1)</strong></td>
             </tr>
 
             <!-- CHAMPIONNAT CFS GOFIR (CLIQUABLE) -->
@@ -198,49 +204,49 @@
               <td>Marin Tomczyk</td>
               <td>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <strong style="color: #f59e0b;">🏆 CHAMPION FINAL</strong>
+                  <strong style="color: #f59e0b;">🏆 CHAMPION</strong>
                   <span class="arrow-icon" id="arrow">▼</span>
                 </div>
               </td>
             </tr>
             
-            <!-- DÉTAILS DÉROULANTS DES MANCHES (Avec Suzuka en mode Joker) -->
+            <!-- DÉTAILS DÉROULANTS DES MANCHES -->
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
-                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 12px; font-size: 1rem;">🏁 Détail des manches (La Manche 1 était une course joker non comptabilisée) :</div>
+                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 12px; font-size: 1rem;">🏁 Détail des manches :</div>
                   <div class="rounds-grid">
                     <div class="round-card joker">
                       <div class="round-info"><span class="round-name">Manche 1 : Suzuka (Joker)</span><span class="round-date">25 février 2026</span></div>
-                      <span style="color: #94a3b8; font-size: 0.85rem;">P20</span>
+                      <span class="pos-other">P20</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 2 : Hockenheim</span><span class="round-date">18 mars 2026</span></div>
-                      <strong style="color: #38bdf8;">P2</strong>
+                      <span class="pos-p2">P2</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 3 : Magny-Cours</span><span class="round-date">01 avril 2026</span></div>
-                      <strong style="color: #10b981;">P1</strong>
+                      <span class="pos-p1">P1</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 4 : Barcelone (Historic)</span><span class="round-date">15 avril 2026</span></div>
-                      <strong style="color: #10b981;">P1</strong>
+                      <span class="pos-p1">P1</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 5 : Interlagos</span><span class="round-date">29 avril 2026</span></div>
-                      <strong style="color: #94a3b8;">P4</strong>
+                      <span class="pos-other">P4</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 6 : Imola</span><span class="round-date">13 mai 2026</span></div>
-                      <strong style="color: #10b981;">P1</strong>
+                      <span class="pos-p1">P1</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 7 : Portimão</span><span class="round-date">03 juin 2026</span></div>
-                      <strong style="color: #38bdf8;">P2</strong>
+                      <span class="pos-p2">P2</span>
                     </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 8 : Road America</span><span class="round-date">24 juin 2026</span></div>
-                      <strong style="color: #f59e0b;">P3</strong>
+                      <span class="pos-p3">P3</span>
                     </div>
                   </div>
                 </div>
