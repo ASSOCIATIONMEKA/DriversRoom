@@ -31,20 +31,25 @@
 
     .pilot-card {
       background: #0f172a; border-radius: 12px; padding: 1.5rem; text-align: center;
-      border-top: 4px solid transparent; transition: transform 0.3s ease;
+      border: 2px solid transparent; transition: transform 0.3s ease;
     }
     .pilot-card:hover { transform: translateY(-5px); }
     .pilot-name { font-size: 1.2rem; font-weight: 900; color: white; margin-bottom: 1.2rem; }
     
-    .stat-line { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.85rem; }
+    .stat-line { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .stat-label { color: #64748b; }
     .stat-value { color: #f1f5f9; font-weight: 600; }
 
-    /* Tableau des résultats élargi */
-    .results-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .results-table th { padding: 16px; border-bottom: 2px solid #38bdf8; color: #94a3b8; font-weight: 600; font-size: 0.9rem; }
-    .results-table td { padding: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
-    .badge { padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+    /* Tableau des résultats moderne et élargi */
+    .results-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+    .results-table th { color: #94a3b8; padding: 15px; font-size: 0.85rem; text-transform: uppercase; text-align: left; }
+    .results-table td { padding: 15px; background: rgba(15, 23, 42, 0.8); font-size: 0.95rem; }
+    .results-table tr td:first-child { border-radius: 8px 0 0 8px; }
+    .results-table tr td:last-child { border-radius: 0 8px 8px 0; }
+    
+    .result-win { color: #10b981; font-weight: bold; }
+    .result-champ { color: #f59e0b; font-weight: bold; }
+    .sub-result { display: block; font-size: 0.8rem; color: #94a3b8; margin-top: 6px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -60,6 +65,7 @@
 
   <main class="portal-content">
     
+    <!-- PRÉSENTATION -->
     <div class="course-box">
       <h2>Qui sommes-nous ?</h2>
       <p style="text-align: center; max-width: 900px; margin: 0 auto; color: #cbd5e1;">Passion, rigueur et performance. L'écurie <strong>MEKA eSport</strong> réunit des pilotes engagés dans les championnats les plus exigeants comme l'ESTACUP. Au-delà du chrono, nous cultivons le partage et la stratégie pour porter nos couleurs au sommet.</p>
@@ -67,15 +73,17 @@
 
     <!-- ROSTER -->
     <div class="course-box">
-      <h2>Le Roster Officiel Iracing</h2>
+      <h2>Le Roster Officiel iRacing</h2>
       <div class="roster-grid">
-        <div class="pilot-card" style="border-top-color: #ec4899;">
+        <!-- NICOLAS (ROSE) -->
+        <div class="pilot-card" style="border-color: #ec4899;">
           <div class="pilot-name">Nicolas MOREAU</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
           <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2547</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Oct. 2023</span></div>
         </div>
+        <!-- ILAN (JAUNE) -->
         <div class="pilot-card" style="border-color: #f59e0b;">
           <div class="pilot-name">Ilan GUILBAUD</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
@@ -83,6 +91,7 @@
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2619</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Janv. 2025</span></div>
         </div>
+        <!-- MARIN (BLEU) -->
         <div class="pilot-card" style="border-color: #38bdf8;">
           <div class="pilot-name">Marin TOMCZYK</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
@@ -90,6 +99,7 @@
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">3226</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Mars 2025</span></div>
         </div>
+        <!-- TIMOTHEE (VERT) -->
         <div class="pilot-card" style="border-color: #10b981;">
           <div class="pilot-name">Timothée JACOBSEN</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
@@ -100,7 +110,7 @@
       </div>
     </div>
 
-    <!-- HISTORIQUE -->
+    <!-- PALMARÈS & HISTORIQUE -->
     <div class="course-box">
       <h2>Palmarès & Historique des courses</h2>
       <div style="overflow-x: auto;">
@@ -109,25 +119,35 @@
             <tr>
               <th>Date</th>
               <th>Événement</th>
-              <th>Format</th>
+              <th>Véhicule</th>
+              <th>Split</th>
               <th>Pilotes</th>
-              <th>Résultat / Classement</th>
+              <th>Résultat</th>
             </tr>
           </thead>
           <tbody>
+            <!-- 24H SPA -->
             <tr>
               <td>11/07/2026</td>
-              <td><strong>24H Spa</strong></td>
-              <td><span class="badge" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Endurance</span></td>
+              <td><strong>24H de Spa</strong></td>
+              <td>Ferrari 296 GT3</td>
+              <td>Split 12</td>
               <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
-              <td><strong style="color: #10b981;">Vainqueur (P1 - Split 12)</strong> en Ferrari 296 GT3</td>
+              <td><span class="result-win">🏆 Vainqueur (P1)</span></td>
             </tr>
+            <!-- CFS GOFIR -->
             <tr>
               <td>2026</td>
               <td><strong>Championnat CFS GoFiR</strong></td>
-              <td><span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
-              <td>Marin Tomczyk (Split Access)</td>
-              <td><strong style="color: #f59e0b;">CHAMPION FINAL</strong><br><small style="color:#94a3b8;">(P3 Allemagne, P2 France, P1 Espagne, P1 Brésil, P4 Italie, P1 Portugal, P2 USA)</small></td>
+              <td>-</td>
+              <td>Access</td>
+              <td>Marin Tomczyk</td>
+              <td>
+                <span class="result-champ">🏆 CHAMPION FINAL</span>
+                <span class="sub-result">
+                  🇩🇪 P3 All. | 🇫🇷 P2 Fra. | 🇪🇸 P1 Esp. | 🇧🇷 P1 Bré. | 🇮🇹 P4 Ita. | 🇵🇹 P1 Por. | 🇺🇸 P2 USA
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
