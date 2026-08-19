@@ -7,19 +7,11 @@
   <link rel="stylesheet" href="style.css"> 
   
   <style>
-    /* En-tête sans aucun effet de fond */
-    .esport-header {
-      text-align: center;
-      padding: 3rem 2rem 2rem 2rem;
-    }
+    .esport-header { text-align: center; padding: 3rem 2rem 2rem 2rem; }
     .esport-header img { max-width: 250px; margin-bottom: 1.5rem; }
     .esport-header h1 { font-size: 2.5rem; color: white; margin-bottom: 0.5rem; text-transform: uppercase; }
 
-    .portal-content {
-      max-width: 1200px; /* Largeur augmentée pour mieux intégrer les 4 pilotes */
-      margin: 0 auto;
-      padding: 0 2rem 6rem 2rem;
-    }
+    .portal-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem 6rem 2rem; }
     
     .course-box {
       background: rgba(30, 37, 48, 0.6);
@@ -30,14 +22,8 @@
       margin-bottom: 2rem;
     }
     
-    .course-box h2 { 
-      font-size: 1.8rem;
-      margin-bottom: 1.5rem;
-      color: var(--accent-primary, #6366F1);
-      text-align: center;
-    }
+    .course-box h2 { font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--accent-primary, #6366F1); text-align: center; }
     
-    /* Grille des pilotes : forcée sur 4 colonnes pour qu'ils soient tous sur la même ligne */
     .roster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -55,18 +41,15 @@
       border-radius: 1rem;
       padding: 1.5rem;
       text-align: center;
-      min-height: 120px; /* Espace pour les futures infos */
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
     }
 
-    .pilot-name { font-size: 1.1rem; font-weight: bold; color: white; }
+    .pilot-name { font-size: 1.2rem; font-weight: 800; color: white; margin-bottom: 1rem; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .pilot-info { font-size: 0.9rem; color: #94a3b8; line-height: 1.8; text-align: left; }
+    .pilot-info strong { color: #38bdf8; }
   </style>
 </head>
 <body>
 
-  <!-- Navbar globale -->
   <div id="global-navbar"></div>
   <script type="module" src="nav.js" defer></script>
 
@@ -78,27 +61,53 @@
 
   <main class="portal-content">
     
-    <!-- SECTION : PRÉSENTATION -->
     <div class="course-box">
       <h2>Qui sommes-nous ?</h2>
       <p style="text-align: center; max-width: 800px; margin: 0 auto;">Fondée sur les valeurs de passion, de rigueur et d'esprit d'équipe, l'écurie <strong>MEKA eSport</strong> rassemble les meilleurs pilotes issus de la communauté étudiante et simracing. De la préparation des setups à la stratégie de course en passant par la gestion des championnats comme l'<strong>ESTACUP</strong>, notre structure porte haut les couleurs de l'association sur tous les circuits virtuels.</p>
     </div>
 
-    <!-- SECTION : LE ROSTER PILOTES -->
     <div class="course-box">
       <h2>Le Roster Officiel</h2>
       <div class="roster-grid">
+        <!-- NICOLAS -->
         <div class="roster-card">
           <div class="pilot-name">Nicolas MOREAU</div>
+          <div class="pilot-info">
+            • <strong>Âge :</strong> 23 ans<br>
+            • <strong>Licence :</strong> Classe A<br>
+            • <strong>iRating :</strong> 2547<br>
+            • <strong>Membre depuis :</strong> Octobre 2023
+          </div>
         </div>
+        <!-- ILAN -->
         <div class="roster-card">
           <div class="pilot-name">Ilan GUILBAUD</div>
+          <div class="pilot-info">
+            • <strong>Âge :</strong> 23 ans<br>
+            • <strong>Licence :</strong> Classe A<br>
+            • <strong>iRating :</strong> 2619<br>
+            • <strong>Membre depuis :</strong> Janvier 2025
+          </div>
         </div>
+        <!-- MARIN -->
         <div class="roster-card">
           <div class="pilot-name">Marin TOMCZYK</div>
+          <div class="pilot-info">
+            • <strong>Âge :</strong> 20 ans<br>
+            • <strong>Licence :</strong> Classe A<br>
+            • <strong>iRating :</strong> 3226<br>
+            • <strong>Membre depuis :</strong> Mars 2025
+          </div>
         </div>
+        <!-- TIMOTHEE -->
         <div class="roster-card">
           <div class="pilot-name">Timothée JACOBSEN</div>
+          <div class="pilot-info">
+            • <strong>Âge :</strong> 20 ans<br>
+            • <strong>Licence :</strong> Classe A<br>
+            • <strong>iRating :</strong> 2520<br>
+            • <strong>Membre depuis :</strong> Novembre 2025
+          </div>
         </div>
       </div>
     </div>
