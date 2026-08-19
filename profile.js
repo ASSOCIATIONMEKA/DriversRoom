@@ -71,7 +71,9 @@ async function loadUserProfile() {
         });
       }
 
-      const licence = data.licenceClass || data.licence || "Rookie";
+      // 🟢 CORRECTION DE LA LICENCE (On vérifie toutes les orthographes possibles)
+      const licence = data.licenseClass || data.licenceClass || data.license || data.licence || "Rookie";
+      
       if ($("profLicence")) {
         $("profLicence").textContent = licence;
         $("profLicence").className = `badge-license licence-${licence.toLowerCase()}`;
