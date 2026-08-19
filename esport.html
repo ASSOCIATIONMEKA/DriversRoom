@@ -7,120 +7,57 @@
   <link rel="stylesheet" href="style.css"> 
   
   <style>
-    .hero-section {
+    /* En-tête épuré avec logo */
+    .esport-header {
       text-align: center;
-      padding: 6rem 2rem 4rem 2rem;
-      position: relative;
-      z-index: 10;
-      background: linear-gradient(rgba(5, 8, 16, 0.7), rgba(5, 8, 16, 0.9)), url('path-to-your-bg.jpg') center/cover;
+      padding: 3rem 2rem 2rem 2rem;
+      background: rgba(15, 23, 42, 0.4);
+      margin-top: 20px;
     }
-
-    .hero-section h1 { font-size: 3.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
-    .hero-section p { font-size: 1.25rem; color: #CBD5E1; max-width: 800px; margin: 0 auto 2rem auto; }
-
-    .btn-discord {
-      background: #5865F2;
-      color: white;
-      padding: 12px 28px;
-      border-radius: 10px;
-      font-weight: bold;
-      text-decoration: none;
-      display: inline-block;
-      transition: background 0.2s;
-    }
-    .btn-discord:hover { background: #4752C4; }
+    .esport-header img { max-width: 250px; margin-bottom: 1.5rem; }
+    .esport-header h1 { font-size: 2.5rem; color: white; margin-bottom: 0.5rem; text-transform: uppercase; }
 
     .portal-content {
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 2rem;
       padding-bottom: 6rem;
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      gap: 2.5rem;
     }
     
     .course-box {
-      background: rgba(30, 37, 48, 0.8);
-      backdrop-filter: blur(15px);
-      padding: 2.5rem;
+      background: rgba(30, 37, 48, 0.6);
+      backdrop-filter: blur(10px);
+      padding: 2rem;
       border-radius: 1rem;
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: #F8FAFC;
+      margin-bottom: 2rem;
     }
     
     .course-box h2 { 
-      font-size: 2rem;
+      font-size: 1.8rem;
       margin-bottom: 1.5rem;
       color: var(--accent-primary, #6366F1);
-      border-bottom: 2px solid rgba(99, 102, 241, 0.2);
-      padding-bottom: 0.5rem;
+      text-align: center;
     }
     
-    .course-box p {
-      font-size: 1.05rem;
-      line-height: 1.6;
-      color: #CBD5E1;
-    }
-
-    /* Grille pour le Roster et les Résultats */
-    .roster-grid, .results-grid {
+    /* Grille des pilotes */
+    .roster-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1.5rem;
       margin-top: 1.5rem;
     }
 
-    .roster-card, .result-card {
-      background: rgba(15, 23, 42, 0.7);
+    .roster-card {
+      background: rgba(15, 23, 42, 0.8);
       border: 1px solid var(--border-primary);
       border-radius: 1rem;
-      padding: 2rem;
+      padding: 1.5rem;
       text-align: center;
-      transition: all 0.3s ease;
     }
 
-    .roster-card:hover, .result-card:hover {
-      border-color: var(--accent-primary);
-      transform: translateY(-4px);
-    }
-
-    .pilot-avatar {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(56, 189, 248, 0.1);
-      border: 2px solid #38bdf8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 1rem auto;
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #38bdf8;
-    }
-
-    .pilot-name { font-size: 1.2rem; font-weight: bold; color: white; margin-bottom: 0.25rem; }
-    .pilot-role { font-size: 0.9rem; color: #94a3b8; }
-
-    /* Tableau des résultats */
-    .results-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      font-size: 0.95rem;
-    }
-
-    .results-table th, .results-table td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .results-table th { color: #94a3b8; font-weight: 600; background: rgba(255, 255, 255, 0.02); }
-    .results-table td { color: #F8FAFC; }
+    .pilot-name { font-size: 1.1rem; font-weight: bold; color: white; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -129,10 +66,10 @@
   <div id="global-navbar"></div>
   <script type="module" src="nav.js" defer></script>
 
-  <header class="hero-section">
+  <header class="esport-header">
+    <img src="logos/mekasr-logo.png" alt="MEKA eSport Logo">
     <h1>Équipe MEKA eSport</h1>
-    <p>L'équipe eSport 100% étudiante engagée sur les championnats virtuels les plus exigeants.</p>
-    <a href="https://discord.gg/ton-lien-discord" target="_blank" class="btn-discord">Rejoindre le Discord</a>
+    <p style="color: #94a3b8;">L'équipe eSport 100% étudiante engagée sur les championnats virtuels les plus exigeants.</p>
   </header>
 
   <main class="portal-content">
@@ -140,65 +77,25 @@
     <!-- SECTION : PRÉSENTATION -->
     <div class="course-box">
       <h2>Qui sommes-nous ?</h2>
-      <p>Fondée sur les valeurs de passion, de rigueur et d'esprit d'équipe, l'écurie <strong>MEKA eSport</strong> rassemble les meilleurs pilotes issus de la communauté étudiante et simracing. De la préparation des setups à la stratégie de course en passant par la gestion des championnats comme l'<strong>ESTACUP</strong>, notre structure porte haut les couleurs de l'association sur tous les circuits virtuels.</p>
+      <p style="text-align: center;">Fondée sur les valeurs de passion, de rigueur et d'esprit d'équipe, l'écurie <strong>MEKA eSport</strong> rassemble les meilleurs pilotes issus de la communauté étudiante et simracing. De la préparation des setups à la stratégie de course en passant par la gestion des championnats comme l'<strong>ESTACUP</strong>, notre structure porte haut les couleurs de l'association sur tous les circuits virtuels.</p>
     </div>
 
     <!-- SECTION : LE ROSTER PILOTES -->
     <div class="course-box">
       <h2>Le Roster Officiel</h2>
-      <p style="margin-bottom: 1.5rem;">Découvrez les pilotes engagés sous les couleurs de MEKA eSport pour la saison.</p>
-      
       <div class="roster-grid">
         <div class="roster-card">
-          <div class="pilot-avatar">MT</div>
-          <div class="pilot-name">Marin TOMCZYK</div>
-          <div class="pilot-role">Pilote Titulaire / LMP3</div>
-        </div>
-
-        <div class="roster-card">
-          <div class="pilot-avatar">NM</div>
           <div class="pilot-name">Nicolas MOREAU</div>
-          <div class="pilot-role">Pilote Titulaire / GT3</div>
         </div>
-
         <div class="roster-card">
-          <div class="pilot-avatar">--</div>
-          <div class="pilot-name">Nom Prénom</div>
-          <div class="pilot-role">Pilote / Endurance</div>
+          <div class="pilot-name">Ilan GUILBAUD</div>
         </div>
-      </div>
-    </div>
-
-    <!-- SECTION : PALMARÈS & RÉSULTATS -->
-    <div class="course-box">
-      <h2>Palmarès & Participations</h2>
-      <p style="margin-bottom: 1.5rem;">Retrouvez les faits d'armes et les classements majeurs de l'équipe sur nos différents championnats.</p>
-      
-      <div style="overflow-x: auto;">
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Championnat / Événement</th>
-              <th>Saison / Année</th>
-              <th>Catégorie</th>
-              <th>Résultat / Position</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>ESTACUP</strong></td>
-              <td>Saison 9</td>
-              <td>GT3 / LMP3</td>
-              <td><span style="color: #10b981; font-weight: bold;">Victoire au championnat Équipes</span></td>
-            </tr>
-            <tr>
-              <td><strong>Championnat d'Endurance MEKA</strong></td>
-              <td>2025</td>
-              <td>Multiclass</td>
-              <td><span style="color: #38bdf8; font-weight: bold;">Podium (2e place)</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="roster-card">
+          <div class="pilot-name">Marin TOMCZYK</div>
+        </div>
+        <div class="roster-card">
+          <div class="pilot-name">Timothée JACOBSEN</div>
+        </div>
       </div>
     </div>
 
