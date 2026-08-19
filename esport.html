@@ -54,6 +54,13 @@
     .pos-p3 { color: #cd7f32; font-weight: bold; } 
     .pos-other { color: #94a3b8; }
 
+    /* Structure à deux étages pour les lignes complexes */
+    .row-tier {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     /* Ligne cliquable (Championnat) */
     .clickable-row {
       cursor: pointer;
@@ -230,19 +237,34 @@
               <td><strong style="color: #38bdf8;">P6</strong></td>
             </tr>
 
-            <!-- CHAMPIONNAT CFS GOFIR (UNIQUE LIGNE PRINCIPALE) -->
+            <!-- CHAMPIONNAT CFS GOFIR (LIGNE COMMUNE À DEUX ÉTAGES) -->
             <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
               <td><strong>Championnat CFS GoFiR</strong></td>
-              <td>Porsche 911 GT3R / Corvette Z06 GT3.R</td>
-              <td>Access / Elite</td>
-              <td>Marin Tomczyk, Ilan Guilbaud</td>
+              <td>
+                <div class="row-tier">
+                  <div>Porsche 911 GT3R</div>
+                  <div style="color: #94a3b8;">Corvette Z06 GT3.R</div>
+                </div>
+              </td>
+              <td>
+                <div class="row-tier">
+                  <div>Access</div>
+                  <div style="color: #94a3b8;">Elite</div>
+                </div>
+              </td>
+              <td>
+                <div class="row-tier">
+                  <div>Marin Tomczyk</div>
+                  <div style="color: #94a3b8;">Ilan Guilbaud</div>
+                </div>
+              </td>
               <td>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <span style="color: #f59e0b; font-weight: bold;">🏆 CHAMPION (Marin)</span><br>
-                    <span style="color: #38bdf8; font-size: 0.85rem;">9ème (Ilan)</span>
+                  <div class="row-tier">
+                    <span style="color: #f59e0b; font-weight: bold;">🏆 CHAMPION</span>
+                    <span style="color: #38bdf8; font-size: 0.85rem;">9ème</span>
                   </div>
                   <span class="arrow-icon" id="arrow">▼</span>
                 </div>
