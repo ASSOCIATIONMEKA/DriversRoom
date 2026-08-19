@@ -3,7 +3,7 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔧 Config Firebase
+// 🔧 Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
@@ -13,111 +13,116 @@ const firebaseConfig = {
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 
-// 🛡️ SÉCURITÉ : Vérifie si Firebase est déjà initialisé
+// 🛡️ Sécurité : On initialise Firebase SEULEMENT s'il n'existe pas déjà sur la page
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 🛠️ Fonction principale pour charger la Navbar
-function initNavbar() {
-  const navContainer = document.getElementById("global-navbar");
+function injectNavbar() {
+    // Évite les doublons d'injection si la fonction est appelée deux fois
+    if (document.querySelector(".top-navbar")) return;
 
-  // Sécurité : si la balise n'existe pas dans le HTML, on s'arrête et on prévient dans la console
-  if (!navContainer) {
-    console.error("❌ ERREUR nav.js : La balise <div id='global-navbar'></div> est introuvable sur cette page !");
-    return;
-  }
+    const fastCheckLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
-  // 1️⃣ INJECTION DU HTML DE LA NAVBAR
-  navContainer.innerHTML = `
+    const navbarHTML = `
     <nav class="top-navbar">
-      <a href="index.html" style="display: flex; align-items: center; text-decoration: none;">
-        <img src="img/logo.png" alt="MEKA Logo" class="nav-logo" onerror="this.src='logo.png'; this.onerror=null;" style="height: 40px;">
-      </a>
-      
-      <div class="nav-links">
-        <a href="index.html">ACCUEIL</a>
-        <a href="association.html">L'ASSOCIATION</a>
+        <a href="index.html">
+          <img src="meka.svg" alt="Logo MEKA" class="nav-logo" />
+        </a>
         
-        <div class="dropdown">
-          <a href="#" style="cursor: default;">NOS COMPÉTITIONS ▾</a>
-          <div class="dropdown-content">
-            <a href="estacup-s10.html">EstaCup Saison 10</a>
+        <div class="nav-links">
+          <a href="index.html">ACCUEIL</a>
+          <a href="https://www.helloasso.com/associations/meka" target="_blank" rel="noopener noreferrer">L'ASSOCIATION</a>
+          
+          <div class="dropdown">
+            <!-- Le bouton principal ne recharge pas la page, il sert juste de survol -->
+            <a href="#" class="dropbtn" onclick="return false;">NOS COMPÉTITIONS ▾</a>
+            <div class="dropdown-content">
+            <a href="estacup-s10.html">🟢 EstaCup S10</a>
+            <a href="estacup-s9.html">⚪ EstaCup S9</a>
           </div>
         </div>
-        
-        <a href="#" onclick="alert('Page en construction 🚧'); return false;">ÉQUIPE ESPORT</a>
-        <a href="#" onclick="alert('Page en construction 🚧'); return false;">NOS PARTENAIRES</a>
-        
-        <a href="https://discord.gg/meka" target="_blank">DISCORD</a>
-        <a href="https://www.twitch.tv/mekaesport" target="_blank">TWITCH</a>
-        
-        <!-- Menu Utilisateur (Masqué par défaut) -->
-        <div class="dropdown" id="userMenuDropdown" style="display: none;">
-          <a href="#" id="navUserName" style="color: var(--accent-primary); font-weight: bold;">👤 PROFIL ▾</a>
-          <div class="dropdown-content">
-            <a href="estacup-s10.html">Driver's Room</a>
-            <a href="admin-users.html" id="navAdminLink" style="display: none;">Administration</a>
-            <a href="#" id="navLogoutBtn" style="color: #f87171;">Déconnexion</a>
+          
+          <a href="esport.html">ÉQUIPE ESPORT</a>
+          
+          <!-- 🟢 NOUVEL ONGLET : NOS PARTENAIRES -->
+          <a href="partenaires.html">NOS PARTENAIRES</a>
+          
+          <a href="https://discord.gg/jB6yDhQFyw" target="_blank">DISCORD</a>
+          <a href="https://twitch.tv/asso_meka" target="_blank">TWITCH</a>
+          
+          <div id="nav-auth-zone" style="display: inline-block; margin-left: 1rem;">
+             ${fastCheckLoggedIn 
+               ? `<span style="color: #10B981; font-weight: 600; font-size: 0.9rem;">⏳ CHARGEMENT...</span>` 
+               : `<a href="login.html" class="nav-btn-login">CONNEXION</a>`}
           </div>
         </div>
-        
-        <!-- Bouton de connexion (Affiche si non connecté) -->
-        <a href="login.html" id="navLoginBtn" class="nav-btn-login">CONNEXION</a>
-      </div>
-    </nav>
-  `;
+    </nav>`;
 
-  // 2️⃣ GESTION DE L'AFFICHAGE DU COMPTE (CONNECTÉ / DÉCONNECTÉ)
-  onAuthStateChanged(auth, async (user) => {
-    const loginBtn = document.getElementById("navLoginBtn");
-    const userMenu = document.getElementById("userMenuDropdown");
-    const userNameDisplay = document.getElementById("navUserName");
-    const adminLink = document.getElementById("navAdminLink");
-
-    if (user) {
-      if (loginBtn) loginBtn.style.display = "none";
-      if (userMenu) userMenu.style.display = "inline-block";
-
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          const firstName = data.firstName || "PILOTE";
-          
-          if (userNameDisplay) {
-            userNameDisplay.innerHTML = `👤 ${firstName.toUpperCase()} ▾`;
-          }
-          
-          if (data.admin && adminLink) {
-            adminLink.style.display = "block";
-          }
-        }
-      } catch (error) {
-        console.error("Erreur de récupération utilisateur :", error);
-      }
+    // Ciblage intelligent de l'élément de réception ou repli sur le haut du body
+    const targetDiv = document.getElementById("global-navbar");
+    if (targetDiv) {
+        targetDiv.innerHTML = navbarHTML;
     } else {
-      if (loginBtn) loginBtn.style.display = "inline-block";
-      if (userMenu) userMenu.style.display = "none";
+        document.body.insertAdjacentHTML('afterbegin', navbarHTML);
     }
-  });
 
-  // 3️⃣ GESTION DE LA DÉCONNEXION
-  document.addEventListener("click", (e) => {
-    if (e.target && e.target.id === "navLogoutBtn") {
-      e.preventDefault();
-      signOut(auth).then(() => {
-        window.location.href = "login.html";
-      }).catch((error) => {
-        console.error("Erreur lors de la déconnexion :", error);
-      });
-    }
-  });
+    const authZone = document.getElementById("nav-auth-zone");
+
+    // Écouteur de session Firebase
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            localStorage.setItem("isLoggedIn", "true");
+            try {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                const userData = userDoc.data();
+                
+                const firstName = userData ? userData.firstName : "Pilote";
+                const lastName = userData ? userData.lastName : "";
+                const isAdmin = userData && userData.admin === true;
+
+                authZone.innerHTML = `
+                  <div class="dropdown">
+                    <a href="#" class="dropbtn" style="color: #10B981; font-weight: 700;">👤 ${firstName.toUpperCase()} ▾</a>
+                    <div class="dropdown-content" style="min-width: 180px;">
+                      
+                      <div class="dropdown-user-name" style="padding: 12px 16px; font-weight: 700; color: var(--accent-primary); border-bottom: 1px solid var(--border-primary); font-size: 0.85rem; cursor: default; user-select: none; background: rgba(255, 255, 255, 0.02);">
+                        ${firstName.toUpperCase()} ${lastName.toUpperCase()}
+                      </div>
+                      
+                      <a href="profile.html">Mon Profil</a>
+                      <a href="estacup-s9.html">🎛️ Espace Écurie S9</a>
+                      
+                      ${isAdmin ? '<a href="admin-s10.html" style="color: var(--accent-success); font-weight: 600;">⚙️ Panel Admin S10</a>' : ''}
+                      ${isAdmin ? '<a href="admin-s9.html" style="color: var(--text-muted); font-size: 0.85rem;">⚙️ Archives Admin S9</a>' : ''}
+                      ${isAdmin ? '<a href="admin-users.html" style="color: var(--accent-tertiary); font-weight: 600; border-top: 1px dashed var(--border-primary);">🛠️ Gestion Droits</a>' : ''}
+                      
+                      <a href="#" id="nav-logout-btn" style="color: #EF4444;">✖ Déconnexion</a>
+                    </div>
+                  </div>
+                `;
+
+                document.getElementById("nav-logout-btn").addEventListener("click", (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem("isLoggedIn");
+                    signOut(auth).then(() => {
+                        window.location.href = "index.html";
+                    });
+                });
+
+            } catch (error) {
+                console.error("Erreur navbar:", error);
+            }
+        } else {
+            localStorage.removeItem("isLoggedIn");
+            authZone.innerHTML = `<a href="login.html" class="nav-btn-login">CONNEXION</a>`;
+        }
+    });
 }
 
-// ⏳ EXÉCUTION AU BON MOMENT (Une fois la page HTML chargée)
+// Lancement de l'injection
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initNavbar);
+    document.addEventListener("DOMContentLoaded", injectNavbar);
 } else {
-  initNavbar();
+    injectNavbar();
 }
