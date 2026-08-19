@@ -434,7 +434,7 @@ function setupMekaQuestionnaire(userData) {
           if (formContainer) formContainer.classList.remove("hidden"); 
           loadEstacupForm(userData);
         } else if (select.value === "no") {
-          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
+          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sarà gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
         }
       };
     }
@@ -449,9 +449,19 @@ async function loadEstacupForm(userData) {
     const docRef = doc(db, "estacup_s10_signups", currentUid);
     const docSnap = await getDoc(docRef);
 
-    // 🟢 CORRECTION : Si l'inscription n'existe pas encore, on affiche directement le formulaire de saisie !
     if (!docSnap.exists()) {
       await ensureSignupCache();
+      
+      // Récupération des numéros déjà pris
+      const allSignupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
+      const takenNumbers = [];
+      allSignupsSnap.forEach(d => {
+        const num = Number(d.data().raceNumber);
+        if (num) takenNumbers.push(num);
+      });
+      takenNumbers.sort((a, b) => a - b);
+      const takenStr = takenNumbers.length > 0 ? takenNumbers.join(", ") : "Aucun";
+
       const teamCounts = {};
       signupCache.forEach((data) => {
         const tName = data.teamName?.trim();
@@ -487,6 +497,9 @@ async function loadEstacupForm(userData) {
 
           <label for="regNumber">Numéro de course souhaité (Ex: 42) :</label>
           <input type="number" id="regNumber" placeholder="Entre 2 et 999" min="2" max="999" required>
+          <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px; margin-bottom: 1rem; color: #f59e0b;">
+            🚫 <strong>Numéros déjà pris :</strong> ${escapeHtml(takenStr)}
+          </p>
 
           <label for="regSteam">Steam ID (64) :</label>
           <input type="text" id="regSteam" placeholder="7656119..." value="${escapeHtml(userData.steamID64 || userData.steamId || "")}" required>
@@ -534,7 +547,7 @@ async function loadEstacupForm(userData) {
           numSnap.forEach(d => { if (d.id !== currentUid) numberTaken = true; });
 
           if (numberTaken) {
-            alert(`Désolé, le numéro #${num} est déjà réservé par un autre pilote !`);
+            alert(`Désolé, le numéro #${num} vient d'être réservé par un autre pilote ! Veuillez en choisir un autre.`);
             btn.disabled = false;
             btn.textContent = "🏁 Valider mon inscription";
             return;
@@ -555,7 +568,6 @@ async function loadEstacupForm(userData) {
 
           alert("✅ Inscription transmise avec succès ! En attente de validation par les administrateurs.");
           loadEstacupForm(userData);
-          // Actualise le bloc initial pour masquer la question
           setupMekaQuestionnaire(userData);
         } catch (err) {
           console.error("Erreur inscription:", err);
@@ -567,7 +579,6 @@ async function loadEstacupForm(userData) {
       return;
     }
 
-    // S'il existe déjà, on affiche le récapitulatif (Validé ou En attente)
     const data = docSnap.data();
     const isValidated = data.isValidated === true;
     
