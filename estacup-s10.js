@@ -445,14 +445,129 @@ async function loadEstacupForm(userData) {
   const container = $("estacupFormContainer");
   if (!container) return;
 
-  container.innerHTML = `<div class="loading-inline" style="margin-top: 15px;"><div class="spinner"></div> Chargement du récapitulatif...</div>`;
-
   try {
     const docRef = doc(db, "estacup_s10_signups", currentUid);
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists()) return;
+    // 🟢 CORRECTION : Si l'inscription n'existe pas encore, on affiche directement le formulaire de saisie !
+    if (!docSnap.exists()) {
+      await ensureSignupCache();
+      const teamCounts = {};
+      signupCache.forEach((data) => {
+        const tName = data.teamName?.trim();
+        if (tName) teamCounts[tName] = (teamCounts[tName] || 0) + 1;
+      });
 
+      let datalistOptions = "";
+      for (const [t, count] of Object.entries(teamCounts)) {
+        if (count < 3) datalistOptions += `<option value="${escapeHtml(t)}">`;
+      }
+      const datalistHtml = `<datalist id="teamSuggestions">${datalistOptions}</datalist>`;
+
+      container.innerHTML = `
+        <div class="course-box" style="margin-top: 20px;">
+          <h4 style="color: var(--accent-primary); margin-bottom: 15px;">Formulaire d'inscription au championnat ESTACUP S10</h4>
+          
+          <label for="regFirstName">Prénom :</label>
+          <input type="text" id="regFirstName" placeholder="Votre prénom" value="${escapeHtml(userData.firstName || "")}" required>
+
+          <label for="regLastName">Nom :</label>
+          <input type="text" id="regLastName" placeholder="Votre nom" value="${escapeHtml(userData.lastName || "")}" required>
+
+          <label for="regStatus">Statut d'inscription :</label>
+          <select id="regStatus" required style="margin-bottom: 1.5rem;">
+            <option value="" disabled selected>-- Sélectionnez votre statut --</option>
+            <option value="adherent">Je suis adhérent de l'association MEKA</option>
+            <option value="paye_5e">J'ai payé les 5€ d'inscription</option>
+          </select>
+
+          <label for="regTeam">Nom de l'équipe (Laissez vide si vous roulez en indépendant) :</label>
+          <input type="text" id="regTeam" list="teamSuggestions" placeholder="Ex: MEKA eSport">
+          ${datalistHtml}
+
+          <label for="regNumber">Numéro de course souhaité (Ex: 42) :</label>
+          <input type="number" id="regNumber" placeholder="Entre 2 et 999" min="2" max="999" required>
+
+          <label for="regSteam">Steam ID (64) :</label>
+          <input type="text" id="regSteam" placeholder="7656119..." value="${escapeHtml(userData.steamID64 || userData.steamId || "")}" required>
+
+          <button id="btnSubmitSignup" class="btn-validate" style="width: 100%; margin-top: 15px;">🏁 Valider mon inscription</button>
+        </div>
+      `;
+
+      $("btnSubmitSignup").onclick = async () => {
+        const fName = $("regFirstName").value.trim();
+        const lName = $("regLastName").value.trim();
+        const status = $("regStatus").value;
+        const team = $("regTeam").value.trim();
+        const num = parseInt($("regNumber").value, 10);
+        const steam = $("regSteam").value.trim();
+
+        if (!fName || !lName || !status || isNaN(num) || !steam) {
+          alert("Veuillez remplir tous les champs obligatoires correctement.");
+          return;
+        }
+
+        const btn = $("btnSubmitSignup");
+        btn.disabled = true;
+        btn.textContent = "Enregistrement en cours...";
+
+        try {
+          const signupsRef = collection(db, "estacup_s10_signups");
+
+          if (team !== "") {
+            const qTeam = query(signupsRef, where("teamName", "==", team));
+            const teamSnap = await getDocs(qTeam);
+            let membersCount = 0;
+            teamSnap.forEach(d => { if (d.id !== currentUid) membersCount++; });
+            if (membersCount >= 3) {
+              alert(`Désolé, l'équipe "${team}" est déjà complète (3 pilotes maximum).`);
+              btn.disabled = false;
+              btn.textContent = "🏁 Valider mon inscription";
+              return;
+            }
+          }
+
+          const qNum = query(signupsRef, where("raceNumber", "==", num));
+          const numSnap = await getDocs(qNum);
+          let numberTaken = false;
+          numSnap.forEach(d => { if (d.id !== currentUid) numberTaken = true; });
+
+          if (numberTaken) {
+            alert(`Désolé, le numéro #${num} est déjà réservé par un autre pilote !`);
+            btn.disabled = false;
+            btn.textContent = "🏁 Valider mon inscription";
+            return;
+          }
+
+          await setDoc(docRef, {
+            uid: currentUid,
+            firstName: fName,
+            lastName: lName,
+            paymentStatus: status,
+            teamName: team,
+            raceNumber: num,
+            carChoice: "Ligier JS P320",
+            steamID64: steam,
+            isValidated: false,
+            updatedAt: new Date()
+          });
+
+          alert("✅ Inscription transmise avec succès ! En attente de validation par les administrateurs.");
+          loadEstacupForm(userData);
+          // Actualise le bloc initial pour masquer la question
+          setupMekaQuestionnaire(userData);
+        } catch (err) {
+          console.error("Erreur inscription:", err);
+          alert("Erreur lors de l'enregistrement.");
+          btn.disabled = false;
+          btn.textContent = "🏁 Valider mon inscription";
+        }
+      };
+      return;
+    }
+
+    // S'il existe déjà, on affiche le récapitulatif (Validé ou En attente)
     const data = docSnap.data();
     const isValidated = data.isValidated === true;
     
@@ -472,7 +587,7 @@ async function loadEstacupForm(userData) {
             <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
             <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
           </ul>
-          <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); pt: 10px;">
+          <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
             💡 Pour toute modification de dernière minute, veuillez contacter directement l'administration sur Discord.
           </p>
         </div>
@@ -497,7 +612,7 @@ async function loadEstacupForm(userData) {
     }
 
   } catch (err) {
-    console.error("Erreur chargement récapitulatif inscription:", err);
+    console.error("Erreur chargement formulaire:", err);
     container.innerHTML = `<div class="course-box"><p class="impact-bad">Erreur de connexion à la base de données.</p></div>`;
   }
 }
@@ -536,11 +651,10 @@ async function loadEstacupEngages() {
       const uid = data.uid || docSnap.id;
       const uData = usersMap.get(uid) || {};
 
-      // Récupération de la licence et du M-Rating
       const licence = uData.licenseClass || uData.licenceClass || uData.license || "Rookie";
-      let licColor = "#10b981"; // Vert (Rookie)
-      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; // Rouge (Pro)
-      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; // Orange (Challenger)
+      let licColor = "#10b981"; 
+      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; 
+      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; 
 
       const mRating = uData.eloRating ?? 1000;
 
@@ -734,7 +848,7 @@ const circuitsSaison10 = [
   { round: "Manche 4", name: "Brno", country: "République Tchèque", flag: "cz", date: "08/12/2026", lat: 49.2031, lng: 16.4444, status: "confirm" },
   { round: "Manche 5 (Vote)", name: "Barcelone-Catalunya", country: "Espagne", flag: "es", date: "19/01/2026", lat: 41.5700, lng: 2.2611, status: "vote" },
   { round: "Manche 5 (Vote)", name: "Dijon-Prenois", country: "France", flag: "fr", date: "19/01/2026", lat: 47.3625, lng: 4.8986, status: "vote" },
-  { round: "Manche 6", name: "Fuji Speedway", country: "Japon", flag: "jp", date: "09/02/2026", lat: 35.3717, lng: 138.9267, status: "confirm" }
+  { round: "Manche 6", name: "Fuji Speedway", country: "Japon", flag: "jp", date: "35.3717", lng: 138.9267, status: "confirm" }
 ];
 
 function init3DGlobe() {
