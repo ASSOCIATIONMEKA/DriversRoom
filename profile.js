@@ -25,7 +25,21 @@ function showMsg(text, type = "success") {
   if (!box) return;
   box.textContent = text;
   box.className = `msg-box msg-${type}`;
+  box.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => box.classList.add("hidden"), 4000);
+}
+
+// Outil de calcul de l'âge
+function computeAge(dateString) {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+  if (isNaN(d)) return "";
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return `(${age} ans)`;
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -44,6 +58,19 @@ async function loadUserProfile() {
       if ($("profFirstName")) $("profFirstName").value = data.firstName || "";
       if ($("profLastName")) $("profLastName").value = data.lastName || "";
       if ($("profSteamId")) $("profSteamId").value = data.steamId || data.steamID64 || "";
+      
+      // Gestion de la Date de Naissance
+      const dob = data.dob || data.birthDate || "";
+      if ($("profDob")) {
+        $("profDob").value = dob;
+        if ($("profAge")) $("profAge").textContent = computeAge(dob);
+        
+        // Mettre à jour l'âge dynamiquement quand l'utilisateur change la date
+        $("profDob").addEventListener("change", (e) => {
+           if ($("profAge")) $("profAge").textContent = computeAge(e.target.value);
+        });
+      }
+
       const licence = data.licenceClass || data.licence || "Rookie";
       if ($("profLicence")) {
         $("profLicence").textContent = licence;
@@ -53,62 +80,47 @@ async function loadUserProfile() {
   } catch (err) { console.error("Erreur profil:", err); }
 }
 
-// 🟢 CALCUL DES STATS : Scan global (collections racines) + Sous-collections (users/{uid}/)
+// 🟢 NOUVEAU CALCUL DES STATS : Scan fiable 100% via sous-collections personnelles
 async function calculatePilotStats() {
   try {
-    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-    const userData = userDoc.exists() ? userDoc.data() : {};
-    
-    // Identifiants de recherche
-    const mySteamId = (userData.steamId || userData.steamID64 || "").toString().trim();
-    const myFullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim().toUpperCase();
-
-    // Récupération des deux sources
-    const [snapS9, snapS10] = await Promise.all([
-      getDocs(collection(db, "raceHistory")), 
-      getDocs(collection(db, "raceHistory_s10"))
-    ]);
-
-    let racesCount = 0, winsCount = 0, podiumsCount = 0;
+    let racesCount = 0, winsCount = 0, podiumsCount = 0, polesCount = 0;
     let championships = new Set();
 
-    const process = (snap, champName) => {
+    // On va chercher l'historique direct du pilote, rangé dans SON profil !
+    const s9Ref = collection(db, "users", currentUser.uid, "raceHistory");
+    const s10Ref = collection(db, "users", currentUser.uid, "raceHistory_s10");
+
+    const [snapS9, snapS10] = await Promise.all([getDocs(s9Ref), getDocs(s10Ref)]);
+
+    const processUserHistory = (snap, champName) => {
+      if (!snap.empty) championships.add(champName);
+      
       snap.forEach(docSnap => {
+        racesCount++;
         const data = docSnap.data();
-        const participants = data.participants || [];
         
-        // 🟢 RECHERCHE HYBRIDE : SteamID EXACT OU Nom (partiel ou total)
-        const found = participants.find(p => {
-          const pSteam = (p.steamId || p.steamID || p.steamID64 || "").toString().trim();
-          const pName = (p.name || p.driverName || `${p.firstName || ""} ${p.lastName || ""}`).trim().toUpperCase();
-          
-          return (mySteamId !== "" && pSteam === mySteamId) || 
-                 (myFullName !== "" && pName.includes(myFullName)) ||
-                 (myFullName !== "" && myFullName.includes(pName));
-        });
-        
-        if (found) {
-          racesCount++;
-          const pos = parseInt(found.position || 0, 10);
-          if (pos === 1) winsCount++;
-          if (pos >= 1 && pos <= 3) podiumsCount++;
-          championships.add(champName);
-        }
+        const pos = Number(data.position) || 999;
+        const grid = Number(data.grid) || Number(data.startPosition) || 999;
+
+        if (pos === 1) winsCount++;
+        if (pos >= 1 && pos <= 3) podiumsCount++;
+        if (grid === 1) polesCount++;
       });
     };
 
-    process(snapS9, "EstaCup - Saison 9");
-    process(snapS10, "EstaCup - Saison 10");
+    processUserHistory(snapS9, "EstaCup - Saison 9");
+    processUserHistory(snapS10, "EstaCup - Saison 10");
 
     // Mise à jour UI
     if($("statRaces")) $("statRaces").textContent = racesCount;
     if($("statWins")) $("statWins").textContent = winsCount;
     if($("statPodiums")) $("statPodiums").textContent = podiumsCount;
+    if($("statPoles")) $("statPoles").textContent = polesCount;
     
     const listEl = $("championshipList");
     if(listEl) {
       listEl.innerHTML = championships.size === 0 
-        ? `<li>Aucun historique trouvé pour ${myFullName}.</li>` 
+        ? `<li style="color: var(--text-muted); font-style: italic; background: none; border: none; padding: 0;">Aucun historique de course trouvé.</li>` 
         : Array.from(championships).map(c => `<li>🏎️ <strong>${c}</strong></li>`).join("");
     }
   } catch (err) { console.error("Erreur stats:", err); }
@@ -123,12 +135,18 @@ $("profileForm")?.addEventListener("submit", async (e) => {
     await setDoc(doc(db, "users", currentUser.uid), {
       firstName: $("profFirstName").value.trim(),
       lastName: $("profLastName").value.trim(),
-      steamId: $("profSteamId").value.trim()
+      steamId: $("profSteamId").value.trim(),
+      dob: $("profDob").value // Sauvegarde la nouvelle date
     }, { merge: true });
+    
     await calculatePilotStats();
-    alert("Profil mis à jour !");
-  } catch(err) { alert("Erreur de sauvegarde."); }
-  finally { if(btn) btn.textContent = "Sauvegarder les modifications"; }
+    showMsg("Profil mis à jour !");
+  } catch(err) { 
+    showMsg("Erreur de sauvegarde.", "error"); 
+  }
+  finally { 
+    if(btn) btn.textContent = "Sauvegarder les modifications"; 
+  }
 });
 
 $("btnProfileLogout")?.addEventListener("click", () => signOut(auth).then(() => window.location.href = "login.html"));
