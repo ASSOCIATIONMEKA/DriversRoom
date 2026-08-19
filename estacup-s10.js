@@ -174,7 +174,7 @@ async function getRaceHistoryEntry(uid, raceId) {
 }
 function toFiniteNumber(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
 
-/* ======================== NOUVELLE GESTION DES MENUS ======================== */
+/* ======================== GESTION DES MENUS ======================== */
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin");
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
@@ -192,7 +192,7 @@ function setupNavigation(isAdmin = false) {
       setupChampionshipSubnav();
       showChampionshipSub("vehicule");
       setupMekaQuestionnaire(lastUserData);
-      if(typeof loadEstacupEngages === "function") loadEstacupEngages();
+      loadEstacupEngages();
       renderVoteCircuit();
     }
     else if (key === "results" && currentUid) {
@@ -225,6 +225,9 @@ function showChampionshipSub(key) {
 
   if (key === "circuits") {
     setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
+  }
+  else if (key === "engages") {
+    loadEstacupEngages();
   }
 }
 
@@ -266,7 +269,6 @@ onAuthStateChanged(auth, async (user) => {
     setupNavigation(data.admin === true);
     await ensureSignupCache();
     await loadPilotStats(currentUid);
-    if(typeof initInfoComparison === "function") await initInfoComparison(currentUid);
   } catch (err) { console.error("Erreur sécurité S10:", err); }
 });
 
@@ -395,15 +397,6 @@ async function loadPilotStats(uid) {
   } catch {}
 }
 
-async function initInfoComparison(currentUid) { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function renderComparison() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function loadMRating(uid) { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function loadMSafety(uid) { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function loadEstacupEngages() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function loadReclamHistory() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function loadEstacupPilotStandings() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-async function loadEstacupTeamStandings() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
-
 /* ======================== FORMULAIRE D'INSCRIPTION ======================== */
 function setupMekaQuestionnaire(userData) {
   const select = $("mekaPaid"); const nextStep = $("mekaNextStep"); const formContainer = $("estacupFormContainer");
@@ -414,7 +407,6 @@ function setupMekaQuestionnaire(userData) {
     if (select.value === "yes") {
       if (formContainer) formContainer.classList.remove("hidden"); loadEstacupForm(userData);
     } else if (select.value === "no") {
-      // 🟢 Mise à jour avec les NOUVEAUX LIENS
       nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
     }
   };
@@ -430,7 +422,6 @@ async function loadEstacupForm(userData, editing = false) {
     const docRef = doc(db, "estacup_s10_signups", currentUid);
     const docSnap = await getDoc(docRef);
 
-    // 🟢 1. Création de la liste des suggestions d'équipe
     await ensureSignupCache();
     const teamCounts = {};
     signupCache.forEach((data) => {
@@ -442,8 +433,6 @@ async function loadEstacupForm(userData, editing = false) {
 
     let datalistOptions = "";
     for (const [t, count] of Object.entries(teamCounts)) {
-      // On suggère seulement les équipes qui n'ont pas encore 3 pilotes,
-      // SAUF si le pilote actuel en fait déjà partie (pour pré-remplir l'edit)
       const existingTeam = docSnap.exists() ? docSnap.data().teamName : null;
       if (count < 3 || existingTeam === t) {
         datalistOptions += `<option value="${escapeHtml(t)}">`;
@@ -546,7 +535,6 @@ async function loadEstacupForm(userData, editing = false) {
       try {
         const signupsRef = collection(db, "estacup_s10_signups");
 
-        // 🟢 2. VÉRIFICATION DE LA LIMITE D'ÉQUIPE (Max 3)
         if (team !== "") {
           const qTeam = query(signupsRef, where("teamName", "==", team));
           const teamSnap = await getDocs(qTeam);
@@ -566,7 +554,6 @@ async function loadEstacupForm(userData, editing = false) {
           }
         }
 
-        // 🟢 3. VÉRIFICATION SI LE NUMÉRO EST DÉJÀ PRIS
         const qNum = query(signupsRef, where("raceNumber", "==", num));
         const numQuerySnap = await getDocs(qNum);
         
@@ -602,7 +589,6 @@ async function loadEstacupForm(userData, editing = false) {
         
         alert("✅ Inscription réussie et enregistrée !");
         loadEstacupForm(userData, false);
-        if(typeof loadEstacupEngages === "function") loadEstacupEngages(); 
       } catch (err) {
         console.error("Erreur d'inscription:", err);
         alert("Erreur lors de l'enregistrement de l'inscription.");
@@ -614,6 +600,82 @@ async function loadEstacupForm(userData, editing = false) {
   } catch (err) {
     console.error("Erreur chargement formulaire:", err);
     container.innerHTML = `<div class="course-box"><p class="impact-bad">Erreur de connexion à la base de données.</p></div>`;
+  }
+}
+
+/* ======================== LISTE DES ENGAGÉS (PUBLIQUE) ======================== */
+async function loadEstacupEngages() {
+  const targetArea = document.getElementById("champ-sub-engages");
+  if (!targetArea) return;
+
+  targetArea.innerHTML = `<div class="loading-inline" style="padding: 2rem; text-align: center;"><div class="spinner"></div> Chargement de la grille des engagés...</div>`;
+
+  try {
+    const signupsRef = collection(db, "estacup_s10_signups");
+    const q = query(signupsRef, where("isValidated", "==", true));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      targetArea.innerHTML = `
+        <h3 style="color: var(--accent-primary); margin-bottom: 1.5rem;">Liste des engagés</h3>
+        <div class="course-box">
+          <p class="muted-note">Aucun pilote validé pour le moment.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const engages = [];
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      engages.push({
+        name: `${data.firstName || ""} ${data.lastName || ""}`.trim() || "Pilote",
+        team: data.teamName || "Indépendant",
+        number: Number(data.raceNumber) || 0,
+        car: data.carChoice || "Ligier JS P320"
+      });
+    });
+
+    // Tri par numéro de course croissant
+    engages.sort((a, b) => a.number - b.number);
+
+    let html = `
+      <h3 style="color: var(--accent-primary); margin-bottom: 1.5rem;">Liste des engagés (${engages.length})</h3>
+      <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">N°</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Véhicule</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    engages.forEach(p => {
+      html += `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+          <td style="padding: 12px 15px; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
+          <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 600;">${escapeHtml(p.name)}</td>
+          <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
+          <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.car)}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    targetArea.innerHTML = html;
+
+  } catch (err) {
+    console.error("Erreur chargement liste des engagés publique :", err);
+    targetArea.innerHTML = `<p class="impact-bad">Erreur lors du chargement de la liste des engagés.</p>`;
   }
 }
 
