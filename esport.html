@@ -3,49 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Portail - MEKA SimRacing</title>
+  <title>Équipe eSport - MEKA SimRacing</title>
   <link rel="stylesheet" href="style.css"> 
   
   <style>
-    /* 1. SECTION PRINCIPALE (Le fond global, la navbar et le dropdown sont centralisés dans style.css !) */
     .hero-section {
       text-align: center;
-      padding: 6rem 2rem;
+      padding: 6rem 2rem 4rem 2rem;
       position: relative;
       z-index: 10;
+      background: linear-gradient(rgba(5, 8, 16, 0.7), rgba(5, 8, 16, 0.9)), url('path-to-your-bg.jpg') center/cover;
     }
 
-    .hero-section h1 { font-size: 4.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
-    .hero-section p { font-size: 1.5rem; color: #CBD5E1; margin-bottom: 2rem; }
+    .hero-section h1 { font-size: 3.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
+    .hero-section p { font-size: 1.25rem; color: #CBD5E1; max-width: 800px; margin: 0 auto 2rem auto; }
 
-    .hero-btn {
-      display: inline-block;
-      background: #5865F2; /* Couleur officielle Discord */
+    .btn-discord {
+      background: #5865F2;
       color: white;
-      padding: 1rem 2rem;
-      border-radius: 0.75rem;
-      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 10px;
       font-weight: bold;
-      font-size: 1.2rem;
-      box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.2s;
     }
-    
-    .hero-btn:hover { 
-      transform: translateY(-2px); 
-      box-shadow: 0 6px 20px rgba(88, 101, 242, 0.5); 
-    }
+    .btn-discord:hover { background: #4752C4; }
 
-    /* 2. CONTENU DU PORTAIL */
     .portal-content {
       max-width: 1200px;
       margin: 0 auto;
       padding: 2rem;
+      padding-bottom: 6rem;
       position: relative;
       z-index: 10;
       display: flex;
       flex-direction: column;
-      gap: 2rem; /* Espace entre les boites */
+      gap: 2.5rem;
     }
     
     .course-box {
@@ -58,27 +52,157 @@
     }
     
     .course-box h2 { 
-      text-align: left; 
       font-size: 2rem;
       margin-bottom: 1.5rem;
-      color: #6366F1;
+      color: var(--accent-primary, #6366F1);
+      border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+      padding-bottom: 0.5rem;
     }
     
     .course-box p {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       line-height: 1.6;
       color: #CBD5E1;
     }
+
+    /* Grille pour le Roster et les Résultats */
+    .roster-grid, .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .roster-card, .result-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-primary);
+      border-radius: 1rem;
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .roster-card:hover, .result-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-4px);
+    }
+
+    .pilot-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.1);
+      border: 2px solid #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem auto;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .pilot-name { font-size: 1.2rem; font-weight: bold; color: white; margin-bottom: 0.25rem; }
+    .pilot-role { font-size: 0.9rem; color: #94a3b8; }
+
+    /* Tableau des résultats */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .results-table th, .results-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .results-table th { color: #94a3b8; font-weight: 600; background: rgba(255, 255, 255, 0.02); }
+    .results-table td { color: #F8FAFC; }
   </style>
 </head>
 <body>
 
+  <!-- Navbar globale -->
+  <div id="global-navbar"></div>
   <script type="module" src="nav.js" defer></script>
 
   <header class="hero-section">
-    <h1>Équipe eSport</h1>
-    <p>L'équipe MEKA eSport 100% étudiante !</p>
-    <a href="https://discord.gg/jB6yDhQFyw" target="_blank" class="hero-btn">Rejoindre le Discord</a>
+    <h1>Équipe MEKA eSport</h1>
+    <p>L'équipe eSport 100% étudiante engagée sur les championnats virtuels les plus exigeants.</p>
+    <a href="https://discord.gg/ton-lien-discord" target="_blank" class="btn-discord">Rejoindre le Discord</a>
   </header>
+
+  <main class="portal-content">
+    
+    <!-- SECTION : PRÉSENTATION -->
+    <div class="course-box">
+      <h2>Qui sommes-nous ?</h2>
+      <p>Fondée sur les valeurs de passion, de rigueur et d'esprit d'équipe, l'écurie <strong>MEKA eSport</strong> rassemble les meilleurs pilotes issus de la communauté étudiante et simracing. De la préparation des setups à la stratégie de course en passant par la gestion des championnats comme l'<strong>ESTACUP</strong>, notre structure porte haut les couleurs de l'association sur tous les circuits virtuels.</p>
+    </div>
+
+    <!-- SECTION : LE ROSTER PILOTES -->
+    <div class="course-box">
+      <h2>Le Roster Officiel</h2>
+      <p style="margin-bottom: 1.5rem;">Découvrez les pilotes engagés sous les couleurs de MEKA eSport pour la saison.</p>
+      
+      <div class="roster-grid">
+        <div class="roster-card">
+          <div class="pilot-avatar">MT</div>
+          <div class="pilot-name">Marin TOMCZYK</div>
+          <div class="pilot-role">Pilote Titulaire / LMP3</div>
+        </div>
+
+        <div class="roster-card">
+          <div class="pilot-avatar">NM</div>
+          <div class="pilot-name">Nicolas MOREAU</div>
+          <div class="pilot-role">Pilote Titulaire / GT3</div>
+        </div>
+
+        <div class="roster-card">
+          <div class="pilot-avatar">--</div>
+          <div class="pilot-name">Nom Prénom</div>
+          <div class="pilot-role">Pilote / Endurance</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION : PALMARÈS & RÉSULTATS -->
+    <div class="course-box">
+      <h2>Palmarès & Participations</h2>
+      <p style="margin-bottom: 1.5rem;">Retrouvez les faits d'armes et les classements majeurs de l'équipe sur nos différents championnats.</p>
+      
+      <div style="overflow-x: auto;">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Championnat / Événement</th>
+              <th>Saison / Année</th>
+              <th>Catégorie</th>
+              <th>Résultat / Position</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>ESTACUP</strong></td>
+              <td>Saison 9</td>
+              <td>GT3 / LMP3</td>
+              <td><span style="color: #10b981; font-weight: bold;">Victoire au championnat Équipes</span></td>
+            </tr>
+            <tr>
+              <td><strong>Championnat d'Endurance MEKA</strong></td>
+              <td>2025</td>
+              <td>Multiclass</td>
+              <td><span style="color: #38bdf8; font-weight: bold;">Podium (2e place)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
 </body>
 </html>
