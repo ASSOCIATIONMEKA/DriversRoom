@@ -414,7 +414,8 @@ function setupMekaQuestionnaire(userData) {
     if (select.value === "yes") {
       if (formContainer) formContainer.classList.remove("hidden"); loadEstacupForm(userData);
     } else if (select.value === "no") {
-      nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2025-2026" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-9" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
+      // 🟢 Mise à jour avec les NOUVEAUX LIENS
+      nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
     }
   };
 }
@@ -428,6 +429,27 @@ async function loadEstacupForm(userData, editing = false) {
   try {
     const docRef = doc(db, "estacup_s10_signups", currentUid);
     const docSnap = await getDoc(docRef);
+
+    // 🟢 1. Création de la liste des suggestions d'équipe
+    await ensureSignupCache();
+    const teamCounts = {};
+    signupCache.forEach((data) => {
+      const tName = data.teamName?.trim();
+      if (tName) {
+        teamCounts[tName] = (teamCounts[tName] || 0) + 1;
+      }
+    });
+
+    let datalistOptions = "";
+    for (const [t, count] of Object.entries(teamCounts)) {
+      // On suggère seulement les équipes qui n'ont pas encore 3 pilotes,
+      // SAUF si le pilote actuel en fait déjà partie (pour pré-remplir l'edit)
+      const existingTeam = docSnap.exists() ? docSnap.data().teamName : null;
+      if (count < 3 || existingTeam === t) {
+        datalistOptions += `<option value="${escapeHtml(t)}">`;
+      }
+    }
+    const datalistHtml = `<datalist id="teamSuggestions">${datalistOptions}</datalist>`;
 
     if (docSnap.exists() && !editing) {
       const data = docSnap.data();
@@ -474,7 +496,8 @@ async function loadEstacupForm(userData, editing = false) {
         </select>
 
         <label for="regTeam">Nom de l'équipe (Laissez vide si vous roulez en indépendant) :</label>
-        <input type="text" id="regTeam" placeholder="Ex: MEKA eSport" value="${escapeHtml(existingData.teamName || "")}">
+        <input type="text" id="regTeam" list="teamSuggestions" placeholder="Ex: MEKA eSport" value="${escapeHtml(existingData.teamName || "")}">
+        ${datalistHtml}
 
         <label for="regNumber">Numéro de course souhaité (Ex: 42) :</label>
         <input type="number" id="regNumber" placeholder="Entre 2 et 999" value="${existingData.raceNumber || ""}" min="2" max="999" required>
@@ -518,13 +541,34 @@ async function loadEstacupForm(userData, editing = false) {
 
       const btn = $("btnSubmitSignup");
       btn.disabled = true;
-      btn.textContent = "Vérification du numéro...";
+      btn.textContent = "Vérification des données...";
 
       try {
-        // 🟢 VÉRIFICATION SI LE NUMÉRO EST DÉJÀ PRIS
         const signupsRef = collection(db, "estacup_s10_signups");
-        const q = query(signupsRef, where("raceNumber", "==", num));
-        const numQuerySnap = await getDocs(q);
+
+        // 🟢 2. VÉRIFICATION DE LA LIMITE D'ÉQUIPE (Max 3)
+        if (team !== "") {
+          const qTeam = query(signupsRef, where("teamName", "==", team));
+          const teamSnap = await getDocs(qTeam);
+          let membersCount = 0;
+          
+          teamSnap.forEach(docSnap => {
+            if (docSnap.id !== currentUid) {
+              membersCount++;
+            }
+          });
+
+          if (membersCount >= 3) {
+            alert(`Désolé, l'équipe "${team}" est déjà complète (3 pilotes maximum).`);
+            btn.disabled = false;
+            btn.textContent = "🏁 Valider mon inscription";
+            return;
+          }
+        }
+
+        // 🟢 3. VÉRIFICATION SI LE NUMÉRO EST DÉJÀ PRIS
+        const qNum = query(signupsRef, where("raceNumber", "==", num));
+        const numQuerySnap = await getDocs(qNum);
         
         let numberAlreadyTaken = false;
         numQuerySnap.forEach((docSnapshot) => {
