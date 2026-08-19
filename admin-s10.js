@@ -122,7 +122,7 @@ onAuthStateChanged(auth, async (user) => {
       document.body.innerHTML = "<p>Accès refusé</p>"; return;
     }
     
-    // 🟢 FORÇAGE DE L'AFFICHAGE : On s'assure que le HTML devienne visible quoi qu'il arrive
+    // 🟢 FORÇAGE DE L'AFFICHAGE
     const adminOnlyEl = document.getElementById("adminOnly");
     if (adminOnlyEl) {
       adminOnlyEl.classList.remove("hidden");
@@ -317,7 +317,6 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
   await addDoc(collection(db, "incidents"), payload);
 
   for (const p of selectedPilots) {
-    // 🟢 PARENTHÈSE CORRIGÉE ICI : plus de plantage syntaxique au démarrage !
     await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
   }
 
@@ -934,7 +933,6 @@ async function saveImportedResults() {
     const displayName = `${baseName} • ${race.label}`;
 
     for (const p of withUid) {
-      // 🟢 Enregistrement configuré nativement dans la bonne collection raceHistory_s10
       await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: ImportState.isEstacup });
     }
 
@@ -980,22 +978,146 @@ async function loadReclamations() {
 
 /* ---------------- ESTACUP : Listing inscriptions S10 ---------------- */
 async function loadEstacupSignups() {
-  const list = document.getElementById("estacupList"); if (!list) return;
-  list.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement des engagés S10...</div>`;
+  const list = document.getElementById("estacupList"); 
+  if (!list) return;
   
-  // 🟢 Lecture forcée sur la table neuve S10
-  const snap = await getDocs(collection(db, "estacup_s10_signups"));
-  const usersSnap = await getDocs(collection(db, "users"));
-  const usersById = new Map(); usersSnap.forEach(u => usersById.set(u.id, u.data()));
+  list.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement des engagements S10...</div>`;
+  
+  try {
+    const snap = await getDocs(collection(db, "estacup_s10_signups"));
+    const usersSnap = await getDocs(collection(db, "users"));
+    const usersById = new Map(); 
+    usersSnap.forEach(u => usersById.set(u.id, u.data()));
 
-  if (snap.empty) { list.innerHTML = "<p class='muted-note'>Aucun inscrit validé pour l'S10.</p>"; return; }
-  list.innerHTML = `<div id="estacupListValidated" class="cards-grid"></div>`;
+    const pending = [];
+    const validated = [];
 
-  snap.forEach(docu => {
-    const d = docu.data(); const fullName = `${d.firstName || ""} ${d.lastName || ""}`.trim();
-    const html = `<div class="course-box"><h4>${escapeHtml(fullName)}</h4><p>Numéro : ${d.raceNumber} • Voiture : ${escapeHtml(d.carChoice)}</p></div>`;
-    $("estacupListValidated").insertAdjacentHTML("beforeend", html);
-  });
+    snap.forEach(docu => {
+      const sData = docu.data();
+      const uid = sData.uid || docu.id;
+      const uData = usersById.get(uid) || {};
+
+      // 🟢 1. Calcul de l'âge
+      let ageText = "Âge inconnu";
+      const dob = uData.dob || uData.birthDate || uData.dateNaissance;
+      if (dob) {
+        const d = new Date(dob);
+        if (!isNaN(d)) {
+          const now = new Date();
+          let age = now.getFullYear() - d.getFullYear();
+          if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) {
+            age--;
+          }
+          ageText = `${age} ans`;
+        }
+      }
+
+      // 🟢 2. Récupération et Couleur de Licence
+      const licence = uData.licenseClass || uData.licenceClass || uData.license || uData.licence || "Rookie";
+      let licColor = "#10b981"; // Vert pour Rookie
+      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; // Rouge
+      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; // Orange
+
+      // 🟢 3. Formatage du statut de paiement
+      let payStatus = "Non renseigné";
+      if (sData.paymentStatus === "adherent") payStatus = "Adhérent MEKA";
+      if (sData.paymentStatus === "paye_5e") payStatus = "Frais d'inscription (5€) payés";
+
+      const pilotObj = {
+        docId: docu.id,
+        fullName: `${sData.firstName || uData.firstName || ""} ${sData.lastName || uData.lastName || ""}`.trim() || "Pilote Inconnu",
+        team: sData.teamName || "Indépendant",
+        number: sData.raceNumber || "—",
+        car: sData.carChoice || "Ligier JS P320",
+        age: ageText,
+        licence: licence,
+        licColor: licColor,
+        payStatus: payStatus,
+        isValidated: sData.isValidated === true
+      };
+
+      if (pilotObj.isValidated) {
+        validated.push(pilotObj);
+      } else {
+        pending.push(pilotObj);
+      }
+    });
+
+    // 🟢 4. Construction de l'interface
+    let html = `
+      <div style="margin-bottom: 3rem;">
+        <h3 style="color: #f59e0b; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(245, 158, 11, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
+          ⏳ En attente de validation (${pending.length})
+        </h3>
+        <div id="pendingSignupsGrid" class="cards-grid" style="display: grid; gap: 1.5rem;"></div>
+      </div>
+
+      <div>
+        <h3 style="color: #10b981; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(16, 185, 129, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
+          ✅ Inscriptions validées (${validated.length})
+        </h3>
+        <div id="validatedSignupsGrid" class="cards-grid" style="display: grid; gap: 1.5rem;"></div>
+      </div>
+    `;
+
+    list.innerHTML = html;
+
+    const renderCard = (p, isPending) => `
+      <div class="course-box" style="border-left: 4px solid ${isPending ? '#f59e0b' : '#10b981'}; position: relative; padding: 1.5rem;">
+        <h4 style="margin-top:0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem;">
+          ${escapeHtml(p.fullName)}
+          <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
+            ${escapeHtml(p.licence)}
+          </span>
+        </h4>
+        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+           <li><strong>Âge :</strong> ${escapeHtml(p.age)}</li>
+           <li><strong>Numéro :</strong> #${escapeHtml(String(p.number))}</li>
+           <li><strong>Équipe :</strong> ${escapeHtml(p.team)}</li>
+           <li><strong>Paiement :</strong> <span style="color: var(--text-primary);">${escapeHtml(p.payStatus)}</span></li>
+        </ul>
+        <div style="text-align: right; margin-top: 15px;">
+          ${isPending
+            ? `<button class="btn-validate-signup" data-id="${p.docId}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">✔️ Valider l'inscription</button>`
+            : `<button class="btn-revoke-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">❌ Révoquer la validation</button>`
+          }
+        </div>
+      </div>
+    `;
+
+    const pendingContainer = document.getElementById("pendingSignupsGrid");
+    if (pending.length === 0) pendingContainer.innerHTML = "<p class='muted-note'>Aucune inscription en attente.</p>";
+    else pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderCard(p, true)));
+
+    const valContainer = document.getElementById("validatedSignupsGrid");
+    if (validated.length === 0) valContainer.innerHTML = "<p class='muted-note'>Aucune inscription validée.</p>";
+    else validated.forEach(p => valContainer.insertAdjacentHTML("beforeend", renderCard(p, false)));
+
+    // 🟢 5. Actions des boutons avec auto-rafraîchissement
+    document.querySelectorAll('.btn-validate-signup').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.target.getAttribute('data-id');
+        e.target.disabled = true;
+        e.target.textContent = "Validation en cours...";
+        await updateDoc(doc(db, "estacup_s10_signups", id), { isValidated: true });
+        loadEstacupSignups(); // Recharge la vue
+      });
+    });
+
+    document.querySelectorAll('.btn-revoke-signup').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        if(!confirm("Êtes-vous sûr de vouloir repasser cette inscription en attente ?")) return;
+        const id = e.target.getAttribute('data-id');
+        e.target.disabled = true;
+        await updateDoc(doc(db, "estacup_s10_signups", id), { isValidated: false });
+        loadEstacupSignups(); // Recharge la vue
+      });
+    });
+
+  } catch (err) {
+    console.error("Erreur chargement des inscriptions :", err);
+    list.innerHTML = "<p class='impact-bad'>Erreur de chargement de la liste des inscriptions.</p>";
+  }
 }
 
 /* ---------------- VOTES & ACCESSEURS AUTO ---------------- */
