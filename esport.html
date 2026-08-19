@@ -208,39 +208,26 @@
               <td><strong class="pos-p1">🏆 Vainqueur (P1)</strong></td>
             </tr>
 
-            <!-- CFS GOFIR - MARIN -->
+            <!-- CHAMPIONNAT CFS GOFIR (UNIQUE LIGNE PRINCIPALE) -->
             <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
               <td><strong>Championnat CFS GoFiR</strong></td>
-              <td>Porsche 911 GT3R</td>
-              <td>Access</td>
-              <td>Marin Tomczyk</td>
+              <td>Porsche 911 GT3R / Corvette Z06 GT3.R</td>
+              <td>Access / Elite</td>
+              <td>Marin Tomczyk, Ilan Guilbaud</td>
               <td>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <strong style="color: #f59e0b;">🏆 CHAMPION</strong>
+                  <div>
+                    <span style="color: #f59e0b; font-weight: bold;">🏆 CHAMPION (Marin)</span><br>
+                    <span style="color: #38bdf8; font-size: 0.85rem;">9ème (Ilan)</span>
+                  </div>
                   <span class="arrow-icon" id="arrow">▼</span>
                 </div>
               </td>
             </tr>
-
-            <!-- CFS GOFIR - ILAN -->
-            <tr class="clickable-row" onclick="toggleChampDetails()">
-              <td>2026</td>
-              <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
-              <td><strong>Championnat CFS GoFiR</strong></td>
-              <td>Corvette Z06 GT3.R</td>
-              <td>Elite</td>
-              <td>Ilan Guilbaud</td>
-              <td>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <strong style="color: #38bdf8;">9ème</strong>
-                  <span class="arrow-icon">▼</span>
-                </div>
-              </td>
-            </tr>
             
-            <!-- DÉTAILS DÉROULANTS (MARIN & ILAN SÉPARÉS AVEC LIGNE DROITE) -->
+            <!-- DÉTAILS DÉROULANTS (MARIN & ILAN SÉPARÉS) -->
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
@@ -337,15 +324,15 @@
   <script>
     function toggleChampDetails() {
       const row = document.getElementById('champ-details-row');
-      const arrows = document.querySelectorAll('.arrow-icon');
+      const arrow = document.getElementById('arrow');
       
       const isVisible = row.style.display === 'table-row';
       if (isVisible) {
         row.style.display = 'none';
-        arrows.forEach(el => el.classList.remove('open'));
+        arrow.classList.remove('open');
       } else {
         row.style.display = 'table-row';
-        arrows.forEach(el => el.classList.add('open'));
+        arrow.classList.add('open');
       }
     }
   </script>
