@@ -122,7 +122,6 @@ onAuthStateChanged(auth, async (user) => {
       document.body.innerHTML = "<p>Accès refusé</p>"; return;
     }
     
-    // 🟢 FORÇAGE DE L'AFFICHAGE : On s'assure que le HTML devienne visible quoi qu'il arrive
     const adminOnlyEl = document.getElementById("adminOnly");
     if (adminOnlyEl) {
       adminOnlyEl.classList.remove("hidden");
@@ -137,7 +136,6 @@ onAuthStateChanged(auth, async (user) => {
     setupNavigation();
     setupPilotsSection();
 
-    // Chargements asynchrones individuels protégés
     try { await loadPilots(); } catch (e) { console.error("Erreur loadPilots:", e); }
     try { await loadCourses(); } catch (e) { console.error("Erreur loadCourses:", e); }
     try { await loadIncidentHistory(); } catch (e) { console.error("Erreur loadIncidentHistory:", e); }
@@ -537,7 +535,6 @@ function setupPilotsSection() {
 
   fetchPilots();
 }
-
 
 /* ========================= Import JSON (parse) ========================= */
 function readFileAsJson(file) {
@@ -997,7 +994,6 @@ async function loadEstacupSignups() {
       const uid = sData.uid || docu.id;
       const uData = usersById.get(uid) || {};
 
-      // 1. Calcul de l'âge
       let ageText = "Âge inconnu";
       const dob = uData.dob || uData.birthDate || uData.dateNaissance;
       if (dob) {
@@ -1012,18 +1008,15 @@ async function loadEstacupSignups() {
         }
       }
 
-      // 2. Récupération et Couleur de Licence
-      const licence = uData.licenseClass || uData.licenceClass || uData.license || uData.licence || "Rookie";
-      let licColor = "#10b981"; // Vert pour Rookie
-      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; // Rouge
-      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; // Orange
+      const licence = uData.licenseClass || uData.licenceClass || uData.license || "Rookie";
+      let licColor = "#10b981"; 
+      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; 
+      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; 
 
-      // 3. Formatage du statut de paiement
       let payStatus = "Non renseigné";
       if (sData.paymentStatus === "adherent") payStatus = "Adhérent MEKA";
       if (sData.paymentStatus === "paye_5e") payStatus = "Frais d'inscription (5€) payés";
 
-      // 4. Récupération du Steam ID
       const steamId = sData.steamID64 || sData.steamId || uData.steamID64 || uData.steamId || "—";
 
       const pilotObj = {
@@ -1047,7 +1040,6 @@ async function loadEstacupSignups() {
       }
     });
 
-    // 5. Construction de l'interface (Grille pour En Attente, Tableau pour Validés)
     let html = `
       <div style="margin-bottom: 3rem;">
         <h3 style="color: #f59e0b; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(245, 158, 11, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
@@ -1066,7 +1058,7 @@ async function loadEstacupSignups() {
 
     list.innerHTML = html;
 
-    // --- Rendu des cartes EN ATTENTE (Format Fiche avec Steam ID) ---
+    // --- EN ATTENTE : Bouton VALIDER et bouton REFUSER (Supprimer) ---
     const renderPendingCard = (p) => `
       <div class="course-box" style="border-left: 4px solid #f59e0b; position: relative; padding: 1.5rem;">
         <h4 style="margin-top:0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
@@ -1082,8 +1074,9 @@ async function loadEstacupSignups() {
            <li><strong>Steam ID :</strong> <code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px;">${escapeHtml(p.steam)}</code></li>
            <li><strong>Paiement :</strong> <span style="color: var(--text-primary);">${escapeHtml(p.payStatus)}</span></li>
         </ul>
-        <div style="text-align: right; margin-top: 15px;">
-          <button class="btn-validate-signup" data-id="${p.docId}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; width: 100%;">✔️ Valider l'inscription</button>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button class="btn-validate-signup" data-id="${p.docId}" style="flex: 1; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">✔️ Valider</button>
+          <button class="btn-delete-signup" data-id="${p.docId}" style="flex: 1; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">❌ Refuser</button>
         </div>
       </div>
     `;
@@ -1096,7 +1089,7 @@ async function loadEstacupSignups() {
         pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderPendingCard(p)));
     }
 
-    // --- Rendu du tableau VALIDÉS (Format Ligne/Table avec Colonne Steam ID) ---
+    // --- VALIDÉS : Tableau avec bouton SUPPRIMER DÉFINITIVEMENT ---
     const valContainer = document.getElementById("validatedSignupsGrid");
     if (validated.length === 0) {
         valContainer.innerHTML = "<p class='muted-note'>Aucune inscription validée.</p>";
@@ -1132,8 +1125,8 @@ async function loadEstacupSignups() {
                 <td style="padding: 12px 15px;"><code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(p.steam)}</code></td>
                 <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
                 <td style="padding: 12px 15px; text-align: right;">
-                    <button class="btn-revoke-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
-                        ❌ Révoquer
+                    <button class="btn-delete-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                        🗑️ Supprimer
                     </button>
                 </td>
               </tr>
@@ -1148,23 +1141,24 @@ async function loadEstacupSignups() {
         valContainer.innerHTML = tableHtml;
     }
 
-    // 6. Actions des boutons avec auto-rafraîchissement
+    // Gestionnaires d'événements pour les boutons Valider
     document.querySelectorAll('.btn-validate-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.target.getAttribute('data-id');
         e.target.disabled = true;
-        e.target.textContent = "Validation en cours...";
+        e.target.textContent = "Validation...";
         await updateDoc(doc(db, "estacup_s10_signups", id), { isValidated: true });
         loadEstacupSignups();
       });
     });
 
-    document.querySelectorAll('.btn-revoke-signup').forEach(btn => {
+    // Gestionnaires d'événements pour les boutons Supprimer / Refuser
+    document.querySelectorAll('.btn-delete-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        if(!confirm("Êtes-vous sûr de vouloir repasser cette inscription en attente ?")) return;
+        if(!confirm("Êtes-vous sûr de vouloir supprimer définitivement cette inscription ? Le pilote devra refaire sa demande s'il souhaite participer.")) return;
         const id = e.target.getAttribute('data-id');
         e.target.disabled = true;
-        await updateDoc(doc(db, "estacup_s10_signups", id), { isValidated: false });
+        await deleteDoc(doc(db, "estacup_s10_signups", id));
         loadEstacupSignups();
       });
     });
