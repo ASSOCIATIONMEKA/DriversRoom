@@ -49,9 +49,9 @@
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
     /* Couleurs de podium strictes : Or, Argent, Bronze */
-    .pos-p1 { color: #ffd700; font-weight: bold; } /* Or */
-    .pos-p2 { color: #c0c0c0; font-weight: bold; } /* Argent */
-    .pos-p3 { color: #cd7f32; font-weight: bold; } /* Bronze */
+    .pos-p1 { color: #ffd700; font-weight: bold; } 
+    .pos-p2 { color: #c0c0c0; font-weight: bold; } 
+    .pos-p3 { color: #cd7f32; font-weight: bold; } 
     .pos-other { color: #94a3b8; }
 
     /* Ligne cliquable (Championnat) */
@@ -72,6 +72,17 @@
       border-left: 3px solid #8b5cf6;
       font-size: 0.9rem;
     }
+    .pilot-section-title {
+      font-weight: bold;
+      color: #c4b5fd;
+      margin-top: 15px;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: 4px;
+    }
+    .pilot-section-title:first-child { margin-top: 0; }
+
     .rounds-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -183,7 +194,7 @@
             </tr>
           </thead>
           <tbody>
-            <!-- 24H SPA (COURSE UNIQUE) -->
+            <!-- 24H SPA -->
             <tr>
               <td>11/07/2026</td>
               <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
@@ -194,30 +205,32 @@
               <td><strong class="pos-p1">🏆 Vainqueur (P1)</strong></td>
             </tr>
 
-            <!-- CHAMPIONNAT CFS GOFIR (CLIQUABLE) -->
+            <!-- CHAMPIONNAT CFS GOFIR (GROUPÉ POUR MARIN ET ILAN) -->
             <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
               <td><strong>Championnat CFS GoFiR</strong></td>
               <td>Porsche 911 GT3R</td>
               <td>Access</td>
-              <td>Marin Tomczyk</td>
+              <td>Marin Tomczyk, Ilan Guilbaud</td>
               <td>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <strong style="color: #f59e0b;">🏆 CHAMPION</strong>
+                  <strong style="color: #f59e0b;">🏆 CHAMPION (Marin)</strong>
                   <span class="arrow-icon" id="arrow">▼</span>
                 </div>
               </td>
             </tr>
             
-            <!-- DÉTAILS DÉROULANTS DES MANCHES -->
+            <!-- DÉTAILS DÉROULANTS GROUPÉS -->
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
-                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 12px; font-size: 1rem;">🏁 Détail des manches :</div>
+                  
+                  <!-- Section Marin -->
+                  <div class="pilot-section-title">👤 Résultats de Marin Tomczyk :</div>
                   <div class="rounds-grid">
                     <div class="round-card joker">
-                      <div class="round-info"><span class="round-name">Manche 1 : Suzuka (Joker)</span><span class="round-date">25 février 2026</span></div>
+                      <div class="round-info"><span class="round-name">Manche 1 : Suzuka (Joker)</span><span class="round-date">25 fév. 2026</span></div>
                       <span class="pos-other">P20</span>
                     </div>
                     <div class="round-card">
@@ -225,15 +238,15 @@
                       <span class="pos-p2">P2</span>
                     </div>
                     <div class="round-card">
-                      <div class="round-info"><span class="round-name">Manche 3 : Magny-Cours</span><span class="round-date">01 avril 2026</span></div>
+                      <div class="round-info"><span class="round-name">Manche 3 : Magny-Cours</span><span class="round-date">01 avr. 2026</span></div>
                       <span class="pos-p1">P1</span>
                     </div>
                     <div class="round-card">
-                      <div class="round-info"><span class="round-name">Manche 4 : Barcelone (Historic)</span><span class="round-date">15 avril 2026</span></div>
+                      <div class="round-info"><span class="round-name">Manche 4 : Barcelone</span><span class="round-date">15 avr. 2026</span></div>
                       <span class="pos-p1">P1</span>
                     </div>
                     <div class="round-card">
-                      <div class="round-info"><span class="round-name">Manche 5 : Interlagos</span><span class="round-date">29 avril 2026</span></div>
+                      <div class="round-info"><span class="round-name">Manche 5 : Interlagos</span><span class="round-date">29 avr. 2026</span></div>
                       <span class="pos-other">P4</span>
                     </div>
                     <div class="round-card">
@@ -249,6 +262,11 @@
                       <span class="pos-p3">P3</span>
                     </div>
                   </div>
+
+                  <!-- Section Ilan (Prête à recevoir ses résultats) -->
+                  <div class="pilot-section-title" style="margin-top: 20px;">👤 Résultats d'Ilan Guilbaud :</div>
+                  <p style="color: #94a3b8; font-style: italic; font-size: 0.85rem; margin: 5px 0 0 0;">(Résultats d'Ilan à insérer ici)</p>
+
                 </div>
               </td>
             </tr>
