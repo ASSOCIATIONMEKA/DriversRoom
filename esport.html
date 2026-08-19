@@ -48,37 +48,46 @@
     
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
-    /* Accordéon / Liste déroulante pour les championnats */
-    .champ-dropdown {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #f8fafc;
-      padding: 8px 12px;
-      border-radius: 6px;
+    /* Ligne cliquable (Championnat) */
+    .clickable-row {
       cursor: pointer;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s;
+      transition: background 0.2s;
     }
-    .champ-dropdown:hover { border-color: #818cf8; }
+    .clickable-row:hover td {
+      background: rgba(139, 92, 246, 0.15);
+    }
     
     .details-row { display: none; }
     .details-content {
       background: rgba(15, 23, 42, 0.95);
-      padding: 15px;
+      padding: 20px;
       border-radius: 8px;
       margin-top: 5px;
       border-left: 3px solid #8b5cf6;
       font-size: 0.9rem;
     }
-    .round-item {
+    .rounds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .round-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 14px;
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      align-items: center;
     }
-    .round-item:last-child { border-bottom: none; }
+    .arrow-icon {
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+    .arrow-icon.open {
+      transform: rotate(180deg);
+    }
   </style>
 </head>
 <body>
@@ -163,8 +172,8 @@
               <td><strong style="color: #10b981;">🏆 Vainqueur (P1)</strong></td>
             </tr>
 
-            <!-- CHAMPIONNAT CFS GOFIR -->
-            <tr>
+            <!-- CHAMPIONNAT CFS GOFIR (CLIQUABLE) -->
+            <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
               <td><strong>Championnat CFS GoFiR</strong></td>
@@ -172,29 +181,27 @@
               <td>Access</td>
               <td>Marin Tomczyk</td>
               <td>
-                <div style="margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                   <strong style="color: #f59e0b;">🏆 CHAMPION FINAL</strong>
+                  <span class="arrow-icon" id="arrow">▼</span>
                 </div>
-                <!-- Liste déroulante interactive -->
-                <select class="champ-dropdown" onchange="toggleDetails(this)">
-                  <option value="" disabled selected>📂 Voir le détail des manches...</option>
-                  <option value="all">Fermer le détail</option>
-                  <option value="details">Afficher les 7 manches</option>
-                </select>
               </td>
             </tr>
-            <!-- Ligne de détails cachée pour le championnat -->
-            <tr class="details-row" id="cfs-details">
+            
+            <!-- DÉTAILS DÉROULANTS DES MANCHES -->
+            <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
-                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 8px;">Détails des manches - Championnat CFS GoFiR :</div>
-                  <div class="round-item"><span>🇩🇪 Allemagne</span> <span style="color: #f59e0b; font-weight: bold;">P3</span></div>
-                  <div class="round-item"><span>🇫🇷 France</span> <span style="color: #38bdf8; font-weight: bold;">P2</span></div>
-                  <div class="round-item"><span>🇪🇸 Espagne</span> <span style="color: #10b981; font-weight: bold;">P1</span></div>
-                  <div class="round-item"><span>🇧🇷 Brésil</span> <span style="color: #10b981; font-weight: bold;">P1</span></div>
-                  <div class="round-item"><span>🇮🇹 Italie</span> <span style="color: #94a3b8;">P4</span></div>
-                  <div class="round-item"><span>🇵🇹 Portugal</span> <span style="color: #10b981; font-weight: bold;">P1</span></div>
-                  <div class="round-item"><span>🇺🇸 USA</span> <span style="color: #38bdf8; font-weight: bold;">P2</span></div>
+                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 12px; font-size: 1rem;">🏁 Détail des manches - Championnat CFS GoFiR :</div>
+                  <div class="rounds-grid">
+                    <div class="round-card"><span>🇩🇪 Allemagne</span> <strong style="color: #f59e0b;">P3</strong></div>
+                    <div class="round-card"><span>🇫🇷 France</span> <strong style="color: #38bdf8;">P2</strong></div>
+                    <div class="round-card"><span>🇪🇸 Espagne</span> <strong style="color: #10b981;">P1</strong></div>
+                    <div class="round-card"><span>🇧🇷 Brésil</span> <strong style="color: #10b981;">P1</strong></div>
+                    <div class="round-card"><span>🇮🇹 Italie</span> <strong style="color: #94a3b8;">P4</strong></div>
+                    <div class="round-card"><span>🇵🇹 Portugal</span> <strong style="color: #10b981;">P1</strong></div>
+                    <div class="round-card"><span>🇺🇸 USA</span> <strong style="color: #38bdf8;">P2</strong></div>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -206,15 +213,17 @@
 
   </main>
 
-  <!-- Script pour gérer le menu déroulant du championnat -->
+  <!-- Script d'interaction pour le dépliage -->
   <script>
-    function toggleDetails(selectObj) {
-      const row = document.getElementById('cfs-details');
-      if (selectObj.value === 'details') {
-        row.style.display = 'table-row';
-      } else {
+    function toggleChampDetails() {
+      const row = document.getElementById('champ-details-row');
+      const arrow = document.getElementById('arrow');
+      if (row.style.display === 'table-row') {
         row.style.display = 'none';
-        selectObj.selectedIndex = 0; // Remet l'invite par défaut
+        arrow.classList.remove('open');
+      } else {
+        row.style.display = 'table-row';
+        arrow.classList.add('open');
       }
     }
   </script>
