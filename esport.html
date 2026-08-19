@@ -2,50 +2,57 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Équipe eSport - MEKA SimRacing</title>
   <link rel="stylesheet" href="style.css"> 
   
   <style>
-    .esport-header { text-align: center; padding: 3rem 2rem 2rem 2rem; }
-    .esport-header img { max-width: 250px; margin-bottom: 1.5rem; }
-    .esport-header h1 { font-size: 2.5rem; color: white; margin-bottom: 0.5rem; text-transform: uppercase; }
+    .esport-header { text-align: center; padding: 3rem 2rem 1rem 2rem; }
+    .esport-header img { max-width: 250px; margin-bottom: 1rem; }
+    .esport-header h1 { font-size: 2.5rem; color: white; text-transform: uppercase; margin-bottom: 0.5rem; }
 
     .portal-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem 6rem 2rem; }
     
     .course-box {
-      background: rgba(30, 37, 48, 0.6);
-      padding: 2rem;
+      background: rgba(30, 37, 48, 0.4);
+      padding: 2.5rem;
       border-radius: 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.05);
       color: #F8FAFC;
       margin-bottom: 2rem;
     }
     
-    .course-box h2 { font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--accent-primary, #6366F1); text-align: center; }
-    
+    .course-box h2 { font-size: 1.8rem; margin-bottom: 2rem; color: #818cf8; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Grille des pilotes style "Carte Profil" */
     .roster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
-      margin-top: 1.5rem;
+      gap: 20px;
     }
 
-    @media (max-width: 900px) {
-      .roster-grid { grid-template-columns: repeat(2, 1fr); }
-    }
+    @media (max-width: 1000px) { .roster-grid { grid-template-columns: repeat(2, 1fr); } }
 
-    .roster-card {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--border-primary);
-      border-radius: 1rem;
-      padding: 1.5rem;
+    .pilot-card {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 2rem 1rem;
       text-align: center;
+      border-top: 4px solid #38bdf8; /* Couleur par défaut */
+      transition: transform 0.3s ease;
     }
+    
+    .pilot-card:hover { transform: translateY(-5px); }
 
-    .pilot-name { font-size: 1.2rem; font-weight: 800; color: white; margin-bottom: 1rem; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .pilot-info { font-size: 0.9rem; color: #94a3b8; line-height: 1.8; text-align: left; }
-    .pilot-info strong { color: #38bdf8; }
+    .pilot-name { font-size: 1.3rem; font-weight: 900; color: white; margin-bottom: 1.5rem; }
+    
+    .stat-line { 
+      display: flex; justify-content: space-between; 
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.9rem;
+    }
+    .stat-label { color: #64748b; }
+    .stat-value { color: #f1f5f9; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -56,63 +63,54 @@
   <header class="esport-header">
     <img src="logos/mekasr-logo.png" alt="MEKA eSport Logo">
     <h1>Équipe MEKA eSport</h1>
-    <p style="color: #94a3b8;">L'équipe eSport 100% étudiante engagée sur les championnats virtuels les plus exigeants.</p>
+    <p style="color: #94a3b8;">L'excellence sur piste virtuelle, l'esprit d'équipe avant tout.</p>
   </header>
 
   <main class="portal-content">
     
     <div class="course-box">
       <h2>Qui sommes-nous ?</h2>
-      <p style="text-align: center; max-width: 800px; margin: 0 auto;">Fondée sur les valeurs de passion, de rigueur et d'esprit d'équipe, l'écurie <strong>MEKA eSport</strong> rassemble les meilleurs pilotes issus de la communauté étudiante et simracing. De la préparation des setups à la stratégie de course en passant par la gestion des championnats comme l'<strong>ESTACUP</strong>, notre structure porte haut les couleurs de l'association sur tous les circuits virtuels.</p>
+      <p style="text-align: center; max-width: 800px; margin: 0 auto; color: #cbd5e1;">Passion, rigueur et performance. L'écurie <strong>MEKA eSport</strong> réunit des pilotes engagés dans les championnats les plus exigeants comme l'ESTACUP. Au-delà du chrono, nous cultivons le partage et la stratégie pour porter nos couleurs au sommet.</p>
     </div>
 
     <div class="course-box">
-      <h2>Le Roster Officiel</h2>
+      <h2>Le Roster Officiel iRacing</h2>
       <div class="roster-grid">
         <!-- NICOLAS -->
-        <div class="roster-card">
+        <div class="pilot-card" style="border-top-color: #8b5cf6;">
           <div class="pilot-name">Nicolas MOREAU</div>
-          <div class="pilot-info">
-            • <strong>Âge :</strong> 23 ans<br>
-            • <strong>Licence :</strong> Classe A<br>
-            • <strong>iRating :</strong> 2547<br>
-            • <strong>Membre depuis :</strong> Octobre 2023
-          </div>
+          <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
+          <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
+          <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2547</span></div>
+          <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Oct. 2023</span></div>
         </div>
         <!-- ILAN -->
-        <div class="roster-card">
+        <div class="pilot-card" style="border-top-color: #ec4899;">
           <div class="pilot-name">Ilan GUILBAUD</div>
-          <div class="pilot-info">
-            • <strong>Âge :</strong> 23 ans<br>
-            • <strong>Licence :</strong> Classe A<br>
-            • <strong>iRating :</strong> 2619<br>
-            • <strong>Membre depuis :</strong> Janvier 2025
-          </div>
+          <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
+          <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
+          <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2619</span></div>
+          <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Janv. 2025</span></div>
         </div>
         <!-- MARIN -->
-        <div class="roster-card">
+        <div class="pilot-card" style="border-top-color: #f59e0b;">
           <div class="pilot-name">Marin TOMCZYK</div>
-          <div class="pilot-info">
-            • <strong>Âge :</strong> 20 ans<br>
-            • <strong>Licence :</strong> Classe A<br>
-            • <strong>iRating :</strong> 3226<br>
-            • <strong>Membre depuis :</strong> Mars 2025
-          </div>
+          <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
+          <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
+          <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">3226</span></div>
+          <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Mars 2025</span></div>
         </div>
         <!-- TIMOTHEE -->
-        <div class="roster-card">
+        <div class="pilot-card" style="border-top-color: #10b981;">
           <div class="pilot-name">Timothée JACOBSEN</div>
-          <div class="pilot-info">
-            • <strong>Âge :</strong> 20 ans<br>
-            • <strong>Licence :</strong> Classe A<br>
-            • <strong>iRating :</strong> 2520<br>
-            • <strong>Membre depuis :</strong> Novembre 2025
-          </div>
+          <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
+          <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
+          <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2520</span></div>
+          <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Nov. 2025</span></div>
         </div>
       </div>
     </div>
 
   </main>
-
 </body>
 </html>
