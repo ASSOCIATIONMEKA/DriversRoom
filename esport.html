@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Équipe eSport - MEKA SimRacing</title>
   <link rel="stylesheet" href="style.css"> 
   
@@ -14,17 +14,16 @@
     .portal-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem 6rem 2rem; }
     
     .course-box {
-      background: rgba(30, 37, 48, 0.4);
+      background: rgba(30, 37, 48, 0.6);
       padding: 2.5rem;
       border-radius: 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: #F8FAFC;
       margin-bottom: 2rem;
     }
     
     .course-box h2 { font-size: 1.8rem; margin-bottom: 2rem; color: #818cf8; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* Grille des pilotes style "Carte Profil" */
     .roster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -38,7 +37,7 @@
       border-radius: 12px;
       padding: 2rem 1rem;
       text-align: center;
-      border-top: 4px solid #38bdf8; /* Couleur par défaut */
+      border: 2px solid transparent; /* Bordure colorée spécifique */
       transition: transform 0.3s ease;
     }
     
@@ -74,34 +73,34 @@
     </div>
 
     <div class="course-box">
-      <h2>Le Roster Officiel iRacing</h2>
+      <h2>Le Roster Officiel Iracing</h2>
       <div class="roster-grid">
-        <!-- NICOLAS -->
-        <div class="pilot-card" style="border-top-color: #8b5cf6;">
+        <!-- NICOLAS (ROSE) -->
+        <div class="pilot-card" style="border-color: #ec4899;">
           <div class="pilot-name">Nicolas MOREAU</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
           <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2547</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Oct. 2023</span></div>
         </div>
-        <!-- ILAN -->
-        <div class="pilot-card" style="border-top-color: #ec4899;">
+        <!-- ILAN (JAUNE) -->
+        <div class="pilot-card" style="border-color: #f59e0b;">
           <div class="pilot-name">Ilan GUILBAUD</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
           <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2619</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Janv. 2025</span></div>
         </div>
-        <!-- MARIN -->
-        <div class="pilot-card" style="border-top-color: #f59e0b;">
+        <!-- MARIN (BLEU) -->
+        <div class="pilot-card" style="border-color: #38bdf8;">
           <div class="pilot-name">Marin TOMCZYK</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
           <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">3226</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Mars 2025</span></div>
         </div>
-        <!-- TIMOTHEE -->
-        <div class="pilot-card" style="border-top-color: #10b981;">
+        <!-- TIMOTHEE (VERT) -->
+        <div class="pilot-card" style="border-color: #10b981;">
           <div class="pilot-name">Timothée JACOBSEN</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
           <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
