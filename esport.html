@@ -24,34 +24,29 @@
     
     .course-box h2 { font-size: 1.8rem; margin-bottom: 2rem; color: #818cf8; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
 
-    .roster-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
-
+    /* Grille des pilotes */
+    .roster-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
     @media (max-width: 1000px) { .roster-grid { grid-template-columns: repeat(2, 1fr); } }
 
     .pilot-card {
-      background: #0f172a;
-      border-radius: 12px;
-      padding: 2rem 1rem;
-      text-align: center;
-      border: 2px solid transparent; /* Bordure colorée spécifique */
-      transition: transform 0.3s ease;
+      background: #0f172a; border-radius: 12px; padding: 2rem 1rem; text-align: center;
+      border: 2px solid transparent; transition: transform 0.3s ease;
     }
-    
     .pilot-card:hover { transform: translateY(-5px); }
-
     .pilot-name { font-size: 1.3rem; font-weight: 900; color: white; margin-bottom: 1.5rem; }
     
     .stat-line { 
       display: flex; justify-content: space-between; 
-      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-      font-size: 0.9rem;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem;
     }
     .stat-label { color: #64748b; }
     .stat-value { color: #f1f5f9; font-weight: 600; }
+
+    /* Tableau des résultats */
+    .results-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .results-table th { padding: 15px; border-bottom: 2px solid #38bdf8; color: #94a3b8; font-weight: 600; }
+    .results-table td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -69,13 +64,12 @@
     
     <div class="course-box">
       <h2>Qui sommes-nous ?</h2>
-      <p style="text-align: center; max-width: 800px; margin: 0 auto; color: #cbd5e1;">Passion, rigueur et performance. L'écurie <strong>MEKA SimRacing</strong> réunit des pilotes engagés dans les championnats les plus exigeants comme l'ESTACUP. Au-delà du chrono, nous cultivons le partage et la stratégie pour porter nos couleurs au sommet.</p>
+      <p style="text-align: center; max-width: 800px; margin: 0 auto; color: #cbd5e1;">Passion, rigueur et performance. L'écurie <strong>MEKA eSport</strong> réunit des pilotes engagés dans les championnats les plus exigeants comme l'ESTACUP. Au-delà du chrono, nous cultivons le partage et la stratégie pour porter nos couleurs au sommet.</p>
     </div>
 
     <div class="course-box">
       <h2>Le Roster Officiel Iracing</h2>
       <div class="roster-grid">
-        <!-- NICOLAS (ROSE) -->
         <div class="pilot-card" style="border-color: #ec4899;">
           <div class="pilot-name">Nicolas MOREAU</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
@@ -83,7 +77,6 @@
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2547</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Oct. 2023</span></div>
         </div>
-        <!-- ILAN (JAUNE) -->
         <div class="pilot-card" style="border-color: #f59e0b;">
           <div class="pilot-name">Ilan GUILBAUD</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
@@ -91,7 +84,6 @@
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2619</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Janv. 2025</span></div>
         </div>
-        <!-- MARIN (BLEU) -->
         <div class="pilot-card" style="border-color: #38bdf8;">
           <div class="pilot-name">Marin TOMCZYK</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
@@ -99,7 +91,6 @@
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">3226</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Mars 2025</span></div>
         </div>
-        <!-- TIMOTHEE (VERT) -->
         <div class="pilot-card" style="border-color: #10b981;">
           <div class="pilot-name">Timothée JACOBSEN</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">20 ans</span></div>
@@ -107,6 +98,42 @@
           <div class="stat-line"><span class="stat-label">iRating</span><span class="stat-value">2520</span></div>
           <div class="stat-line"><span class="stat-label">Depuis</span><span class="stat-value">Nov. 2025</span></div>
         </div>
+      </div>
+    </div>
+
+    <div class="course-box">
+      <h2>Palmarès & Historique des courses</h2>
+      <div style="overflow-x: auto;">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Événement</th>
+              <th>Format</th>
+              <th>Pilotes</th>
+              <th>Résultat</th>
+              <th>Détails</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>15/06/2026</td>
+              <td><strong>24h du Nürburgring</strong></td>
+              <td><span class="badge" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Endurance</span></td>
+              <td>N. Moreau, M. Tomczyk</td>
+              <td style="color: #f59e0b; font-weight: bold;">P3 Général</td>
+              <td><a href="#" style="color: #38bdf8; text-decoration: underline;">Replay</a></td>
+            </tr>
+            <tr>
+              <td>24/05/2026</td>
+              <td><strong>ESTACUP S10 - R2</strong></td>
+              <td><span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Sprint</span></td>
+              <td>Ilan Guilbaud</td>
+              <td style="color: #10b981; font-weight: bold;">P1</td>
+              <td><a href="#" style="color: #38bdf8; text-decoration: underline;">Stats</a></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
