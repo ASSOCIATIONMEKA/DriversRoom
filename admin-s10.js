@@ -981,7 +981,7 @@ async function loadReclamations() {
 /* ---------------- ESTACUP : Listing inscriptions S10 ---------------- */
 async function loadEstacupSignups() {
   const list = document.getElementById("estacupList"); if (!list) return;
-  list.innerHTML = loaderHtml("Chargement des engagés S10...");
+  list.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement des engagés S10...</div>`;
   
   // 🟢 Lecture forcée sur la table neuve S10
   const snap = await getDocs(collection(db, "estacup_s10_signups"));
