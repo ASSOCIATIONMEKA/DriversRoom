@@ -192,7 +192,7 @@ function setupNavigation(isAdmin = false) {
       setupChampionshipSubnav();
       showChampionshipSub("vehicule");
       setupMekaQuestionnaire(lastUserData);
-      loadEstacupEngages();
+      if(typeof loadEstacupEngages === "function") loadEstacupEngages();
       renderVoteCircuit();
     }
     else if (key === "results" && currentUid) {
@@ -201,11 +201,11 @@ function setupNavigation(isAdmin = false) {
       loadResults(currentUid);
     }
     else if (key === "reclamations") {
-      loadReclamHistory();
+      if(typeof loadReclamHistory === "function") loadReclamHistory();
     }
     else if (key === "infos" && currentUid) {
-      loadMRating(currentUid);
-      loadMSafety(currentUid);
+      if(typeof loadMRating === "function") loadMRating(currentUid);
+      if(typeof loadMSafety === "function") loadMSafety(currentUid);
     }
   }
 
@@ -232,14 +232,14 @@ function showChampionshipSub(key) {
 function setupResultsSubnav() {
   const subs = document.querySelectorAll("#resultsSubnav .res-sub-btn");
   subs.forEach(btn => { btn.onclick = () => showResultsSub(btn.dataset.sub); });
-  const chkP = $("jokerTogglePilots"); if (chkP) chkP.onchange = () => loadEstacupPilotStandings();
-  const chkT = $("jokerToggleTeams"); if (chkT) chkT.onchange = () => loadEstacupTeamStandings();
+  const chkP = $("jokerTogglePilots"); if (chkP) chkP.onchange = () => { if(typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings(); };
+  const chkT = $("jokerToggleTeams"); if (chkT) chkT.onchange = () => { if(typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings(); };
 }
 function showResultsSub(key) {
   document.querySelectorAll('.res-subsection').forEach(b => b.classList.add("hidden"));
   const block = $("res-sub-" + key); if (block) block.classList.remove("hidden");
-  if (key === "rankpilots") loadEstacupPilotStandings();
-  if (key === "rankteams") loadEstacupTeamStandings();
+  if (key === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
+  if (key === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
 }
 
 /* ======================== AUTHENTIFICATION ======================== */
@@ -266,7 +266,7 @@ onAuthStateChanged(auth, async (user) => {
     setupNavigation(data.admin === true);
     await ensureSignupCache();
     await loadPilotStats(currentUid);
-    await initInfoComparison(currentUid);
+    if(typeof initInfoComparison === "function") await initInfoComparison(currentUid);
   } catch (err) { console.error("Erreur sécurité S10:", err); }
 });
 
@@ -431,12 +431,18 @@ async function loadEstacupForm(userData, editing = false) {
 
     if (docSnap.exists() && !editing) {
       const data = docSnap.data();
+      
+      let statusText = "Non renseigné";
+      if (data.paymentStatus === "adherent") statusText = "Adhérent MEKA";
+      if (data.paymentStatus === "paye_5e") statusText = "Frais d'inscription (5€) payés";
+
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px; border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05);">
           <h4 style="color: var(--accent-success); margin-bottom: 10px;">✅ Inscription validée !</h4>
           <p>Vous êtes officiellement engagé pour la Saison 10 de l'ESTACUP.</p>
           <ul style="list-style: none; padding: 0; margin-top: 15px;">
-            <li style="padding: 5px 0;"><strong>Pilote :</strong> ${escapeHtml(userData.firstName)} ${escapeHtml(userData.lastName)}</li>
+            <li style="padding: 5px 0;"><strong>Pilote :</strong> ${escapeHtml(data.firstName || userData.firstName)} ${escapeHtml(data.lastName || userData.lastName)}</li>
+            <li style="padding: 5px 0;"><strong>Statut :</strong> ${statusText}</li>
             <li style="padding: 5px 0;"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</li>
             <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
             <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
@@ -452,8 +458,21 @@ async function loadEstacupForm(userData, editing = false) {
     
     container.innerHTML = `
       <div class="course-box" style="margin-top: 20px;">
-        <h4 style="color: var(--accent-primary); margin-bottom: 15px;">Formulaire d'engagement - LMP3</h4>
+        <h4 style="color: var(--accent-primary); margin-bottom: 15px;">Formulaire d'inscription au championnat ESTACUP S10</h4>
         
+        <label for="regFirstName">Prénom :</label>
+        <input type="text" id="regFirstName" placeholder="Votre prénom" value="${escapeHtml(existingData.firstName || userData.firstName || "")}" required>
+
+        <label for="regLastName">Nom :</label>
+        <input type="text" id="regLastName" placeholder="Votre nom" value="${escapeHtml(existingData.lastName || userData.lastName || "")}" required>
+
+        <label for="regStatus">Statut d'inscription :</label>
+        <select id="regStatus" required style="margin-bottom: 1.5rem;">
+          <option value="" disabled ${!existingData.paymentStatus ? 'selected' : ''}>-- Sélectionnez votre statut --</option>
+          <option value="adherent" ${existingData.paymentStatus === 'adherent' ? 'selected' : ''}>Je suis adhérent de l'association MEKA</option>
+          <option value="paye_5e" ${existingData.paymentStatus === 'paye_5e' ? 'selected' : ''}>J'ai payé les 5€ d'inscription</option>
+        </select>
+
         <label for="regTeam">Nom de l'équipe (Laissez vide si vous roulez en indépendant) :</label>
         <input type="text" id="regTeam" placeholder="Ex: MEKA eSport" value="${escapeHtml(existingData.teamName || "")}">
 
@@ -473,10 +492,21 @@ async function loadEstacupForm(userData, editing = false) {
     }
 
     $("btnSubmitSignup").onclick = async () => {
+      const fName = $("regFirstName").value.trim();
+      const lName = $("regLastName").value.trim();
+      const status = $("regStatus").value;
       const team = $("regTeam").value.trim();
       const num = parseInt($("regNumber").value, 10);
       const steam = $("regSteam").value.trim();
 
+      if (!fName || !lName) {
+        alert("Veuillez renseigner votre prénom et votre nom.");
+        return;
+      }
+      if (!status) {
+        alert("Veuillez sélectionner votre statut d'inscription (Adhérent ou 5€ payés).");
+        return;
+      }
       if (!num || isNaN(num)) {
         alert("Veuillez entrer un numéro de course valide.");
         return;
@@ -493,8 +523,9 @@ async function loadEstacupForm(userData, editing = false) {
       try {
         await setDoc(docRef, {
           uid: currentUid,
-          firstName: userData.firstName || "",
-          lastName: userData.lastName || "",
+          firstName: fName,
+          lastName: lName,
+          paymentStatus: status,
           teamName: team,
           raceNumber: num,
           carChoice: "Ligier JS P320", 
@@ -506,7 +537,7 @@ async function loadEstacupForm(userData, editing = false) {
         
         alert("✅ Inscription réussie et enregistrée !");
         loadEstacupForm(userData, false);
-        loadEstacupEngages(); 
+        if(typeof loadEstacupEngages === "function") loadEstacupEngages(); 
       } catch (err) {
         console.error("Erreur d'inscription:", err);
         alert("Erreur lors de l'enregistrement de l'inscription.");
