@@ -395,12 +395,16 @@ async function loadPilotStats(uid) {
   } catch {}
 }
 
-async function initInfoComparison(currentUid) { /* Inchangé */ }
-async function renderComparison() { /* Inchangé */ }
-async function loadMRating(uid) { /* Inchangé */ }
-async function loadMSafety(uid) { /* Inchangé */ }
+async function initInfoComparison(currentUid) { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function renderComparison() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function loadMRating(uid) { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function loadMSafety(uid) { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function loadEstacupEngages() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function loadReclamHistory() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function loadEstacupPilotStandings() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
+async function loadEstacupTeamStandings() { /* Stubs pour d'éventuelles futures fonctionnalités */ }
 
-/* ======================== Formulaires ESTACUP (inscription) ======================== */
+/* ======================== FORMULAIRE D'INSCRIPTION ======================== */
 function setupMekaQuestionnaire(userData) {
   const select = $("mekaPaid"); const nextStep = $("mekaNextStep"); const formContainer = $("estacupFormContainer");
   if (!select) return;
@@ -415,11 +419,107 @@ function setupMekaQuestionnaire(userData) {
   };
 }
 
-async function loadEstacupForm(userData, editing = false) { /* Inchangé */ }
-async function loadEstacupEngages() { /* Inchangé */ }
-async function loadReclamHistory() { /* Inchangé */ }
-async function loadEstacupPilotStandings() { /* Inchangé */ }
-async function loadEstacupTeamStandings() { /* Inchangé */ }
+async function loadEstacupForm(userData, editing = false) {
+  const container = $("estacupFormContainer");
+  if (!container) return;
+
+  container.innerHTML = `<div class="loading-inline" style="margin-top: 15px;"><div class="spinner"></div> Chargement du formulaire...</div>`;
+
+  try {
+    const docRef = doc(db, "estacup_s10_signups", currentUid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists() && !editing) {
+      const data = docSnap.data();
+      container.innerHTML = `
+        <div class="course-box" style="margin-top: 20px; border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05);">
+          <h4 style="color: var(--accent-success); margin-bottom: 10px;">✅ Inscription validée !</h4>
+          <p>Vous êtes officiellement engagé pour la Saison 10 de l'ESTACUP.</p>
+          <ul style="list-style: none; padding: 0; margin-top: 15px;">
+            <li style="padding: 5px 0;"><strong>Pilote :</strong> ${escapeHtml(userData.firstName)} ${escapeHtml(userData.lastName)}</li>
+            <li style="padding: 5px 0;"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</li>
+            <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
+            <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
+          </ul>
+          <button id="btnEditSignup" style="margin-top: 20px; background: rgba(15,23,42,0.8); border: 1px solid var(--border-primary); color: white;">✏️ Modifier mon inscription</button>
+        </div>
+      `;
+      $("btnEditSignup").onclick = () => loadEstacupForm(userData, true);
+      return;
+    }
+
+    const existingData = docSnap.exists() ? docSnap.data() : {};
+    
+    container.innerHTML = `
+      <div class="course-box" style="margin-top: 20px;">
+        <h4 style="color: var(--accent-primary); margin-bottom: 15px;">Formulaire d'engagement - LMP3</h4>
+        
+        <label for="regTeam">Nom de l'équipe (Laissez vide si vous roulez en indépendant) :</label>
+        <input type="text" id="regTeam" placeholder="Ex: MEKA eSport" value="${escapeHtml(existingData.teamName || "")}">
+
+        <label for="regNumber">Numéro de course souhaité (Ex: 42) :</label>
+        <input type="number" id="regNumber" placeholder="Entre 2 et 999" value="${existingData.raceNumber || ""}" min="2" max="999" required>
+
+        <label for="regSteam">Steam ID (64) :</label>
+        <input type="text" id="regSteam" placeholder="7656119..." value="${escapeHtml(existingData.steamID64 || userData.steamID64 || userData.steamId || "")}" required>
+
+        <button id="btnSubmitSignup" class="btn-validate" style="width: 100%; margin-top: 15px;">🏁 Valider mon inscription</button>
+        ${editing ? '<button id="btnCancelEdit" style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid var(--border-primary);">❌ Annuler la modification</button>' : ''}
+      </div>
+    `;
+
+    if (editing) {
+      $("btnCancelEdit").onclick = () => loadEstacupForm(userData, false);
+    }
+
+    $("btnSubmitSignup").onclick = async () => {
+      const team = $("regTeam").value.trim();
+      const num = parseInt($("regNumber").value, 10);
+      const steam = $("regSteam").value.trim();
+
+      if (!num || isNaN(num)) {
+        alert("Veuillez entrer un numéro de course valide.");
+        return;
+      }
+      if (!steam) {
+        alert("Veuillez renseigner votre Steam ID pour le serveur.");
+        return;
+      }
+
+      const btn = $("btnSubmitSignup");
+      btn.disabled = true;
+      btn.textContent = "Enregistrement en cours...";
+
+      try {
+        await setDoc(docRef, {
+          uid: currentUid,
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          teamName: team,
+          raceNumber: num,
+          carChoice: "Ligier JS P320", 
+          steamID64: steam,
+          updatedAt: new Date()
+        }, { merge: true });
+
+        signupCache.set(currentUid, { teamName: team, raceNumber: num, carChoice: "Ligier JS P320", steamID64: steam });
+        
+        alert("✅ Inscription réussie et enregistrée !");
+        loadEstacupForm(userData, false);
+        loadEstacupEngages(); 
+      } catch (err) {
+        console.error("Erreur d'inscription:", err);
+        alert("Erreur lors de l'enregistrement de l'inscription.");
+        btn.disabled = false;
+        btn.textContent = "🏁 Valider mon inscription";
+      }
+    };
+
+  } catch (err) {
+    console.error("Erreur chargement formulaire:", err);
+    container.innerHTML = `<div class="course-box"><p class="impact-bad">Erreur de connexion à la base de données.</p></div>`;
+  }
+}
 
 /* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
 async function renderVoteCircuit() {
