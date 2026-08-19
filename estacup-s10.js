@@ -229,6 +229,10 @@ function showChampionshipSub(key) {
   else if (key === "engages") {
     loadEstacupEngages();
   }
+  else if (key === "inscription") {
+    // S'assure que le questionnaire s'adapte si on reclique sur l'onglet inscription
+    if (lastUserData) setupMekaQuestionnaire(lastUserData);
+  }
 }
 
 /* --- Sous-menus Résultats --- */
@@ -399,17 +403,48 @@ async function loadPilotStats(uid) {
 
 /* ======================== FORMULAIRE D'INSCRIPTION ======================== */
 function setupMekaQuestionnaire(userData) {
-  const select = $("mekaPaid"); const nextStep = $("mekaNextStep"); const formContainer = $("estacupFormContainer");
+  const select = $("mekaPaid"); 
+  const nextStep = $("mekaNextStep"); 
+  const formContainer = $("estacupFormContainer");
+  
   if (!select) return;
-  nextStep.innerHTML = ""; if (formContainer) { formContainer.classList.add("hidden"); formContainer.innerHTML = ""; }
-  select.onchange = () => {
-    nextStep.innerHTML = ""; if (formContainer) { formContainer.classList.add("hidden"); formContainer.innerHTML = ""; }
-    if (select.value === "yes") {
-      if (formContainer) formContainer.classList.remove("hidden"); loadEstacupForm(userData);
-    } else if (select.value === "no") {
-      nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
+
+  // On vérifie directement si une inscription existe déjà dans Firebase pour masquer la question des 5€ / adhésion
+  const docRef = doc(db, "estacup_s10_signups", currentUid);
+  getDoc(docRef).then((docSnap) => {
+    const hasSignedUp = docSnap.exists();
+
+    const containerParent = select.closest(".course-box") || select.parentElement.parentElement;
+
+    if (hasSignedUp) {
+      // Si déjà inscrit, on masque complètement la question des 5€/adhésion et on affiche direct le formulaire/récap
+      if (select && select.parentElement) select.parentElement.style.display = "none";
+      if (formContainer) formContainer.classList.remove("hidden");
+      loadEstacupForm(userData, false);
+    } else {
+      // Sinon, on s'assure que le bloc de sélection est bien affiché
+      if (select && select.parentElement) select.parentElement.style.display = "block";
+      nextStep.innerHTML = ""; 
+      if (formContainer) { 
+        formContainer.classList.add("hidden"); 
+        formContainer.innerHTML = ""; 
+      }
+
+      select.onchange = () => {
+        nextStep.innerHTML = ""; 
+        if (formContainer) { 
+          formContainer.classList.add("hidden"); 
+          formContainer.innerHTML = ""; 
+        }
+        if (select.value === "yes") {
+          if (formContainer) formContainer.classList.remove("hidden"); 
+          loadEstacupForm(userData, false);
+        } else if (select.value === "no") {
+          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
+        }
+      };
     }
-  };
+  });
 }
 
 async function loadEstacupForm(userData, editing = false) {
@@ -636,7 +671,6 @@ async function loadEstacupEngages() {
       });
     });
 
-    // Tri par numéro de course croissant
     engages.sort((a, b) => a.number - b.number);
 
     let html = `
