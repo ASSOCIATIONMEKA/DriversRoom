@@ -47,27 +47,38 @@
     .results-table tr td:last-child { border-radius: 0 8px 8px 0; }
     
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-    
-    /* Style épuré pour les manches de championnats */
-    .rounds-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .round-tag {
-      background: rgba(255, 255, 255, 0.05);
+
+    /* Accordéon / Liste déroulante pour les championnats */
+    .champ-dropdown {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+      color: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
     }
-    .round-tag.p1 { border-color: #10b981; color: #10b981; }
-    .round-tag.p2 { border-color: #38bdf8; color: #38bdf8; }
-    .round-tag.p3 { border-color: #f59e0b; color: #f59e0b; }
+    .champ-dropdown:hover { border-color: #818cf8; }
+    
+    .details-row { display: none; }
+    .details-content {
+      background: rgba(15, 23, 42, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 5px;
+      border-left: 3px solid #8b5cf6;
+      font-size: 0.9rem;
+    }
+    .round-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .round-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -141,7 +152,7 @@
             </tr>
           </thead>
           <tbody>
-            <!-- 24H SPA -->
+            <!-- 24H SPA (COURSE UNIQUE) -->
             <tr>
               <td>11/07/2026</td>
               <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
@@ -151,7 +162,8 @@
               <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
               <td><strong style="color: #10b981;">🏆 Vainqueur (P1)</strong></td>
             </tr>
-            <!-- CFS GOFIR -->
+
+            <!-- CHAMPIONNAT CFS GOFIR -->
             <tr>
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
@@ -160,23 +172,51 @@
               <td>Access</td>
               <td>Marin Tomczyk</td>
               <td>
-                <strong style="color: #f59e0b; display: block; margin-bottom: 6px;">🏆 CHAMPION FINAL</strong>
-                <div class="rounds-grid">
-                  <span class="round-tag p3">🇩🇪 P3</span>
-                  <span class="round-tag p2">🇫🇷 P2</span>
-                  <span class="round-tag p1">🇪🇸 P1</span>
-                  <span class="round-tag p1">🇧🇷 P1</span>
-                  <span class="round-tag">🇮🇹 P4</span>
-                  <span class="round-tag p1">🇵🇹 P1</span>
-                  <span class="round-tag p2">🇺🇸 P2</span>
+                <div style="margin-bottom: 8px;">
+                  <strong style="color: #f59e0b;">🏆 CHAMPION FINAL</strong>
+                </div>
+                <!-- Liste déroulante interactive -->
+                <select class="champ-dropdown" onchange="toggleDetails(this)">
+                  <option value="" disabled selected>📂 Voir le détail des manches...</option>
+                  <option value="all">Fermer le détail</option>
+                  <option value="details">Afficher les 7 manches</option>
+                </select>
+              </td>
+            </tr>
+            <!-- Ligne de détails cachée pour le championnat -->
+            <tr class="details-row" id="cfs-details">
+              <td colspan="7">
+                <div class="details-content">
+                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 8px;">Détails des manches - Championnat CFS GoFiR :</div>
+                  <div class="round-item"><span>🇩🇪 Allemagne</span> <span style="color: #f59e0b; font-weight: bold;">P3</span></div>
+                  <div class="round-item"><span>🇫🇷 France</span> <span style="color: #38bdf8; font-weight: bold;">P2</span></div>
+                  <div class="round-item"><span>🇪🇸 Espagne</span> <span style="color: #10b981; font-weight: bold;">P1</span></div>
+                  <div class="round-item"><span>🇧🇷 Brésil</span> <span style="color: #10b981; font-weight: bold;">P1</span></div>
+                  <div class="round-item"><span>🇮🇹 Italie</span> <span style="color: #94a3b8;">P4</span></div>
+                  <div class="round-item"><span>🇵🇹 Portugal</span> <span style="color: #10b981; font-weight: bold;">P1</span></div>
+                  <div class="round-item"><span>🇺🇸 USA</span> <span style="color: #38bdf8; font-weight: bold;">P2</span></div>
                 </div>
               </td>
             </tr>
+
           </tbody>
         </table>
       </div>
     </div>
 
   </main>
+
+  <!-- Script pour gérer le menu déroulant du championnat -->
+  <script>
+    function toggleDetails(selectObj) {
+      const row = document.getElementById('cfs-details');
+      if (selectObj.value === 'details') {
+        row.style.display = 'table-row';
+      } else {
+        row.style.display = 'none';
+        selectObj.selectedIndex = 0; // Remet l'invite par défaut
+      }
+    }
+  </script>
 </body>
 </html>
