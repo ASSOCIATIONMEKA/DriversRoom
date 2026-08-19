@@ -81,6 +81,10 @@
       justify-content: space-between;
       align-items: center;
     }
+    .round-card.joker {
+      opacity: 0.6;
+      border-style: dashed;
+    }
     .round-info {
       display: flex;
       flex-direction: column;
@@ -200,12 +204,16 @@
               </td>
             </tr>
             
-            <!-- DÉTAILS DÉROULANTS DES MANCHES (Sans la manche 1 joker) -->
+            <!-- DÉTAILS DÉROULANTS DES MANCHES (Avec Suzuka en mode Joker) -->
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
-                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 12px; font-size: 1rem;">🏁 Détail des manches (Manche 1 Joker non comptabilisée) :</div>
+                  <div style="font-weight: bold; color: #8b5cf6; margin-bottom: 12px; font-size: 1rem;">🏁 Détail des manches (La Manche 1 était une course joker non comptabilisée) :</div>
                   <div class="rounds-grid">
+                    <div class="round-card joker">
+                      <div class="round-info"><span class="round-name">Manche 1 : Suzuka (Joker)</span><span class="round-date">25 février 2026</span></div>
+                      <span style="color: #94a3b8; font-size: 0.85rem;">P20</span>
+                    </div>
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 2 : Hockenheim</span><span class="round-date">18 mars 2026</span></div>
                       <strong style="color: #38bdf8;">P2</strong>
