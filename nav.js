@@ -13,15 +13,22 @@ const firebaseConfig = {
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 
-// 🛡️ SÉCURITÉ : Vérifie si Firebase est déjà initialisé par la page principale pour éviter le crash
+// 🛡️ SÉCURITÉ : Vérifie si Firebase est déjà initialisé
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 1️⃣ INJECTION DU HTML DE LA NAVBAR
-const navContainer = document.getElementById("global-navbar");
+// 🛠️ Fonction principale pour charger la Navbar
+function initNavbar() {
+  const navContainer = document.getElementById("global-navbar");
 
-if (navContainer) {
+  // Sécurité : si la balise n'existe pas dans le HTML, on s'arrête et on prévient dans la console
+  if (!navContainer) {
+    console.error("❌ ERREUR nav.js : La balise <div id='global-navbar'></div> est introuvable sur cette page !");
+    return;
+  }
+
+  // 1️⃣ INJECTION DU HTML DE LA NAVBAR
   navContainer.innerHTML = `
     <nav class="top-navbar">
       <a href="index.html" style="display: flex; align-items: center; text-decoration: none;">
@@ -40,10 +47,7 @@ if (navContainer) {
         </div>
         
         <a href="#" onclick="alert('Page en construction 🚧'); return false;">ÉQUIPE ESPORT</a>
-        
-        <!-- 🟢 NOUVEL ONGLET : NOS PARTENAIRES -->
         <a href="#" onclick="alert('Page en construction 🚧'); return false;">NOS PARTENAIRES</a>
-        <!-- ==================================== -->
         
         <a href="https://discord.gg/meka" target="_blank">DISCORD</a>
         <a href="https://www.twitch.tv/mekaesport" target="_blank">TWITCH</a>
@@ -63,54 +67,57 @@ if (navContainer) {
       </div>
     </nav>
   `;
+
+  // 2️⃣ GESTION DE L'AFFICHAGE DU COMPTE (CONNECTÉ / DÉCONNECTÉ)
+  onAuthStateChanged(auth, async (user) => {
+    const loginBtn = document.getElementById("navLoginBtn");
+    const userMenu = document.getElementById("userMenuDropdown");
+    const userNameDisplay = document.getElementById("navUserName");
+    const adminLink = document.getElementById("navAdminLink");
+
+    if (user) {
+      if (loginBtn) loginBtn.style.display = "none";
+      if (userMenu) userMenu.style.display = "inline-block";
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const firstName = data.firstName || "PILOTE";
+          
+          if (userNameDisplay) {
+            userNameDisplay.innerHTML = `👤 ${firstName.toUpperCase()} ▾`;
+          }
+          
+          if (data.admin && adminLink) {
+            adminLink.style.display = "block";
+          }
+        }
+      } catch (error) {
+        console.error("Erreur de récupération utilisateur :", error);
+      }
+    } else {
+      if (loginBtn) loginBtn.style.display = "inline-block";
+      if (userMenu) userMenu.style.display = "none";
+    }
+  });
+
+  // 3️⃣ GESTION DE LA DÉCONNEXION
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "navLogoutBtn") {
+      e.preventDefault();
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      }).catch((error) => {
+        console.error("Erreur lors de la déconnexion :", error);
+      });
+    }
+  });
 }
 
-// 2️⃣ GESTION DE L'AFFICHAGE DU COMPTE (CONNECTÉ / DÉCONNECTÉ)
-onAuthStateChanged(auth, async (user) => {
-  const loginBtn = document.getElementById("navLoginBtn");
-  const userMenu = document.getElementById("userMenuDropdown");
-  const userNameDisplay = document.getElementById("navUserName");
-  const adminLink = document.getElementById("navAdminLink");
-
-  if (user) {
-    // L'utilisateur est connecté
-    if (loginBtn) loginBtn.style.display = "none";
-    if (userMenu) userMenu.style.display = "inline-block";
-
-    try {
-      // Récupère les infos de l'utilisateur pour afficher son prénom
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        const firstName = data.firstName || "PILOTE";
-        
-        if (userNameDisplay) {
-          userNameDisplay.innerHTML = `👤 ${firstName.toUpperCase()} ▾`;
-        }
-        
-        // Affiche le lien Admin si l'utilisateur a les droits
-        if (data.admin && adminLink) {
-          adminLink.style.display = "block";
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des données utilisateur :", error);
-    }
-  } else {
-    // L'utilisateur n'est pas connecté
-    if (loginBtn) loginBtn.style.display = "inline-block";
-    if (userMenu) userMenu.style.display = "none";
-  }
-});
-
-// 3️⃣ GESTION DE LA DÉCONNEXION
-document.addEventListener("click", (e) => {
-  if (e.target && e.target.id === "navLogoutBtn") {
-    e.preventDefault();
-    signOut(auth).then(() => {
-      window.location.href = "login.html";
-    }).catch((error) => {
-      console.error("Erreur lors de la déconnexion :", error);
-    });
-  }
-});
+// ⏳ EXÉCUTION AU BON MOMENT (Une fois la page HTML chargée)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initNavbar);
+} else {
+  initNavbar();
+}
