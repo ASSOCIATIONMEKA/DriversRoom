@@ -507,8 +507,8 @@ async function loadEstacupForm(userData, editing = false) {
         alert("Veuillez sélectionner votre statut d'inscription (Adhérent ou 5€ payés).");
         return;
       }
-      if (!num || isNaN(num)) {
-        alert("Veuillez entrer un numéro de course valide.");
+      if (!num || isNaN(num) || num < 2 || num > 999) {
+        alert("Veuillez entrer un numéro de course valide (entre 2 et 999).");
         return;
       }
       if (!steam) {
@@ -518,9 +518,30 @@ async function loadEstacupForm(userData, editing = false) {
 
       const btn = $("btnSubmitSignup");
       btn.disabled = true;
-      btn.textContent = "Enregistrement en cours...";
+      btn.textContent = "Vérification du numéro...";
 
       try {
+        // 🟢 VÉRIFICATION SI LE NUMÉRO EST DÉJÀ PRIS
+        const signupsRef = collection(db, "estacup_s10_signups");
+        const q = query(signupsRef, where("raceNumber", "==", num));
+        const numQuerySnap = await getDocs(q);
+        
+        let numberAlreadyTaken = false;
+        numQuerySnap.forEach((docSnapshot) => {
+          if (docSnapshot.id !== currentUid) {
+            numberAlreadyTaken = true;
+          }
+        });
+
+        if (numberAlreadyTaken) {
+          alert(`Désolé, le numéro #${num} est déjà réservé par un autre pilote ! Veuillez en choisir un autre.`);
+          btn.disabled = false;
+          btn.textContent = "🏁 Valider mon inscription";
+          return; 
+        }
+
+        btn.textContent = "Enregistrement en cours...";
+
         await setDoc(docRef, {
           uid: currentUid,
           firstName: fName,
