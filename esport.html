@@ -11,7 +11,8 @@
     .esport-header img { max-width: 250px; margin-bottom: 1rem; }
     .esport-header h1 { font-size: 2.5rem; color: white; text-transform: uppercase; margin-bottom: 0.5rem; }
 
-    .portal-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem 6rem 2rem; }
+    /* Conteneur élargi pour tout le contenu */
+    .portal-content { max-width: 1400px; margin: 0 auto; padding: 0 2rem 6rem 2rem; }
     
     .course-box {
       background: rgba(30, 37, 48, 0.6);
@@ -24,29 +25,26 @@
     
     .course-box h2 { font-size: 1.8rem; margin-bottom: 2rem; color: #818cf8; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* Grille des pilotes */
+    /* Roster */
     .roster-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
     @media (max-width: 1000px) { .roster-grid { grid-template-columns: repeat(2, 1fr); } }
 
     .pilot-card {
-      background: #0f172a; border-radius: 12px; padding: 2rem 1rem; text-align: center;
-      border: 2px solid transparent; transition: transform 0.3s ease;
+      background: #0f172a; border-radius: 12px; padding: 1.5rem; text-align: center;
+      border-top: 4px solid transparent; transition: transform 0.3s ease;
     }
     .pilot-card:hover { transform: translateY(-5px); }
-    .pilot-name { font-size: 1.3rem; font-weight: 900; color: white; margin-bottom: 1.5rem; }
+    .pilot-name { font-size: 1.2rem; font-weight: 900; color: white; margin-bottom: 1.2rem; }
     
-    .stat-line { 
-      display: flex; justify-content: space-between; 
-      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem;
-    }
+    .stat-line { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.85rem; }
     .stat-label { color: #64748b; }
     .stat-value { color: #f1f5f9; font-weight: 600; }
 
-    /* Tableau des résultats */
+    /* Tableau des résultats élargi */
     .results-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .results-table th { padding: 15px; border-bottom: 2px solid #38bdf8; color: #94a3b8; font-weight: 600; }
-    .results-table td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-    .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    .results-table th { padding: 16px; border-bottom: 2px solid #38bdf8; color: #94a3b8; font-weight: 600; font-size: 0.9rem; }
+    .results-table td { padding: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
+    .badge { padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -64,13 +62,14 @@
     
     <div class="course-box">
       <h2>Qui sommes-nous ?</h2>
-      <p style="text-align: center; max-width: 800px; margin: 0 auto; color: #cbd5e1;">Passion, rigueur et performance. L'écurie <strong>MEKA eSport</strong> réunit des pilotes engagés dans les championnats les plus exigeants comme l'ESTACUP. Au-delà du chrono, nous cultivons le partage et la stratégie pour porter nos couleurs au sommet.</p>
+      <p style="text-align: center; max-width: 900px; margin: 0 auto; color: #cbd5e1;">Passion, rigueur et performance. L'écurie <strong>MEKA eSport</strong> réunit des pilotes engagés dans les championnats les plus exigeants comme l'ESTACUP. Au-delà du chrono, nous cultivons le partage et la stratégie pour porter nos couleurs au sommet.</p>
     </div>
 
+    <!-- ROSTER -->
     <div class="course-box">
       <h2>Le Roster Officiel Iracing</h2>
       <div class="roster-grid">
-        <div class="pilot-card" style="border-color: #ec4899;">
+        <div class="pilot-card" style="border-top-color: #ec4899;">
           <div class="pilot-name">Nicolas MOREAU</div>
           <div class="stat-line"><span class="stat-label">Âge</span><span class="stat-value">23 ans</span></div>
           <div class="stat-line"><span class="stat-label">Licence</span><span class="stat-value">Classe A</span></div>
@@ -101,6 +100,7 @@
       </div>
     </div>
 
+    <!-- HISTORIQUE -->
     <div class="course-box">
       <h2>Palmarès & Historique des courses</h2>
       <div style="overflow-x: auto;">
@@ -111,26 +111,23 @@
               <th>Événement</th>
               <th>Format</th>
               <th>Pilotes</th>
-              <th>Résultat</th>
-              <th>Détails</th>
+              <th>Résultat / Classement</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>15/06/2026</td>
-              <td><strong>24h du Nürburgring</strong></td>
+              <td>11/07/2026</td>
+              <td><strong>24H Spa</strong></td>
               <td><span class="badge" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Endurance</span></td>
-              <td>N. Moreau, M. Tomczyk</td>
-              <td style="color: #f59e0b; font-weight: bold;">P3 Général</td>
-              <td><a href="#" style="color: #38bdf8; text-decoration: underline;">Replay</a></td>
+              <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
+              <td><strong style="color: #10b981;">Vainqueur (P1 - Split 12)</strong> en Ferrari 296 GT3</td>
             </tr>
             <tr>
-              <td>24/05/2026</td>
-              <td><strong>ESTACUP S10 - R2</strong></td>
-              <td><span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Sprint</span></td>
-              <td>Ilan Guilbaud</td>
-              <td style="color: #10b981; font-weight: bold;">P1</td>
-              <td><a href="#" style="color: #38bdf8; text-decoration: underline;">Stats</a></td>
+              <td>2026</td>
+              <td><strong>Championnat CFS GoFiR</strong></td>
+              <td><span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
+              <td>Marin Tomczyk (Split Access)</td>
+              <td><strong style="color: #f59e0b;">CHAMPION FINAL</strong><br><small style="color:#94a3b8;">(P3 Allemagne, P2 France, P1 Espagne, P1 Brésil, P4 Italie, P1 Portugal, P2 USA)</small></td>
             </tr>
           </tbody>
         </table>
