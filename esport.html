@@ -91,7 +91,7 @@
     }
     .round-card {
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 258, 0.08);
       padding: 10px 14px;
       border-radius: 6px;
       display: flex;
@@ -205,29 +205,32 @@
               <td><strong class="pos-p1">🏆 Vainqueur (P1)</strong></td>
             </tr>
 
-            <!-- CHAMPIONNAT CFS GOFIR (MARIN & ILAN) -->
+            <!-- CHAMPIONNAT CFS GOFIR (LIGNE PRINCIPALE SÉPARÉE PAR PILOTE DANS LE DÉTAIL) -->
             <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
               <td><strong>Championnat CFS GoFiR</strong></td>
-              <td>Porsche 911 GT3R</td>
-              <td>Access</td>
+              <td>Porsche 911 GT3R / Corvette Z06 GT3.R</td>
+              <td>Access / Elite</td>
               <td>Marin Tomczyk, Ilan Guilbaud</td>
               <td>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <strong style="color: #f59e0b;">🏆 CHAMPION (Marin)</strong>
+                  <div>
+                    <span style="color: #f59e0b; font-weight: bold;">🏆 CHAMPION (Marin)</span><br>
+                    <span style="color: #94a3b8; font-size: 0.85rem;">9ème (Ilan - 234 pts)</span>
+                  </div>
                   <span class="arrow-icon" id="arrow">▼</span>
                 </div>
               </td>
             </tr>
             
-            <!-- DÉTAILS DÉROULANTS GROUPÉS (MARIN & ILAN) -->
+            <!-- DÉTAILS DÉROULANTS GROUPÉS (MARIN & ILAN SÉPARÉS) -->
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
                   
                   <!-- Résultats de Marin -->
-                  <div class="pilot-section-title">👤 Marin Tomczyk :</div>
+                  <div class="pilot-section-title">👤 Marin Tomczyk (Porsche 911 GT3R - Split Access) :</div>
                   <div class="rounds-grid">
                     <div class="round-card joker">
                       <div class="round-info"><span class="round-name">Manche 1 : Suzuka (Joker)</span><span class="round-date">25 fév. 2026</span></div>
@@ -263,8 +266,8 @@
                     </div>
                   </div>
 
-                  <!-- Résultats d'Ilan (avec positions générales par manche) -->
-                  <div class="pilot-section-title" style="margin-top: 25px;">👤 Ilan Guilbaud (Total : 234 pts) :</div>
+                  <!-- Résultats d'Ilan -->
+                  <div class="pilot-section-title" style="margin-top: 25px;">👤 Ilan Guilbaud (Corvette Z06 GT3.R - Split Elite - 234 pts) :</div>
                   <div class="rounds-grid">
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Manche 1 : Suzuka</span><span class="round-date">25 fév. 2026</span></div>
