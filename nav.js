@@ -91,10 +91,8 @@ function injectNavbar() {
                       </div>
                       
                       <a href="profile.html">Mon Profil</a>
-                      <a href="estacup-s9.html">🎛️ Espace Écurie S9</a>
                       
                       ${isAdmin ? '<a href="admin-s10.html" style="color: var(--accent-success); font-weight: 600;">⚙️ Panel Admin S10</a>' : ''}
-                      ${isAdmin ? '<a href="admin-s9.html" style="color: var(--text-muted); font-size: 0.85rem;">⚙️ Archives Admin S9</a>' : ''}
                       ${isAdmin ? '<a href="admin-users.html" style="color: var(--accent-tertiary); font-weight: 600; border-top: 1px dashed var(--border-primary);">🛠️ Gestion Droits</a>' : ''}
                       
                       <a href="#" id="nav-logout-btn" style="color: #EF4444;">✖ Déconnexion</a>
