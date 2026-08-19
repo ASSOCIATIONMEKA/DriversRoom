@@ -3,49 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Portail - MEKA SimRacing</title>
+  <title>Nos Partenaires - MEKA SimRacing</title>
   <link rel="stylesheet" href="style.css"> 
   
   <style>
-    /* 1. SECTION PRINCIPALE (Le fond global, la navbar et le dropdown sont centralisés dans style.css !) */
     .hero-section {
       text-align: center;
-      padding: 6rem 2rem;
+      padding: 5rem 2rem 3rem 2rem;
       position: relative;
       z-index: 10;
     }
 
-    .hero-section h1 { font-size: 4.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
-    .hero-section p { font-size: 1.5rem; color: #CBD5E1; margin-bottom: 2rem; }
+    .hero-section h1 { font-size: 3.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
+    .hero-section p { font-size: 1.25rem; color: #CBD5E1; max-width: 800px; margin: 0 auto; }
 
-    .hero-btn {
-      display: inline-block;
-      background: #5865F2; /* Couleur officielle Discord */
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 0.75rem;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 1.2rem;
-      box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .hero-btn:hover { 
-      transform: translateY(-2px); 
-      box-shadow: 0 6px 20px rgba(88, 101, 242, 0.5); 
-    }
-
-    /* 2. CONTENU DU PORTAIL */
     .portal-content {
       max-width: 1200px;
       margin: 0 auto;
       padding: 2rem;
+      padding-bottom: 6rem;
       position: relative;
       z-index: 10;
       display: flex;
       flex-direction: column;
-      gap: 2rem; /* Espace entre les boites */
+      gap: 2.5rem;
     }
     
     .course-box {
@@ -58,27 +39,178 @@
     }
     
     .course-box h2 { 
-      text-align: left; 
       font-size: 2rem;
       margin-bottom: 1.5rem;
-      color: #6366F1;
+      color: var(--accent-primary, #6366F1);
+      border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+      padding-bottom: 0.5rem;
+    }
+
+    .course-box h3 {
+      font-size: 1.3rem;
+      color: #38bdf8;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
     }
     
-    .course-box p {
-      font-size: 1.1rem;
+    .course-box p, .course-box li {
+      font-size: 1.05rem;
       line-height: 1.6;
       color: #CBD5E1;
+    }
+
+    .course-box ul {
+      margin-left: 1.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Grille pour les cartes partenaires */
+    .partners-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+
+    .partner-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-lg, 12px);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .partner-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-glow, 0 10px 30px rgba(99, 102, 241, 0.2));
+    }
+
+    .partner-logo-container {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .partner-logo-container img {
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    .partner-name {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+
+    .partner-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted, #94a3b8);
+      flex-grow: 1;
     }
   </style>
 </head>
 <body>
 
+  <!-- 🟢 Navbar globale -->
+  <div id="global-navbar"></div>
   <script type="module" src="nav.js" defer></script>
 
   <header class="hero-section">
-    <h1>Équipe eSport</h1>
-    <p>L'équipe MEKA eSport 100% étudiante !</p>
-    <a href="https://discord.gg/jB6yDhQFyw" target="_blank" class="hero-btn">Rejoindre le Discord</a>
+    <h1>Nos Partenaires</h1>
+    <p>Ils soutiennent nos projets, notre association et propulsent la communauté MEKA SimRacing vers l'excellence.</p>
   </header>
+
+  <main class="portal-content">
+    
+    <!-- SECTION : POURQUOI NOUS SUPPORTER -->
+    <div class="course-box">
+      <h2>Pourquoi nous supporter ?</h2>
+      <p>Associer votre image à <strong>MEKA SimRacing</strong>, c'est soutenir une association dynamique portée par des passionnés de sport automobile virtuel et réel. Nos compétitions, à l'image de l'<strong>ESTACUP</strong>, rassemblent une communauté engagée de pilotes de tous niveaux, offrant une vitrine unique et qualitative pour votre marque ou votre structure.</p>
+    </div>
+
+    <!-- SECTION : COMMENT DEVENIR PARTENAIRE -->
+    <div class="course-box">
+      <h2>Comment devenir partenaire ?</h2>
+      <p>Plusieurs formules s'offrent à vous pour nous accompagner dans le développement de nos projets :</p>
+      
+      <h3>1. Visibilité & Événementiel</h3>
+      <p>Associez votre nom à nos retransmissions en direct sur Twitch, à nos graphismes de championnats ou à nos plateformes en ligne fréquentées par des centaines de pilotes.</p>
+
+      <h3>2. Partenariat Technique</h3>
+      <p>Fournissez des outils, des logiciels, du matériel ou des services utiles à notre communauté (télémétrie, setups, hardware simracing) en échange d'une exposition privilégiée.</p>
+
+      <h3>3. Mécénat & Soutien Associatif</h3>
+      <p>Aidez-nous à financer nos projets pédagogiques, l'organisation de championnats d'envergure et l'expansion de notre structure eSport.</p>
+    </div>
+
+    <!-- SECTION : SOUTENIR L'ASSOCIATION ET LES PROJETS -->
+    <div class="course-box">
+      <h2>Soutenir l'association et les projets : à quoi sert votre don / investissement ?</h2>
+      <p>Les fonds récolter grâce à nos partenaires et donateurs servent directement à :</p>
+      <ul>
+        <li>Améliorer l'infrastructure de nos serveurs de jeu et portails communautaires.</li>
+        <li>Financer les lots et la communication autour de nos championnats officiels.</li>
+        <li>Permettre à nos équipes étudiantes et compétitives de participer à des événements physiques et virtuels majeurs.</li>
+      </ul>
+    </div>
+
+    <!-- SECTION : DÉCOUVREZ NOS PARTENAIRES -->
+    <div class="course-box">
+      <h2>Découvrez nos partenaires</h2>
+      <p style="margin-bottom: 1.5rem;">Des acteurs majeurs de l'enseignement supérieur, du matériel et des outils de simulation de pointe nous font confiance.</p>
+      
+      <div class="partners-grid">
+        
+        <!-- ESTACA -->
+        <div class="partner-card">
+          <div class="partner-logo-container">
+            <span style="font-size: 2rem; font-weight: 800; color: #38bdf8;">ESTACA</span>
+          </div>
+          <div class="partner-name">École ESTACA</div>
+          <div class="partner-desc">École d'ingénieurs supérieure de référence dans les domaines aéronautique, automobile, spatial et ferroviaire, partenaire historique de nos racines associatives.</div>
+        </div>
+
+        <!-- WARLOCK -->
+        <div class="partner-card">
+          <div class="partner-logo-container">
+            <span style="font-size: 1.8rem; font-weight: 800; color: white; letter-spacing: 1px;">WARLOCK</span>
+          </div>
+          <div class="partner-name">Warlock SimRacing</div>
+          <div class="partner-desc">Conception et fabrication d'équipements et châssis haut de gamme pour le simracing, garantissant une immersion totale et une robustesse taillée pour la compétition.</div>
+        </div>
+
+        <!-- IRACEPLAN -->
+        <div class="partner-card">
+          <div class="partner-logo-container">
+            <span style="font-size: 1.8rem; font-weight: 800; color: #ef4444;">iRacePlan</span>
+          </div>
+          <div class="partner-name">iRacePlan</div>
+          <div class="partner-desc">Plateforme incontournable de planification et de gestion d'événements et de championnats pour les ligues de simulation automobile.</div>
+        </div>
+
+        <!-- GARAGE 61 -->
+        <div class="partner-card">
+          <div class="partner-logo-container">
+            <span style="font-size: 1.8rem; font-weight: 800; color: #10b981;">Garage 61</span>
+          </div>
+          <div class="partner-name">Garage 61</div>
+          <div class="partner-desc">L'outil de télémétrie collaboratif par excellence pour analyser ses chronos, comparer ses trajectoires et progresser virage après virage.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
 </body>
 </html>
