@@ -41,7 +41,6 @@ function msToClock(ms) {
   return `${sign}${m}:${String(s).padStart(2,"0")}.${ms3}`;
 }
 function firstDefined(...vals) { for (const v of vals) if (v !== undefined && v !== null && v !== "") return v; return undefined; }
-function extractSteam64(input) { const m = String(input || "").match(/765\d{14}/); return m ? m[0] : ""; }
 function getByPath(obj, path) {
   if (!obj || !path) return undefined;
   const parts = path.split("."); let cur = obj;
@@ -414,7 +413,6 @@ function setupMekaQuestionnaire(userData) {
     const parentQuestionBlock = select.closest("div") || select.parentElement.parentElement;
 
     if (hasSignedUp) {
-      // Si déjà inscrit, on masque complètement la question initiale des 5€ / adhésion
       if (parentQuestionBlock) parentQuestionBlock.style.display = "none";
       if (formContainer) formContainer.classList.remove("hidden");
       loadEstacupForm(userData);
@@ -453,7 +451,7 @@ async function loadEstacupForm(userData) {
     const docRef = doc(db, "estacup_s10_signups", currentUid);
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists()) return; // Sécurité
+    if (!docSnap.exists()) return;
 
     const data = docSnap.data();
     const isValidated = data.isValidated === true;
@@ -463,7 +461,6 @@ async function loadEstacupForm(userData) {
     if (data.paymentStatus === "paye_5e") statusText = "Frais d'inscription (5€) payés";
 
     if (isValidated) {
-      // 🟢 CAS 1 : INSCRIPTION VALIDÉE PAR UN ADMIN (Affichage officiel)
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px; border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05);">
           <h4 style="color: var(--accent-success); margin-bottom: 10px;">✅ Inscription validée !</h4>
@@ -481,7 +478,6 @@ async function loadEstacupForm(userData) {
         </div>
       `;
     } else {
-      // 🟡 CAS 2 : INSCRIPTION EN ATTENTE DE VALIDATION ADMIN
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px; border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
           <h4 style="color: #f59e0b; margin-bottom: 10px;">⏳ Inscription en attente de validation</h4>
@@ -516,7 +512,13 @@ async function loadEstacupEngages() {
   try {
     const signupsRef = collection(db, "estacup_s10_signups");
     const q = query(signupsRef, where("isValidated", "==", true));
-    const snap = await getDocs(q);
+    const [snap, usersSnap] = await Promise.all([
+      getDocs(q),
+      getDocs(collection(db, "users"))
+    ]);
+
+    const usersMap = new Map();
+    usersSnap.forEach(u => usersMap.set(u.id, u.data()));
 
     if (snap.empty) {
       targetArea.innerHTML = `
@@ -531,11 +533,25 @@ async function loadEstacupEngages() {
     const engages = [];
     snap.forEach(docSnap => {
       const data = docSnap.data();
+      const uid = data.uid || docSnap.id;
+      const uData = usersMap.get(uid) || {};
+
+      // Récupération de la licence et du M-Rating
+      const licence = uData.licenseClass || uData.licenceClass || uData.license || "Rookie";
+      let licColor = "#10b981"; // Vert (Rookie)
+      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; // Rouge (Pro)
+      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; // Orange (Challenger)
+
+      const mRating = uData.eloRating ?? 1000;
+
       engages.push({
-        name: `${data.firstName || ""} ${data.lastName || ""}`.trim() || "Pilote",
+        name: `${data.firstName || uData.firstName || ""} ${data.lastName || uData.lastName || ""}`.trim() || "Pilote",
         team: data.teamName || "Indépendant",
         number: Number(data.raceNumber) || 0,
-        car: data.carChoice || "Ligier JS P320"
+        car: data.carChoice || "Ligier JS P320",
+        licence: licence,
+        licColor: licColor,
+        mRating: mRating
       });
     });
 
@@ -549,6 +565,8 @@ async function loadEstacupEngages() {
             <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">N°</th>
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Licence</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">M-Rating</th>
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Véhicule</th>
             </tr>
@@ -561,6 +579,12 @@ async function loadEstacupEngages() {
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
           <td style="padding: 12px 15px; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
           <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 600;">${escapeHtml(p.name)}</td>
+          <td style="padding: 12px 15px;">
+            <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
+              ${escapeHtml(p.licence)}
+            </span>
+          </td>
+          <td style="padding: 12px 15px; font-weight: bold; color: #38bdf8;">${p.mRating}</td>
           <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
           <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.car)}</td>
         </tr>
