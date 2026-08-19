@@ -1,5 +1,5 @@
 // nav.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -13,7 +13,8 @@ const firebaseConfig = {
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 
-const app = initializeApp(firebaseConfig);
+// 🛡️ SÉCURITÉ : Vérifie si Firebase est déjà initialisé par la page principale pour éviter le crash
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
