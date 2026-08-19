@@ -1023,12 +1023,16 @@ async function loadEstacupSignups() {
       if (sData.paymentStatus === "adherent") payStatus = "Adhérent MEKA";
       if (sData.paymentStatus === "paye_5e") payStatus = "Frais d'inscription (5€) payés";
 
+      // 4. Récupération du Steam ID
+      const steamId = sData.steamID64 || sData.steamId || uData.steamID64 || uData.steamId || "—";
+
       const pilotObj = {
         docId: docu.id,
         fullName: `${sData.firstName || uData.firstName || ""} ${sData.lastName || uData.lastName || ""}`.trim() || "Pilote Inconnu",
         team: sData.teamName || "Indépendant",
         number: sData.raceNumber || "—",
         car: sData.carChoice || "Ligier JS P320",
+        steam: steamId,
         age: ageText,
         licence: licence,
         licColor: licColor,
@@ -1043,7 +1047,7 @@ async function loadEstacupSignups() {
       }
     });
 
-    // 4. Construction de l'interface (Grille pour En Attente, Tableau pour Validés)
+    // 5. Construction de l'interface (Grille pour En Attente, Tableau pour Validés)
     let html = `
       <div style="margin-bottom: 3rem;">
         <h3 style="color: #f59e0b; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(245, 158, 11, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
@@ -1062,7 +1066,7 @@ async function loadEstacupSignups() {
 
     list.innerHTML = html;
 
-    // --- Rendu des cartes EN ATTENTE (Format Fiche) ---
+    // --- Rendu des cartes EN ATTENTE (Format Fiche avec Steam ID) ---
     const renderPendingCard = (p) => `
       <div class="course-box" style="border-left: 4px solid #f59e0b; position: relative; padding: 1.5rem;">
         <h4 style="margin-top:0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
@@ -1075,6 +1079,7 @@ async function loadEstacupSignups() {
            <li><strong>Âge :</strong> ${escapeHtml(p.age)}</li>
            <li><strong>Numéro :</strong> #${escapeHtml(String(p.number))}</li>
            <li><strong>Équipe :</strong> ${escapeHtml(p.team)}</li>
+           <li><strong>Steam ID :</strong> <code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px;">${escapeHtml(p.steam)}</code></li>
            <li><strong>Paiement :</strong> <span style="color: var(--text-primary);">${escapeHtml(p.payStatus)}</span></li>
         </ul>
         <div style="text-align: right; margin-top: 15px;">
@@ -1086,12 +1091,12 @@ async function loadEstacupSignups() {
     const pendingContainer = document.getElementById("pendingSignupsGrid");
     if (pending.length === 0) {
         pendingContainer.innerHTML = "<p class='muted-note'>Aucune inscription en attente.</p>";
-        pendingContainer.style.display = "block"; // Annule la grille si vide
+        pendingContainer.style.display = "block";
     } else {
         pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderPendingCard(p)));
     }
 
-    // --- Rendu du tableau VALIDÉS (Format Ligne/Table) ---
+    // --- Rendu du tableau VALIDÉS (Format Ligne/Table avec Colonne Steam ID) ---
     const valContainer = document.getElementById("validatedSignupsGrid");
     if (validated.length === 0) {
         valContainer.innerHTML = "<p class='muted-note'>Aucune inscription validée.</p>";
@@ -1104,6 +1109,7 @@ async function loadEstacupSignups() {
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Numéro</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Steam ID</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Paiement</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; text-align: right;">Action</th>
               </tr>
@@ -1123,6 +1129,7 @@ async function loadEstacupSignups() {
                 </td>
                 <td style="padding: 12px 15px; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
                 <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
+                <td style="padding: 12px 15px;"><code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(p.steam)}</code></td>
                 <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
                 <td style="padding: 12px 15px; text-align: right;">
                     <button class="btn-revoke-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
@@ -1141,7 +1148,7 @@ async function loadEstacupSignups() {
         valContainer.innerHTML = tableHtml;
     }
 
-    // 5. Actions des boutons avec auto-rafraîchissement
+    // 6. Actions des boutons avec auto-rafraîchissement
     document.querySelectorAll('.btn-validate-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.target.getAttribute('data-id');
