@@ -122,7 +122,7 @@ onAuthStateChanged(auth, async (user) => {
       document.body.innerHTML = "<p>Accès refusé</p>"; return;
     }
     
-    // 🟢 FORÇAGE DE L'AFFICHAGE
+    // 🟢 FORÇAGE DE L'AFFICHAGE : On s'assure que le HTML devienne visible quoi qu'il arrive
     const adminOnlyEl = document.getElementById("adminOnly");
     if (adminOnlyEl) {
       adminOnlyEl.classList.remove("hidden");
@@ -997,7 +997,7 @@ async function loadEstacupSignups() {
       const uid = sData.uid || docu.id;
       const uData = usersById.get(uid) || {};
 
-      // 🟢 1. Calcul de l'âge
+      // 1. Calcul de l'âge
       let ageText = "Âge inconnu";
       const dob = uData.dob || uData.birthDate || uData.dateNaissance;
       if (dob) {
@@ -1012,13 +1012,13 @@ async function loadEstacupSignups() {
         }
       }
 
-      // 🟢 2. Récupération et Couleur de Licence
+      // 2. Récupération et Couleur de Licence
       const licence = uData.licenseClass || uData.licenceClass || uData.license || uData.licence || "Rookie";
       let licColor = "#10b981"; // Vert pour Rookie
       if (licence.toLowerCase() === "pro") licColor = "#ef4444"; // Rouge
       if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; // Orange
 
-      // 🟢 3. Formatage du statut de paiement
+      // 3. Formatage du statut de paiement
       let payStatus = "Non renseigné";
       if (sData.paymentStatus === "adherent") payStatus = "Adhérent MEKA";
       if (sData.paymentStatus === "paye_5e") payStatus = "Frais d'inscription (5€) payés";
@@ -1043,64 +1043,112 @@ async function loadEstacupSignups() {
       }
     });
 
-    // 🟢 4. Construction de l'interface
+    // 4. Construction de l'interface (Grille pour En Attente, Tableau pour Validés)
     let html = `
       <div style="margin-bottom: 3rem;">
         <h3 style="color: #f59e0b; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(245, 158, 11, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
           ⏳ En attente de validation (${pending.length})
         </h3>
-        <div id="pendingSignupsGrid" class="cards-grid" style="display: grid; gap: 1.5rem;"></div>
+        <div id="pendingSignupsGrid" class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;"></div>
       </div>
 
       <div>
         <h3 style="color: #10b981; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(16, 185, 129, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
           ✅ Inscriptions validées (${validated.length})
         </h3>
-        <div id="validatedSignupsGrid" class="cards-grid" style="display: grid; gap: 1.5rem;"></div>
+        <div id="validatedSignupsGrid"></div>
       </div>
     `;
 
     list.innerHTML = html;
 
-    const renderCard = (p, isPending) => `
-      <div class="course-box" style="border-left: 4px solid ${isPending ? '#f59e0b' : '#10b981'}; position: relative; padding: 1.5rem;">
-        <h4 style="margin-top:0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem;">
+    // --- Rendu des cartes EN ATTENTE (Format Fiche) ---
+    const renderPendingCard = (p) => `
+      <div class="course-box" style="border-left: 4px solid #f59e0b; position: relative; padding: 1.5rem;">
+        <h4 style="margin-top:0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
           ${escapeHtml(p.fullName)}
-          <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
+          <span style="font-size: 0.7rem; padding: 4px 8px; border-radius: 12px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
             ${escapeHtml(p.licence)}
           </span>
         </h4>
-        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
            <li><strong>Âge :</strong> ${escapeHtml(p.age)}</li>
            <li><strong>Numéro :</strong> #${escapeHtml(String(p.number))}</li>
            <li><strong>Équipe :</strong> ${escapeHtml(p.team)}</li>
            <li><strong>Paiement :</strong> <span style="color: var(--text-primary);">${escapeHtml(p.payStatus)}</span></li>
         </ul>
         <div style="text-align: right; margin-top: 15px;">
-          ${isPending
-            ? `<button class="btn-validate-signup" data-id="${p.docId}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">✔️ Valider l'inscription</button>`
-            : `<button class="btn-revoke-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">❌ Révoquer la validation</button>`
-          }
+          <button class="btn-validate-signup" data-id="${p.docId}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; width: 100%;">✔️ Valider l'inscription</button>
         </div>
       </div>
     `;
 
     const pendingContainer = document.getElementById("pendingSignupsGrid");
-    if (pending.length === 0) pendingContainer.innerHTML = "<p class='muted-note'>Aucune inscription en attente.</p>";
-    else pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderCard(p, true)));
+    if (pending.length === 0) {
+        pendingContainer.innerHTML = "<p class='muted-note'>Aucune inscription en attente.</p>";
+        pendingContainer.style.display = "block"; // Annule la grille si vide
+    } else {
+        pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderPendingCard(p)));
+    }
 
+    // --- Rendu du tableau VALIDÉS (Format Ligne/Table) ---
     const valContainer = document.getElementById("validatedSignupsGrid");
-    if (validated.length === 0) valContainer.innerHTML = "<p class='muted-note'>Aucune inscription validée.</p>";
-    else validated.forEach(p => valContainer.insertAdjacentHTML("beforeend", renderCard(p, false)));
+    if (validated.length === 0) {
+        valContainer.innerHTML = "<p class='muted-note'>Aucune inscription validée.</p>";
+    } else {
+        let tableHtml = `
+        <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary);">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Numéro</th>
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Paiement</th>
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
 
-    // 🟢 5. Actions des boutons avec auto-rafraîchissement
+        validated.forEach(p => {
+            tableHtml += `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 12px 15px;">
+                    <strong style="color: var(--text-primary); display: block;">${escapeHtml(p.fullName)}</strong>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">${escapeHtml(p.licence)}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(p.age)}</span>
+                    </div>
+                </td>
+                <td style="padding: 12px 15px; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
+                <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
+                <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
+                <td style="padding: 12px 15px; text-align: right;">
+                    <button class="btn-revoke-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                        ❌ Révoquer
+                    </button>
+                </td>
+              </tr>
+            `;
+        });
+
+        tableHtml += `
+            </tbody>
+          </table>
+        </div>
+        `;
+        valContainer.innerHTML = tableHtml;
+    }
+
+    // 5. Actions des boutons avec auto-rafraîchissement
     document.querySelectorAll('.btn-validate-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.target.getAttribute('data-id');
         e.target.disabled = true;
         e.target.textContent = "Validation en cours...";
         await updateDoc(doc(db, "estacup_s10_signups", id), { isValidated: true });
-        loadEstacupSignups(); // Recharge la vue
+        loadEstacupSignups();
       });
     });
 
@@ -1110,7 +1158,7 @@ async function loadEstacupSignups() {
         const id = e.target.getAttribute('data-id');
         e.target.disabled = true;
         await updateDoc(doc(db, "estacup_s10_signups", id), { isValidated: false });
-        loadEstacupSignups(); // Recharge la vue
+        loadEstacupSignups();
       });
     });
 
