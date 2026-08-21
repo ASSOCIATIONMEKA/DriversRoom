@@ -1,10 +1,9 @@
 // estacup-s10.js — Driver's Room S10
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-// Import pour l'upload des fichiers de livrée (Firebase Storage)
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ======================== Firebase ======================== */
@@ -12,14 +11,16 @@ const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
   projectId: "estacupbymeka",
-  storageBucket: "estacupbymeka.firebasestorage.app", // 👈 CORRECTION DU LIEN STORAGE
+  storageBucket: "estacupbymeka.appspot.com", // 👈 Remis à l'original
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
-const app  = initializeApp(firebaseConfig);
+
+// 🛡️ SÉCURITÉ ANTI-CRASH (Empêche Firebase de planter si nav.js est déjà chargé)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db   = getFirestore(app);
-const storage = getStorage(app); // Initialisation du stockage
+const storage = getStorage(app);
 
 /* ======================== Utils ======================== */
 const $ = (id) => document.getElementById(id);
@@ -458,7 +459,6 @@ async function loadEstacupForm(userData) {
     if (!docSnap.exists()) {
       await ensureSignupCache();
       
-      // Récupération des numéros déjà pris
       const allSignupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
       const takenNumbers = [];
       allSignupsSnap.forEach(d => {
@@ -933,7 +933,7 @@ async function renderLiverySection() {
 
       // 🛡️ VÉRIFICATION STRICTE DU NOM DU FICHIER (Regex)
       // Accepte: numéro (2-999) + espace + tiret + espace + Nom_Prenom + (éventuels autres caractères ex: _2) + .zip
-      const namePattern = /^(?:[2-9]|[1-9]\d|[1-9]\d{2})\s*-\s*[A-Za-zÀ-ÖØ-öø-ÿ\-]+_[A-Za-zÀ-ÖØ-öø-ÿ\-]+.*\.zip$/i;
+      const namePattern = /^(?:[2-9]|[1-9]\d|[1-9]\d{2})\s*-\s*[a-zA-ZÀ-ÿ\-]+_[a-zA-ZÀ-ÿ\-]+.*\.zip$/i;
       
       if (!namePattern.test(fileName)) {
         msgBox.style.color = "#f59e0b";
@@ -972,7 +972,7 @@ async function renderLiverySection() {
       } catch (err) {
         console.error("Erreur upload livrée:", err);
         msgBox.style.color = "#f87171";
-        msgBox.textContent = "Erreur lors de l'envoi. Vérifiez votre connexion.";
+        msgBox.textContent = "Erreur lors de l'envoi. Vérifiez votre connexion ou vos droits Firebase Storage.";
         btn.disabled = false;
         btn.textContent = "📤 Uploader la livrée";
       }
