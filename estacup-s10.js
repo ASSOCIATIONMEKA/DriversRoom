@@ -188,7 +188,6 @@ function setupNavigation(isAdmin = false) {
     const el = document.getElementById(`section-${key}`);
     if (el) el.classList.remove("hidden");
 
-    // Gestion de la classe active pour les boutons principaux
     buttons.forEach(btn => {
       if (btn.getAttribute("data-section") === key) btn.classList.add("active");
       else btn.classList.remove("active");
@@ -229,7 +228,6 @@ function showChampionshipSub(key) {
   const block = $("champ-sub-" + key);
   if (block) block.classList.remove("hidden");
 
-  // Gestion de la classe active pour les sous-menus du Championnat
   document.querySelectorAll("#championshipSubnav .champ-sub-btn").forEach(btn => {
     if (btn.dataset.sub === key) btn.classList.add("active");
     else btn.classList.remove("active");
@@ -260,7 +258,6 @@ function showResultsSub(key) {
   document.querySelectorAll('.res-subsection').forEach(b => b.classList.add("hidden"));
   const block = $("res-sub-" + key); if (block) block.classList.remove("hidden");
 
-  // Gestion de la classe active pour les sous-menus des Résultats
   document.querySelectorAll("#resultsSubnav .res-sub-btn").forEach(btn => {
     if (btn.dataset.sub === key) btn.classList.add("active");
     else btn.classList.remove("active");
@@ -619,19 +616,22 @@ async function loadEstacupForm(userData) {
 
     let liveryText = data.liveryChoice === "personnelle" ? "Livrée personnelle (via OneDrive)" : (data.liveryChoice === "neutre" ? "Livrée neutre ESTACUP" : "Non renseigné");
 
+    // STYLE UNIFORME ET PROPRE AVEC PADDING (Plus de texte collé aux bordures)
+    const infoItemStyle = "padding: 10px 15px; margin: 8px 0; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;";
+
     if (isValidated) {
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px; border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05);">
           <h4 style="color: var(--accent-success); margin-bottom: 10px;">✅ Inscription validée !</h4>
-          <p>Vous êtes officiellement engagé pour la Saison 10 de l'ESTACUP.</p>
-          <ul style="list-style: none; padding: 0; margin-top: 15px;">
-            <li style="padding: 5px 0;"><strong>Pilote :</strong> ${escapeHtml(data.firstName || userData.firstName)} ${escapeHtml(data.lastName || userData.lastName)}</li>
-            <li style="padding: 5px 0;"><strong>Statut :</strong> ${statusText}</li>
-            <li style="padding: 5px 0;"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</li>
-            <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
-            <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
-            <li style="padding: 5px 0;"><strong>Livrée :</strong> ${liveryText}</li>
-          </ul>
+          <p style="margin-bottom: 15px;">Vous êtes officiellement engagé pour la Saison 10 de l'ESTACUP.</p>
+          <div style="display: flex; flex-direction: column;">
+            <div style="${infoItemStyle}"><strong>Pilote :</strong> ${escapeHtml(data.firstName || userData.firstName)} ${escapeHtml(data.lastName || userData.lastName)}</div>
+            <div style="${infoItemStyle}"><strong>Statut :</strong> ${statusText}</div>
+            <div style="${infoItemStyle}"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</div>
+            <div style="${infoItemStyle}"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</div>
+            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</div>
+            <div style="${infoItemStyle}"><strong>Livrée :</strong> ${liveryText}</div>
+          </div>
           <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
             💡 Pour toute modification de dernière minute, veuillez contacter directement l'administration sur Discord.
           </p>
@@ -641,15 +641,15 @@ async function loadEstacupForm(userData) {
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px; border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
           <h4 style="color: #f59e0b; margin-bottom: 10px;">⏳ Inscription en attente de validation</h4>
-          <p>Votre dossier d'inscription a bien été transmis. Un administrateur va le vérifier sous peu.</p>
-          <ul style="list-style: none; padding: 0; margin-top: 15px;">
-            <li style="padding: 5px 0;"><strong>Pilote :</strong> ${escapeHtml(data.firstName || userData.firstName)} ${escapeHtml(data.lastName || userData.lastName)}</li>
-            <li style="padding: 5px 0;"><strong>Statut :</strong> ${statusText}</li>
-            <li style="padding: 5px 0;"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</li>
-            <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
-            <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
-            <li style="padding: 5px 0;"><strong>Livrée :</strong> ${liveryText}</li>
-          </ul>
+          <p style="margin-bottom: 15px;">Votre dossier d'inscription a bien été transmis. Un administrateur va le vérifier sous peu.</p>
+          <div style="display: flex; flex-direction: column;">
+            <div style="${infoItemStyle}"><strong>Pilote :</strong> ${escapeHtml(data.firstName || userData.firstName)} ${escapeHtml(data.lastName || userData.lastName)}</div>
+            <div style="${infoItemStyle}"><strong>Statut :</strong> ${statusText}</div>
+            <div style="${infoItemStyle}"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</div>
+            <div style="${infoItemStyle}"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</div>
+            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</div>
+            <div style="${infoItemStyle}"><strong>Livrée :</strong> ${liveryText}</div>
+          </div>
           <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
             🔒 Vos modifications sont verrouillées en attente de validation par le staff. Contactez-nous en cas de besoin.
           </p>
