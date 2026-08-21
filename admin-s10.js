@@ -1,5 +1,5 @@
 // admin-s10.js — Import JSON, pénalités (groupes), drag & drop inter-groupes — SAISON 10
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
@@ -24,7 +24,7 @@ const firebaseConfig = {
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
-const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -987,7 +987,8 @@ async function loadEstacupSignups() {
     usersSnap.forEach(u => usersById.set(u.id, u.data()));
 
     const pending = [];
-    const validated = [];
+    const validatedTodo = []; // Validated, livery NOT implemented
+    const validatedDone = []; // Validated, livery implemented
 
     snap.forEach(docu => {
       const sData = docu.data();
@@ -1017,7 +1018,6 @@ async function loadEstacupSignups() {
       if (sData.paymentStatus === "adherent") payStatus = "Adhérent MEKA";
       if (sData.paymentStatus === "paye_5e") payStatus = "Frais d'inscription (5€) payés";
 
-      // NOUVEAU : Livrée
       let liveryChoice = "Non renseigné";
       if (sData.liveryChoice === "personnelle") liveryChoice = "Personnelle (OneDrive)";
       if (sData.liveryChoice === "neutre") liveryChoice = "Neutre (Défaut)";
@@ -1042,7 +1042,11 @@ async function loadEstacupSignups() {
       };
 
       if (pilotObj.isValidated) {
-        validated.push(pilotObj);
+        if (pilotObj.liveryImplemented) {
+          validatedDone.push(pilotObj);
+        } else {
+          validatedTodo.push(pilotObj);
+        }
       } else {
         pending.push(pilotObj);
       }
@@ -1056,11 +1060,18 @@ async function loadEstacupSignups() {
         <div id="pendingSignupsGrid" class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;"></div>
       </div>
 
+      <div style="margin-bottom: 3rem;">
+        <h3 style="color: #38bdf8; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(56, 189, 248, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
+          🎨 Livrées à intégrer (${validatedTodo.length})
+        </h3>
+        <div id="validatedTodoGrid"></div>
+      </div>
+
       <div>
         <h3 style="color: #10b981; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(16, 185, 129, 0.3); padding-bottom: 0.5rem; font-size: 1.5rem;">
-          ✅ Inscriptions validées (${validated.length})
+          ✅ Inscriptions 100% complètes (${validatedDone.length})
         </h3>
-        <div id="validatedSignupsGrid"></div>
+        <div id="validatedDoneGrid"></div>
       </div>
     `;
 
@@ -1098,65 +1109,77 @@ async function loadEstacupSignups() {
         pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderPendingCard(p)));
     }
 
-    // --- VALIDÉS : Tableau avec bouton SUPPRIMER DÉFINITIVEMENT ---
-    const valContainer = document.getElementById("validatedSignupsGrid");
-    if (validated.length === 0) {
-        valContainer.innerHTML = "<p class='muted-note'>Aucune inscription validée.</p>";
-    } else {
-        let tableHtml = `
-        <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary);">
-          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Numéro</th>
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Steam ID</th>
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Paiement</th>
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Livrée</th>
-                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; text-align: right;">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
+    // --- FONCTION D'AFFICHAGE DES TABLEAUX (Livrées à intégrer / complètes) ---
+    const renderTable = (pilotsArray, containerId) => {
+      const container = document.getElementById(containerId);
+      if (pilotsArray.length === 0) {
+          container.innerHTML = "<p class='muted-note'>Aucun pilote dans cette catégorie.</p>";
+          return;
+      }
 
-        validated.forEach(p => {
-            tableHtml += `
-              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-                <td style="padding: 12px 15px;">
-                    <strong style="color: var(--text-primary); display: block;">${escapeHtml(p.fullName)}</strong>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                        <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">${escapeHtml(p.licence)}</span>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(p.age)}</span>
-                    </div>
-                </td>
-                <td style="padding: 12px 15px; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
-                <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
-                <td style="padding: 12px 15px;"><code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(p.steam)}</code></td>
-                <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
-                <td style="padding: 12px 15px;">
-                    <div style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 6px;">${escapeHtml(p.liveryChoice)}</div>
-                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; background: ${p.liveryImplemented ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)'}; color: ${p.liveryImplemented ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p.liveryImplemented ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)'}; transition: all 0.2s;">
-                        <input type="checkbox" class="cb-livery-implemented" data-id="${p.docId}" ${p.liveryImplemented ? 'checked' : ''} style="width: 14px; height: 14px; accent-color: #10b981; cursor: pointer; margin: 0;">
-                        ${p.liveryImplemented ? 'Intégrée ✅' : 'À intégrer'}
-                    </label>
-                </td>
-                <td style="padding: 12px 15px; text-align: right;">
-                    <button class="btn-delete-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
-                        🗑️ Supprimer
-                    </button>
-                </td>
-              </tr>
-            `;
-        });
+      let tableHtml = `
+      <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Numéro</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Steam ID</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Paiement</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; text-align: center;">Livrée</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
 
-        tableHtml += `
-            </tbody>
-          </table>
-        </div>
-        `;
-        valContainer.innerHTML = tableHtml;
-    }
+      pilotsArray.forEach(p => {
+          tableHtml += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 12px 15px; vertical-align: middle;">
+                  <strong style="color: var(--text-primary); display: block;">${escapeHtml(p.fullName)}</strong>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                      <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">${escapeHtml(p.licence)}</span>
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(p.age)}</span>
+                  </div>
+              </td>
+              <td style="padding: 12px 15px; vertical-align: middle; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
+              <td style="padding: 12px 15px; vertical-align: middle; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
+              <td style="padding: 12px 15px; vertical-align: middle;"><code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(p.steam)}</code></td>
+              <td style="padding: 12px 15px; vertical-align: middle; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
+              
+              <!-- CELLULE LIVRÉE ENTIÈREMENT CENTRÉE -->
+              <td style="padding: 12px 15px; vertical-align: middle; text-align: center;">
+                  <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+                      <div style="font-size: 0.85rem; color: var(--text-primary); text-align: center;">${escapeHtml(p.liveryChoice)}</div>
+                      <label style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; background: ${p.liveryImplemented ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)'}; color: ${p.liveryImplemented ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p.liveryImplemented ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)'}; transition: all 0.2s; margin: 0;">
+                          <input type="checkbox" class="cb-livery-implemented" data-id="${p.docId}" ${p.liveryImplemented ? 'checked' : ''} style="width: 14px; height: 14px; accent-color: #10b981; cursor: pointer; margin: 0;">
+                          ${p.liveryImplemented ? 'Intégrée ✅' : 'À intégrer'}
+                      </label>
+                  </div>
+              </td>
+
+              <td style="padding: 12px 15px; vertical-align: middle; text-align: right;">
+                  <button class="btn-delete-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                      🗑️ Supprimer
+                  </button>
+              </td>
+            </tr>
+          `;
+      });
+
+      tableHtml += `
+          </tbody>
+        </table>
+      </div>
+      `;
+      container.innerHTML = tableHtml;
+    };
+
+    // Affichage des deux tableaux
+    renderTable(validatedTodo, "validatedTodoGrid");
+    renderTable(validatedDone, "validatedDoneGrid");
 
     // Gestionnaires d'événements pour les boutons Valider
     document.querySelectorAll('.btn-validate-signup').forEach(btn => {
@@ -1188,7 +1211,7 @@ async function loadEstacupSignups() {
         e.target.disabled = true; // Désactive pendant la sauvegarde
         try {
           await updateDoc(doc(db, "estacup_s10_signups", id), { liveryImplemented: isChecked });
-          loadEstacupSignups(); // Recharge pour mettre à jour les couleurs
+          loadEstacupSignups(); // Recharge pour classer dans le bon tableau
         } catch (err) {
           console.error("Erreur mise à jour livrée :", err);
           alert("Erreur lors de la mise à jour.");
