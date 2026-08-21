@@ -1009,6 +1009,17 @@ async function loadEstacupSignups() {
         }
       }
 
+      // ✨ NOUVEAU : Récupération et formatage de la date d'inscription
+      let regDateText = "Date inconnue";
+      if (sData.updatedAt) {
+        const d = toDateVal(sData.updatedAt);
+        if (d) {
+          regDateText = d.toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
+                        " à " + 
+                        d.toLocaleTimeString("fr-FR", { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+
       const licence = uData.licenseClass || uData.licenceClass || uData.license || "Rookie";
       let licColor = "#10b981"; 
       if (licence.toLowerCase() === "pro") licColor = "#ef4444"; 
@@ -1033,6 +1044,7 @@ async function loadEstacupSignups() {
         car: sData.carChoice || "Ligier JS P320",
         steam: steamId,
         age: ageText,
+        regDate: regDateText, // 👈 Ajout de la date ici
         licence: licence,
         licColor: licColor,
         payStatus: payStatus,
@@ -1093,6 +1105,7 @@ async function loadEstacupSignups() {
            <li><strong>Livrée :</strong> ${escapeHtml(p.liveryChoice)}</li>
            <li><strong>Steam ID :</strong> <code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px;">${escapeHtml(p.steam)}</code></li>
            <li><strong>Paiement :</strong> <span style="color: var(--text-primary);">${escapeHtml(p.payStatus)}</span></li>
+           <li><strong>Inscrit le :</strong> ${escapeHtml(p.regDate)}</li>
         </ul>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
           <button class="btn-validate-signup" data-id="${p.docId}" style="flex: 1; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">✔️ Valider</button>
@@ -1143,13 +1156,13 @@ async function loadEstacupSignups() {
                       <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">${escapeHtml(p.licence)}</span>
                       <span style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(p.age)}</span>
                   </div>
+                  <div style="font-size: 0.75rem; color: rgba(148, 163, 184, 0.8); margin-top: 6px;">📅 Inscrit le ${escapeHtml(p.regDate)}</div>
               </td>
               <td style="padding: 12px 15px; vertical-align: middle; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
               <td style="padding: 12px 15px; vertical-align: middle; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
               <td style="padding: 12px 15px; vertical-align: middle;"><code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(p.steam)}</code></td>
               <td style="padding: 12px 15px; vertical-align: middle; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
               
-              <!-- CELLULE LIVRÉE ENTIÈREMENT CENTRÉE -->
               <td style="padding: 12px 15px; vertical-align: middle; text-align: center;">
                   <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
                       <div style="font-size: 0.85rem; color: var(--text-primary); text-align: center;">${escapeHtml(p.liveryChoice)}</div>
