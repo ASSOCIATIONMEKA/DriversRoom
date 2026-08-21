@@ -287,3 +287,11 @@ ul li:hover::before{transform:scaleY(1)}
 .banner-items span { display: flex; align-items: center; gap: 12px; margin: 0 40px; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
 .banner-items img { height: 24px; width: auto; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
 @keyframes scrollBanner { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
+
+/* Boutons de menu actifs (verts) */
+.menu button.active, .admin-menu button.active {
+  background: var(--accent-success);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
