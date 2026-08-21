@@ -39,9 +39,9 @@
     .stat-label { color: #64748b; }
     .stat-value { color: #f1f5f9; font-weight: 600; }
 
-    /* Tableau des résultats */
-    .results-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; table-layout: fixed; }
-    .results-table th, .results-table td { padding: 15px; word-wrap: break-word; vertical-align: middle; transition: all 0.25s ease; }
+    /* Tableau des résultats unifié (sans séparations) */
+    .results-table { width: 100%; border-collapse: collapse; table-layout: fixed; background: rgba(15, 23, 42, 0.5); border-radius: 10px; overflow: hidden; }
+    .results-table th, .results-table td { padding: 16px 15px; word-wrap: break-word; vertical-align: middle; transition: background 0.2s ease; }
     
     /* Largeurs de colonnes optimisées */
     .results-table th:nth-child(1), .results-table td:nth-child(1) { width: 11%; }
@@ -52,21 +52,16 @@
     .results-table th:nth-child(6), .results-table td:nth-child(6) { width: 20%; }
     .results-table th:nth-child(7), .results-table td:nth-child(7) { width: 11%; text-align: right; }
 
-    .results-table th { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; text-align: left; }
+    .results-table th { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; text-align: left; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
     .results-table th:last-child { text-align: right; }
     
-    .results-table td { background: rgba(15, 23, 42, 0.8); font-size: 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+    .results-table td { font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .results-table tbody tr:last-child td { border-bottom: none; }
     
-    /* Effet d'animation au survol sur l'ensemble de la ligne (cours et championnats) */
+    /* Effet d'animation au survol sur l'ensemble de la ligne unifiée */
     .results-table tbody tr:not(.details-row):hover td {
-      background: rgba(139, 92, 246, 0.12);
-      border-color: rgba(139, 92, 246, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: rgba(139, 92, 246, 0.15);
     }
-
-    .results-table tr td:first-child { border-radius: 8px 0 0 8px; border-left: 1px solid rgba(255, 255, 255, 0.03); }
-    .results-table tr td:last-child { border-radius: 0 8px 8px 0; text-align: right; border-right: 1px solid rgba(255, 255, 255, 0.03); }
     
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
@@ -108,13 +103,13 @@
     }
     
     .details-row { display: none; }
-    .details-row td { background: transparent !important; transform: none !important; box-shadow: none !important; border: none !important; }
+    .details-row td { background: transparent !important; }
 
     .details-content {
       background: rgba(15, 23, 42, 0.95);
       padding: 20px;
       border-radius: 8px;
-      margin-top: 5px;
+      margin: 10px 0;
       border-left: 3px solid #8b5cf6;
       font-size: 0.9rem;
     }
