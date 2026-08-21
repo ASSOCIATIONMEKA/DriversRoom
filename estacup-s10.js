@@ -4,7 +4,6 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import {
   getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ======================== Firebase ======================== */
 const firebaseConfig = {
@@ -20,7 +19,6 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db   = getFirestore(app);
-const storage = getStorage(app);
 
 /* ======================== Utils ======================== */
 const $ = (id) => document.getElementById(id);
@@ -853,7 +851,7 @@ async function renderVoteCircuit() {
   }
 }
 
-/* ======================== DÉPÔT DE LIVRÉE ======================== */
+/* ======================== DÉPÔT DE LIVRÉE (ONEDRIVE) ======================== */
 async function renderLiverySection() {
   const host = $("liveryUploadHost");
   if (!host) return;
@@ -867,7 +865,7 @@ async function renderLiverySection() {
 
   try {
     const docSnap = await getDoc(doc(db, "estacup_s10_signups", currentUid));
-    
+
     if (!docSnap.exists() || docSnap.data().isValidated !== true) {
       host.innerHTML = `
         <div class="course-box" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
@@ -877,151 +875,30 @@ async function renderLiverySection() {
       return;
     }
 
-    const data = docSnap.data();
-    const hasLivery = !!data.liveryUrl;
-    const uploadDate = data.liveryUploadedAt ? formatDateFR(data.liveryUploadedAt) : "Récemment";
+    // ⚠️ METTRE LE VRAI LIEN ONEDRIVE ICI ⚠️
+    const oneDriveLink = "https://estaca-my.sharepoint.com/:f:/g/personal/meka_estaca_eu/IgCF2GbO4jLTTpORWbPSETEVAcRha7yQfBo-45BFVAUlZEU?e=7bv6py";
 
     host.innerHTML = `
       <div class="course-box">
         <p class="muted-note" style="margin-bottom: 1.5rem; line-height: 1.6;">
-          Uploadez ici votre livrée personnalisée. Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).<br><br>
-          <span style="color: #f59e0b;">⚠️ <strong>TRÈS IMPORTANT :</strong></span> Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format :<br>
+          Le dépôt des livrées s'effectue désormais sur l'espace OneDrive officiel de l'association. Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).<br><br>
+          <span style="color: #f59e0b;">⚠️ <strong>TRÈS IMPORTANT :</strong></span> Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format pour que le staff puisse l'attribuer à votre voiture :<br>
           <code style="display: inline-block; margin-top: 8px; font-size: 1.1rem; color: #38bdf8; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">### - NOM_Prénom.zip</code><br>
           <em>(Où ### est votre numéro de course entre 2 et 999. Exemple : <strong>96 - TOMCZYK_Marin.zip</strong>)</em>
         </p>
 
-        ${hasLivery ? `
-          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h4 style="color: #10b981; margin: 0 0 5px 0;">✅ Livrée en ligne</h4>
-            <p style="margin: 0; font-size: 0.9rem;">Dernier envoi le : ${uploadDate}</p>
-            <a href="${data.liveryUrl}" target="_blank" style="color: #38bdf8; font-size: 0.9rem; text-decoration: underline; display: inline-block; margin-top: 10px;">Télécharger ma livrée actuelle</a>
-          </div>
-          <p style="font-size: 0.9rem; margin-bottom: 10px;">Vous pouvez envoyer un nouveau fichier pour écraser l'ancien :</p>
-        ` : ''}
-
-        <div style="display: flex; flex-direction: column; gap: 15px; background: rgba(15,23,42,0.6); padding: 20px; border-radius: 10px; border: 1px dashed var(--border-secondary);">
-          <label for="liveryFileInput" style="font-weight: bold; cursor: pointer;">Sélectionner un fichier .ZIP</label>
-          <input type="file" id="liveryFileInput" accept=".zip,application/zip" style="background: transparent; border: 1px solid var(--border-primary); padding: 10px; border-radius: 6px; cursor: pointer;" />
+        <div style="display: flex; flex-direction: column; gap: 15px; background: rgba(15,23,42,0.6); padding: 20px; border-radius: 10px; border: 1px dashed var(--border-secondary); text-align: center;">
+          <h4 style="color: var(--accent-primary); margin-bottom: 0;">Dépôt OneDrive</h4>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Cliquez sur le bouton ci-dessous pour ouvrir le dossier partagé et y glisser/déposer votre fichier .ZIP.</p>
           
-          <button id="btnUploadLivery" class="btn-validate" style="align-self: flex-start;">
-            📤 Uploader la livrée
-          </button>
-
-          <!-- BARRE DE PROGRESSION -->
-          <div id="uploadProgressContainer" style="display: none; width: 100%; height: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-primary); border-radius: 6px; overflow: hidden; margin-top: 5px;">
-            <div id="uploadProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #8b5cf6); transition: width 0.2s ease;"></div>
-          </div>
-          <p id="uploadProgressText" style="margin: 0; font-size: 0.85rem; color: #cbd5e1; text-align: center; display: none;">0%</p>
+          <a href="${oneDriveLink}" target="_blank" style="text-decoration: none;">
+            <button class="btn-validate" style="width: auto; padding: 12px 24px; font-size: 1.1rem;">
+              📁 Accéder au dossier OneDrive
+            </button>
+          </a>
         </div>
-        
-        <p id="liveryUploadMsg" style="margin-top: 15px; font-weight: bold;"></p>
       </div>
     `;
-
-    $("btnUploadLivery").onclick = () => {
-      const fileInput = $("liveryFileInput");
-      const file = fileInput.files[0];
-      const msgBox = $("liveryUploadMsg");
-
-      if (!file) {
-        msgBox.style.color = "#f87171";
-        msgBox.textContent = "Veuillez sélectionner un fichier.";
-        return;
-      }
-
-      const fileName = file.name;
-
-      if (!fileName.toLowerCase().endsWith(".zip")) {
-        msgBox.style.color = "#f87171";
-        msgBox.textContent = "Seuls les fichiers .ZIP sont autorisés.";
-        return;
-      }
-
-      // Regex stricte pour "### - NOM_Prenom.zip"
-      const namePattern = /^(?:[2-9]|[1-9]\d|[1-9]\d{2})\s*-\s*[a-zA-ZÀ-ÿ\-]+_[a-zA-ZÀ-ÿ\-]+.*\.zip$/i;
-      
-      if (!namePattern.test(fileName)) {
-        msgBox.style.color = "#f59e0b";
-        msgBox.innerHTML = `❌ Nom du fichier refusé.<br>Format attendu : <strong>Numéro - NOM_Prénom.zip</strong>`;
-        return;
-      }
-
-      if (file.size > 25 * 1024 * 1024) { 
-        msgBox.style.color = "#f87171";
-        msgBox.textContent = "Le fichier est trop volumineux (Max 25 Mo).";
-        return;
-      }
-
-      const btn = $("btnUploadLivery");
-      btn.disabled = true;
-      btn.textContent = "Préparation de l'envoi...";
-      msgBox.textContent = "";
-
-      const progressContainer = $("uploadProgressContainer");
-      const progressBar = $("uploadProgressBar");
-      const progressText = $("uploadProgressText");
-
-      // On affiche la barre de progression
-      progressContainer.style.display = "block";
-      progressText.style.display = "block";
-      progressBar.style.background = "linear-gradient(90deg, #38bdf8, #8b5cf6)";
-
-      const storageRef = ref(storage, `livrees_s10/${fileName}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      // On écoute la progression
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          progressBar.style.width = progress + '%';
-          
-          const transferredMb = (snapshot.bytesTransferred / 1024 / 1024).toFixed(1);
-          const totalMb = (snapshot.totalBytes / 1024 / 1024).toFixed(1);
-          progressText.textContent = `${Math.round(progress)}% (${transferredMb} Mo / ${totalMb} Mo)`;
-        }, 
-        (err) => {
-          // GESTION DES ERREURS
-          console.error("Erreur upload livrée:", err);
-          msgBox.style.color = "#f87171";
-          
-          if (err.code === 'storage/unauthorized') {
-            msgBox.textContent = "❌ Accès refusé : Vérifiez les règles Firebase Storage (Rules).";
-          } else {
-            msgBox.textContent = "❌ Erreur lors de l'envoi (Code: " + err.code + ").";
-          }
-          
-          btn.disabled = false;
-          btn.textContent = "📤 Uploader la livrée";
-          progressBar.style.background = "#f87171"; // Passe au rouge
-        }, 
-        async () => {
-          // SUCCÈS DE L'ENVOI
-          try {
-            btn.textContent = "Finalisation...";
-            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            
-            await updateDoc(doc(db, "estacup_s10_signups", currentUid), {
-              liveryUrl: downloadUrl,
-              liveryUploadedAt: new Date()
-            });
-
-            msgBox.style.color = "#10b981";
-            msgBox.textContent = "✅ Livrée envoyée avec succès !";
-            progressBar.style.background = "#10b981"; // Passe au vert
-            progressText.textContent = "100% - Terminé !";
-            
-            setTimeout(renderLiverySection, 2000);
-
-          } catch (error) {
-            console.error("Erreur lors de la mise à jour Firestore:", error);
-            msgBox.style.color = "#f87171";
-            msgBox.textContent = "Erreur lors de l'enregistrement final.";
-            btn.disabled = false;
-            btn.textContent = "📤 Uploader la livrée";
-          }
-        }
-      );
-    };
 
   } catch (e) {
     console.error("Erreur chargement section livrée:", e);
