@@ -15,7 +15,6 @@ const firebaseConfig = {
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 
-// 🛡️ SÉCURITÉ ANTI-CRASH (Empêche Firebase de planter si nav.js est déjà chargé)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db   = getFirestore(app);
@@ -189,6 +188,12 @@ function setupNavigation(isAdmin = false) {
     const el = document.getElementById(`section-${key}`);
     if (el) el.classList.remove("hidden");
 
+    // Gestion de la classe active pour les boutons principaux
+    buttons.forEach(btn => {
+      if (btn.getAttribute("data-section") === key) btn.classList.add("active");
+      else btn.classList.remove("active");
+    });
+
     if (key === "championship" && lastUserData) {
       setupChampionshipSubnav();
       showChampionshipSub("vehicule");
@@ -224,6 +229,12 @@ function showChampionshipSub(key) {
   const block = $("champ-sub-" + key);
   if (block) block.classList.remove("hidden");
 
+  // Gestion de la classe active pour les sous-menus du Championnat
+  document.querySelectorAll("#championshipSubnav .champ-sub-btn").forEach(btn => {
+    if (btn.dataset.sub === key) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+
   if (key === "circuits") {
     setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
   }
@@ -248,6 +259,13 @@ function setupResultsSubnav() {
 function showResultsSub(key) {
   document.querySelectorAll('.res-subsection').forEach(b => b.classList.add("hidden"));
   const block = $("res-sub-" + key); if (block) block.classList.remove("hidden");
+
+  // Gestion de la classe active pour les sous-menus des Résultats
+  document.querySelectorAll("#resultsSubnav .res-sub-btn").forEach(btn => {
+    if (btn.dataset.sub === key) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+
   if (key === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
   if (key === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
 }
@@ -888,7 +906,6 @@ async function renderLiverySection() {
       return;
     }
 
-    // ⚠️ METTRE LE VRAI LIEN ONEDRIVE ICI ⚠️
     const oneDriveLink = "VOTRE_LIEN_ONEDRIVE_ICI";
 
     host.innerHTML = `
