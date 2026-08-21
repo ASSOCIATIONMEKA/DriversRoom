@@ -20,7 +20,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
   projectId: "estacupbymeka",
-  storageBucket: "estacupbymeka.appspot.com",
+  storageBucket: "estacupbymeka.firebasestorage.app",
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
@@ -1017,6 +1017,12 @@ async function loadEstacupSignups() {
       if (sData.paymentStatus === "adherent") payStatus = "Adhérent MEKA";
       if (sData.paymentStatus === "paye_5e") payStatus = "Frais d'inscription (5€) payés";
 
+      // NOUVEAU : Livrée
+      let liveryChoice = "Non renseigné";
+      if (sData.liveryChoice === "personnelle") liveryChoice = "Personnelle (OneDrive)";
+      if (sData.liveryChoice === "neutre") liveryChoice = "Neutre (Défaut)";
+      const liveryImplemented = sData.liveryImplemented === true;
+
       const steamId = sData.steamID64 || sData.steamId || uData.steamID64 || uData.steamId || "—";
 
       const pilotObj = {
@@ -1030,6 +1036,8 @@ async function loadEstacupSignups() {
         licence: licence,
         licColor: licColor,
         payStatus: payStatus,
+        liveryChoice: liveryChoice,
+        liveryImplemented: liveryImplemented,
         isValidated: sData.isValidated === true
       };
 
@@ -1071,6 +1079,7 @@ async function loadEstacupSignups() {
            <li><strong>Âge :</strong> ${escapeHtml(p.age)}</li>
            <li><strong>Numéro :</strong> #${escapeHtml(String(p.number))}</li>
            <li><strong>Équipe :</strong> ${escapeHtml(p.team)}</li>
+           <li><strong>Livrée :</strong> ${escapeHtml(p.liveryChoice)}</li>
            <li><strong>Steam ID :</strong> <code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px;">${escapeHtml(p.steam)}</code></li>
            <li><strong>Paiement :</strong> <span style="color: var(--text-primary);">${escapeHtml(p.payStatus)}</span></li>
         </ul>
@@ -1104,6 +1113,7 @@ async function loadEstacupSignups() {
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Steam ID</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Paiement</th>
+                <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Livrée</th>
                 <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; text-align: right;">Action</th>
               </tr>
             </thead>
@@ -1124,6 +1134,13 @@ async function loadEstacupSignups() {
                 <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
                 <td style="padding: 12px 15px;"><code style="font-family: monospace; color: var(--accent-primary); background: rgba(0,0,0,0.3); padding: 3px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(p.steam)}</code></td>
                 <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.payStatus)}</td>
+                <td style="padding: 12px 15px;">
+                    <div style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 6px;">${escapeHtml(p.liveryChoice)}</div>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; background: ${p.liveryImplemented ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)'}; color: ${p.liveryImplemented ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p.liveryImplemented ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)'}; transition: all 0.2s;">
+                        <input type="checkbox" class="cb-livery-implemented" data-id="${p.docId}" ${p.liveryImplemented ? 'checked' : ''} style="width: 14px; height: 14px; accent-color: #10b981; cursor: pointer; margin: 0;">
+                        ${p.liveryImplemented ? 'Intégrée ✅' : 'À intégrer'}
+                    </label>
+                </td>
                 <td style="padding: 12px 15px; text-align: right;">
                     <button class="btn-delete-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
                         🗑️ Supprimer
@@ -1160,6 +1177,24 @@ async function loadEstacupSignups() {
         e.target.disabled = true;
         await deleteDoc(doc(db, "estacup_s10_signups", id));
         loadEstacupSignups();
+      });
+    });
+
+    // Gestionnaires d'événements pour les cases à cocher Livrée
+    document.querySelectorAll('.cb-livery-implemented').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const id = e.target.getAttribute('data-id');
+        const isChecked = e.target.checked;
+        e.target.disabled = true; // Désactive pendant la sauvegarde
+        try {
+          await updateDoc(doc(db, "estacup_s10_signups", id), { liveryImplemented: isChecked });
+          loadEstacupSignups(); // Recharge pour mettre à jour les couleurs
+        } catch (err) {
+          console.error("Erreur mise à jour livrée :", err);
+          alert("Erreur lors de la mise à jour.");
+          e.target.checked = !isChecked; // Annule
+          e.target.disabled = false;
+        }
       });
     });
 
