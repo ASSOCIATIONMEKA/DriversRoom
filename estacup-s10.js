@@ -4,6 +4,8 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import {
   getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// ✨ NOUVEAU : Import pour l'upload des fichiers de livrée (Firebase Storage)
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ======================== Firebase ======================== */
 const firebaseConfig = {
@@ -17,6 +19,7 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const storage = getStorage(app); // ✨ NOUVEAU : Initialisation du stockage
 
 /* ======================== Utils ======================== */
 const $ = (id) => document.getElementById(id);
@@ -230,6 +233,10 @@ function showChampionshipSub(key) {
   }
   else if (key === "inscription") {
     if (lastUserData) setupMekaQuestionnaire(lastUserData);
+  }
+  // ✨ NOUVEAU : Appel à la fonction de rendu de la livrée
+  else if (key === "livree") {
+    renderLiverySection();
   }
 }
 
@@ -844,6 +851,119 @@ async function renderVoteCircuit() {
   } catch (e) {
     console.error("Erreur chargement vote:", e);
     host.innerHTML = `<div class="course-box"><p class="impact-bad">Impossible de charger le module de vote.</p></div>`;
+  }
+}
+
+/* ======================== DÉPÔT DE LIVRÉE ======================== */
+async function renderLiverySection() {
+  const host = $("liveryUploadHost");
+  if (!host) return;
+
+  if (!currentUid) {
+    host.innerHTML = `<div class="course-box"><p class="muted-note">Connectez-vous pour déposer une livrée.</p></div>`;
+    return;
+  }
+
+  host.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement...</div>`;
+
+  try {
+    // On vérifie d'abord si le pilote a une inscription validée
+    const docSnap = await getDoc(doc(db, "estacup_s10_signups", currentUid));
+    
+    if (!docSnap.exists() || docSnap.data().isValidated !== true) {
+      host.innerHTML = `
+        <div class="course-box" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
+          <h4 style="color: #f59e0b; margin-bottom: 10px;">⚠️ Inscription requise</h4>
+          <p>Vous devez être inscrit et votre inscription doit être validée par le staff pour pouvoir envoyer votre livrée personnalisée.</p>
+        </div>`;
+      return;
+    }
+
+    const data = docSnap.data();
+    const hasLivery = !!data.liveryUrl;
+    const uploadDate = data.liveryUploadedAt ? formatDateFR(data.liveryUploadedAt) : "Récemment";
+
+    host.innerHTML = `
+      <div class="course-box">
+        <p class="muted-note" style="margin-bottom: 1.5rem;">
+          Uploadez ici votre livrée personnalisée. <strong>Important :</strong> Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).
+        </p>
+
+        ${hasLivery ? `
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="color: #10b981; margin: 0 0 5px 0;">✅ Livrée en ligne</h4>
+            <p style="margin: 0; font-size: 0.9rem;">Dernier envoi le : ${uploadDate}</p>
+            <a href="${data.liveryUrl}" target="_blank" style="color: #38bdf8; font-size: 0.9rem; text-decoration: underline; display: inline-block; margin-top: 10px;">Télécharger ma livrée actuelle</a>
+          </div>
+          <p style="font-size: 0.9rem; margin-bottom: 10px;">Vous pouvez envoyer un nouveau fichier pour écraser l'ancien :</p>
+        ` : ''}
+
+        <div style="display: flex; flex-direction: column; gap: 15px; background: rgba(15,23,42,0.6); padding: 20px; border-radius: 10px; border: 1px dashed var(--border-secondary);">
+          <label for="liveryFileInput" style="font-weight: bold; cursor: pointer;">Sélectionner un fichier .ZIP</label>
+          <input type="file" id="liveryFileInput" accept=".zip,application/zip" style="background: transparent; border: 1px solid var(--border-primary); padding: 10px; border-radius: 6px; cursor: pointer;" />
+          
+          <button id="btnUploadLivery" class="btn-validate" style="align-self: flex-start;">
+            📤 Uploader la livrée
+          </button>
+        </div>
+        
+        <p id="liveryUploadMsg" style="margin-top: 15px; font-weight: bold;"></p>
+      </div>
+    `;
+
+    $("btnUploadLivery").onclick = async () => {
+      const fileInput = $("liveryFileInput");
+      const file = fileInput.files[0];
+      const msgBox = $("liveryUploadMsg");
+
+      if (!file) {
+        msgBox.style.color = "#f87171";
+        msgBox.textContent = "Veuillez sélectionner un fichier.";
+        return;
+      }
+      if (!file.name.toLowerCase().endsWith(".zip")) {
+        msgBox.style.color = "#f87171";
+        msgBox.textContent = "Seuls les fichiers .ZIP sont autorisés.";
+        return;
+      }
+      if (file.size > 25 * 1024 * 1024) { 
+        msgBox.style.color = "#f87171";
+        msgBox.textContent = "Le fichier est trop volumineux (Max 25 Mo).";
+        return;
+      }
+
+      const btn = $("btnUploadLivery");
+      btn.disabled = true;
+      btn.textContent = "Envoi en cours (patientez)...";
+      msgBox.textContent = "";
+
+      try {
+        const storageRef = ref(storage, `livrees_s10/livree_${currentUid}.zip`);
+        await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(storageRef);
+        
+        await updateDoc(doc(db, "estacup_s10_signups", currentUid), {
+          liveryUrl: downloadUrl,
+          liveryUploadedAt: new Date()
+        });
+
+        msgBox.style.color = "#10b981";
+        msgBox.textContent = "✅ Livrée envoyée avec succès !";
+        
+        setTimeout(renderLiverySection, 1500);
+
+      } catch (err) {
+        console.error("Erreur upload livrée:", err);
+        msgBox.style.color = "#f87171";
+        msgBox.textContent = "Erreur lors de l'envoi. Vérifiez votre connexion.";
+        btn.disabled = false;
+        btn.textContent = "📤 Uploader la livrée";
+      }
+    };
+
+  } catch (e) {
+    console.error("Erreur chargement section livrée:", e);
+    host.innerHTML = `<div class="course-box"><p class="impact-bad">Impossible de charger la page.</p></div>`;
   }
 }
 
