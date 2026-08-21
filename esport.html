@@ -43,14 +43,14 @@
     .results-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; table-layout: fixed; }
     .results-table th, .results-table td { padding: 15px; word-wrap: break-word; vertical-align: middle; }
     
-    /* Largeurs de colonnes */
+    /* Largeurs de colonnes optimisées */
     .results-table th:nth-child(1), .results-table td:nth-child(1) { width: 11%; }
     .results-table th:nth-child(2), .results-table td:nth-child(2) { width: 12%; }
     .results-table th:nth-child(3), .results-table td:nth-child(3) { width: 17%; }
     .results-table th:nth-child(4), .results-table td:nth-child(4) { width: 19%; }
     .results-table th:nth-child(5), .results-table td:nth-child(5) { width: 10%; }
-    .results-table th:nth-child(6), .results-table td:nth-child(6) { width: 21%; }
-    .results-table th:nth-child(7), .results-table td:nth-child(7) { width: 10%; text-align: right; }
+    .results-table th:nth-child(6), .results-table td:nth-child(6) { width: 20%; }
+    .results-table th:nth-child(7), .results-table td:nth-child(7) { width: 11%; text-align: right; }
 
     .results-table th { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; text-align: left; }
     .results-table th:last-child { text-align: right; }
@@ -60,13 +60,27 @@
     
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
+    /* Conteneur de résultat aligné strictement à droite */
+    .result-cell-container {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      width: 100%;
+    }
+    .result-text-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
     /* Couleurs de podium strictes : Or, Argent, Bronze */
     .pos-p1 { color: #ffd700; font-weight: bold; } 
     .pos-p2 { color: #c0c0c0; font-weight: bold; } 
     .pos-p3 { color: #cd7f32; font-weight: bold; } 
     .pos-other { color: #94a3b8; }
 
-    /* Structure à deux étages sans gras */
     .row-tier {
       display: flex;
       flex-direction: column;
@@ -75,12 +89,10 @@
       color: #f8fafc;
     }
 
-    /* Style pour les pilotes externes (plus foncés/grisés) */
     .guest-pilot {
       color: #64748b;
     }
 
-    /* Ligne cliquable (Championnat) */
     .clickable-row {
       cursor: pointer;
       transition: background 0.2s;
@@ -146,6 +158,7 @@
     .arrow-icon {
       display: inline-block;
       transition: transform 0.3s ease;
+      flex-shrink: 0;
     }
     .arrow-icon.open {
       transform: rotate(180deg);
@@ -259,8 +272,8 @@
                 </div>
               </td>
               <td>
-                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
-                  <div class="row-tier" style="text-align: right;">
+                <div class="result-cell-container">
+                  <div class="result-text-stack">
                     <span class="pos-p1">P1</span>
                     <span style="color: #38bdf8;">P9</span>
                   </div>
@@ -382,7 +395,7 @@
               <td>Amateur</td>
               <td>N. Moreau, I. Guilbaud, M. Tomczyk, T. Jacobsen</td>
               <td>
-                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+                <div class="result-cell-container">
                   <span style="color: #c0c0c0; font-weight: bold;">P2 (AM)</span>
                   <span class="arrow-icon" id="arrow-gt4">▼</span>
                 </div>
@@ -448,7 +461,7 @@
               <td>PRO</td>
               <td>Nicolas Moreau, Alexandre Maufroy</td>
               <td>
-                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+                <div class="result-cell-container">
                   <span style="color: #38bdf8; font-weight: bold;">P19 (PRO)</span>
                   <span class="arrow-icon" id="arrow-pro2024">▼</span>
                 </div>
