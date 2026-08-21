@@ -508,6 +508,13 @@ async function loadEstacupForm(userData) {
           <label for="regSteam">Steam ID (64) :</label>
           <input type="text" id="regSteam" placeholder="7656119..." value="${escapeHtml(userData.steamID64 || userData.steamId || "")}" required>
 
+          <label for="regLiveryChoice">Choix de la livrée :</label>
+          <select id="regLiveryChoice" required style="margin-bottom: 1.5rem;">
+            <option value="" disabled selected>-- Sélectionnez une option --</option>
+            <option value="personnelle">Je fournirai une livrée personnelle (dépôt sur OneDrive)</option>
+            <option value="neutre">Je roulerai avec la livrée neutre par défaut de l'ESTACUP</option>
+          </select>
+
           <button id="btnSubmitSignup" class="btn-validate" style="width: 100%; margin-top: 15px;">🏁 Valider mon inscription</button>
         </div>
       `;
@@ -519,8 +526,9 @@ async function loadEstacupForm(userData) {
         const team = $("regTeam").value.trim();
         const num = parseInt($("regNumber").value, 10);
         const steam = $("regSteam").value.trim();
+        const liveryChoice = $("regLiveryChoice").value;
 
-        if (!fName || !lName || !status || isNaN(num) || !steam) {
+        if (!fName || !lName || !status || isNaN(num) || !steam || !liveryChoice) {
           alert("Veuillez remplir tous les champs obligatoires correctement.");
           return;
         }
@@ -566,6 +574,7 @@ async function loadEstacupForm(userData) {
             raceNumber: num,
             carChoice: "Ligier JS P320",
             steamID64: steam,
+            liveryChoice: liveryChoice,
             isValidated: false,
             updatedAt: new Date()
           });
@@ -590,6 +599,8 @@ async function loadEstacupForm(userData) {
     if (data.paymentStatus === "adherent") statusText = "Adhérent MEKA";
     if (data.paymentStatus === "paye_5e") statusText = "Frais d'inscription (5€) payés";
 
+    let liveryText = data.liveryChoice === "personnelle" ? "Livrée personnelle (via OneDrive)" : (data.liveryChoice === "neutre" ? "Livrée neutre ESTACUP" : "Non renseigné");
+
     if (isValidated) {
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px; border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05);">
@@ -601,6 +612,7 @@ async function loadEstacupForm(userData) {
             <li style="padding: 5px 0;"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</li>
             <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
             <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
+            <li style="padding: 5px 0;"><strong>Livrée :</strong> ${liveryText}</li>
           </ul>
           <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
             💡 Pour toute modification de dernière minute, veuillez contacter directement l'administration sur Discord.
@@ -618,6 +630,7 @@ async function loadEstacupForm(userData) {
             <li style="padding: 5px 0;"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</li>
             <li style="padding: 5px 0;"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</li>
             <li style="padding: 5px 0;"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</li>
+            <li style="padding: 5px 0;"><strong>Livrée :</strong> ${liveryText}</li>
           </ul>
           <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
             🔒 Vos modifications sont verrouillées en attente de validation par le staff. Contactez-nous en cas de besoin.
@@ -876,7 +889,7 @@ async function renderLiverySection() {
     }
 
     // ⚠️ METTRE LE VRAI LIEN ONEDRIVE ICI ⚠️
-    const oneDriveLink = "https://estaca-my.sharepoint.com/:f:/g/personal/meka_estaca_eu/IgCF2GbO4jLTTpORWbPSETEVAcRha7yQfBo-45BFVAUlZEU?e=7bv6py";
+    const oneDriveLink = "VOTRE_LIEN_ONEDRIVE_ICI";
 
     host.innerHTML = `
       <div class="course-box">
