@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import {
   getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-// ✨ NOUVEAU : Import pour l'upload des fichiers de livrée (Firebase Storage)
+// Import pour l'upload des fichiers de livrée (Firebase Storage)
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ======================== Firebase ======================== */
@@ -12,14 +12,14 @@ const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
   projectId: "estacupbymeka",
-  storageBucket: "estacupbymeka.appspot.com",
+  storageBucket: "estacupbymeka.firebasestorage.app", // 👈 CORRECTION DU LIEN STORAGE
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
-const storage = getStorage(app); // ✨ NOUVEAU : Initialisation du stockage
+const storage = getStorage(app); // Initialisation du stockage
 
 /* ======================== Utils ======================== */
 const $ = (id) => document.getElementById(id);
@@ -234,7 +234,6 @@ function showChampionshipSub(key) {
   else if (key === "inscription") {
     if (lastUserData) setupMekaQuestionnaire(lastUserData);
   }
-  // ✨ NOUVEAU : Appel à la fonction de rendu de la livrée
   else if (key === "livree") {
     renderLiverySection();
   }
@@ -867,7 +866,6 @@ async function renderLiverySection() {
   host.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement...</div>`;
 
   try {
-    // On vérifie d'abord si le pilote a une inscription validée
     const docSnap = await getDoc(doc(db, "estacup_s10_signups", currentUid));
     
     if (!docSnap.exists() || docSnap.data().isValidated !== true) {
@@ -885,8 +883,11 @@ async function renderLiverySection() {
 
     host.innerHTML = `
       <div class="course-box">
-        <p class="muted-note" style="margin-bottom: 1.5rem;">
-          Uploadez ici votre livrée personnalisée. <strong>Important :</strong> Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).
+        <p class="muted-note" style="margin-bottom: 1.5rem; line-height: 1.6;">
+          Uploadez ici votre livrée personnalisée. Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).<br><br>
+          <span style="color: #f59e0b;">⚠️ <strong>TRÈS IMPORTANT :</strong></span> Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format :<br>
+          <code style="display: inline-block; margin-top: 8px; font-size: 1.1rem; color: #38bdf8; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">### - NOM_Prénom.zip</code><br>
+          <em>(Où ### est votre numéro de course entre 2 et 999. Exemple : <strong>96 - TOMCZYK_Marin.zip</strong>)</em>
         </p>
 
         ${hasLivery ? `
@@ -921,11 +922,25 @@ async function renderLiverySection() {
         msgBox.textContent = "Veuillez sélectionner un fichier.";
         return;
       }
-      if (!file.name.toLowerCase().endsWith(".zip")) {
+
+      const fileName = file.name;
+
+      if (!fileName.toLowerCase().endsWith(".zip")) {
         msgBox.style.color = "#f87171";
         msgBox.textContent = "Seuls les fichiers .ZIP sont autorisés.";
         return;
       }
+
+      // 🛡️ VÉRIFICATION STRICTE DU NOM DU FICHIER (Regex)
+      // Accepte: numéro (2-999) + espace + tiret + espace + Nom_Prenom + (éventuels autres caractères ex: _2) + .zip
+      const namePattern = /^(?:[2-9]|[1-9]\d|[1-9]\d{2})\s*-\s*[A-Za-zÀ-ÖØ-öø-ÿ\-]+_[A-Za-zÀ-ÖØ-öø-ÿ\-]+.*\.zip$/i;
+      
+      if (!namePattern.test(fileName)) {
+        msgBox.style.color = "#f59e0b";
+        msgBox.innerHTML = `❌ Nom du fichier refusé.<br>Format attendu : <strong>Numéro - NOM_Prénom.zip</strong>`;
+        return;
+      }
+
       if (file.size > 25 * 1024 * 1024) { 
         msgBox.style.color = "#f87171";
         msgBox.textContent = "Le fichier est trop volumineux (Max 25 Mo).";
@@ -938,7 +953,9 @@ async function renderLiverySection() {
       msgBox.textContent = "";
 
       try {
-        const storageRef = ref(storage, `livrees_s10/livree_${currentUid}.zip`);
+        // Enregistre avec le vrai nom du fichier pour faciliter le travail des admins
+        const storageRef = ref(storage, `livrees_s10/${fileName}`);
+        
         await uploadBytes(storageRef, file);
         const downloadUrl = await getDownloadURL(storageRef);
         
