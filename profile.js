@@ -59,6 +59,11 @@ async function loadUserProfile() {
       if ($("profLastName")) $("profLastName").value = data.lastName || "";
       if ($("profSteamId")) $("profSteamId").value = data.steamId || data.steamID64 || "";
       
+      // Chargement du Rôle
+      if ($("profRole")) {
+        $("profRole").value = data.role || "Pilote"; // "Pilote" par défaut si vide
+      }
+
       // Gestion de la Date de Naissance
       const dob = data.dob || data.birthDate || "";
       if ($("profDob")) {
@@ -71,7 +76,7 @@ async function loadUserProfile() {
         });
       }
 
-      // 🟢 CORRECTION DE LA LICENCE (On vérifie toutes les orthographes possibles)
+      // Gestion de la Licence
       const licence = data.licenseClass || data.licenceClass || data.license || data.licence || "Rookie";
       
       if ($("profLicence")) {
@@ -82,13 +87,12 @@ async function loadUserProfile() {
   } catch (err) { console.error("Erreur profil:", err); }
 }
 
-// 🟢 NOUVEAU CALCUL DES STATS : Scan fiable 100% via sous-collections personnelles
+// Calcul des stats via sous-collections personnelles
 async function calculatePilotStats() {
   try {
     let racesCount = 0, winsCount = 0, podiumsCount = 0, polesCount = 0;
     let championships = new Set();
 
-    // On va chercher l'historique direct du pilote, rangé dans SON profil !
     const s9Ref = collection(db, "users", currentUser.uid, "raceHistory");
     const s10Ref = collection(db, "users", currentUser.uid, "raceHistory_s10");
 
@@ -138,7 +142,8 @@ $("profileForm")?.addEventListener("submit", async (e) => {
       firstName: $("profFirstName").value.trim(),
       lastName: $("profLastName").value.trim(),
       steamId: $("profSteamId").value.trim(),
-      dob: $("profDob").value // Sauvegarde la nouvelle date
+      dob: $("profDob").value,
+      role: $("profRole").value // Sauvegarde du nouveau rôle
     }, { merge: true });
     
     await calculatePilotStats();
