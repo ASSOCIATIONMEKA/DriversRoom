@@ -39,23 +39,24 @@
     .stat-label { color: #64748b; }
     .stat-value { color: #f1f5f9; font-weight: 600; }
 
-    /* Tableau des résultats (Largeurs de colonnes ajustées pour aérer) */
+    /* Tableau des résultats */
     .results-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; table-layout: fixed; }
     .results-table th, .results-table td { padding: 15px; word-wrap: break-word; vertical-align: middle; }
     
-    /* Attribution des largeurs de colonnes */
-    .results-table th:nth-child(1), .results-table td:nth-child(1) { width: 11%; } /* Date */
-    .results-table th:nth-child(2), .results-table td:nth-child(2) { width: 12%; } /* Type */
-    .results-table th:nth-child(3), .results-table td:nth-child(3) { width: 17%; } /* Événement */
-    .results-table th:nth-child(4), .results-table td:nth-child(4) { width: 19%; } /* Véhicule (plus large) */
-    .results-table th:nth-child(5), .results-table td:nth-child(5) { width: 10%; } /* Split */
-    .results-table th:nth-child(6), .results-table td:nth-child(6) { width: 21%; } /* Pilotes */
-    .results-table th:nth-child(7), .results-table td:nth-child(7) { width: 10%; text-align: right; } /* Résultat */
+    /* Largeurs de colonnes */
+    .results-table th:nth-child(1), .results-table td:nth-child(1) { width: 11%; }
+    .results-table th:nth-child(2), .results-table td:nth-child(2) { width: 12%; }
+    .results-table th:nth-child(3), .results-table td:nth-child(3) { width: 17%; }
+    .results-table th:nth-child(4), .results-table td:nth-child(4) { width: 19%; }
+    .results-table th:nth-child(5), .results-table td:nth-child(5) { width: 10%; }
+    .results-table th:nth-child(6), .results-table td:nth-child(6) { width: 21%; }
+    .results-table th:nth-child(7), .results-table td:nth-child(7) { width: 10%; text-align: right; }
 
     .results-table th { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; text-align: left; }
+    .results-table th:last-child { text-align: right; }
     .results-table td { background: rgba(15, 23, 42, 0.8); font-size: 0.95rem; }
     .results-table tr td:first-child { border-radius: 8px 0 0 8px; }
-    .results-table tr td:last-child { border-radius: 0 8px 8px 0; }
+    .results-table tr td:last-child { border-radius: 0 8px 8px 0; text-align: right; }
     
     .badge-type { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
@@ -65,7 +66,7 @@
     .pos-p3 { color: #cd7f32; font-weight: bold; } 
     .pos-other { color: #94a3b8; }
 
-    /* Structure à deux étages sans gras pour les championnats multi-lignes */
+    /* Structure à deux étages sans gras */
     .row-tier {
       display: flex;
       flex-direction: column;
@@ -231,7 +232,7 @@
               <td>Ferrari 296 GT3</td>
               <td>Split 12</td>
               <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
-              <td style="text-align: right;"><strong class="pos-p1">P1</strong></td>
+              <td><strong class="pos-p1">P1</strong></td>
             </tr>
 
             <!-- CFS GOFIR 2026 (GT3) -->
@@ -358,7 +359,7 @@
               <td>Porsche 963 GTP</td>
               <td>Split 29</td>
               <td>I. Guilbaud, M. Tomczyk, T. Jacobsen</td>
-              <td style="text-align: right;"><strong style="color: #38bdf8;">P6</strong></td>
+              <td><strong style="color: #38bdf8;">P6</strong></td>
             </tr>
 
             <!-- 24H DE DAYTONA (17/01/2026) -->
@@ -369,7 +370,7 @@
               <td>Porsche 963 GTP</td>
               <td>Split 24</td>
               <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
-              <td style="text-align: right;"><strong style="color: #38bdf8;">P6</strong></td>
+              <td><strong style="color: #38bdf8;">P6</strong></td>
             </tr>
 
             <!-- CFE GOFIR 2025-2026 (GT4 AM) -->
@@ -435,7 +436,7 @@
               <td>Porsche 911 GT3 R</td>
               <td>Split 5</td>
               <td>M. Tomczyk, A. Maufroy, <span class="guest-pilot">W. Villatier, H. Lebatteux, A. Reverdy, N. Vansteene</span></td>
-              <td style="text-align: right;"><strong style="color: #38bdf8;">P38</strong></td>
+              <td><strong style="color: #38bdf8;">P38</strong></td>
             </tr>
 
             <!-- CFE GOFIR 2024-2025 (PRO) -->
