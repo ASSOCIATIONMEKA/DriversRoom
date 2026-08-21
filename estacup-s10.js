@@ -4,14 +4,14 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import {
   getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* ======================== Firebase ======================== */
 const firebaseConfig = {
   apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
   authDomain: "estacupbymeka.firebaseapp.com",
   projectId: "estacupbymeka",
-  storageBucket: "estacupbymeka.appspot.com", // 👈 Remis à l'original
+  storageBucket: "estacupbymeka.appspot.com",
   messagingSenderId: "1065406380441",
   appId: "1:1065406380441:web:55005f7d29290040c13b08"
 };
@@ -906,13 +906,19 @@ async function renderLiverySection() {
           <button id="btnUploadLivery" class="btn-validate" style="align-self: flex-start;">
             📤 Uploader la livrée
           </button>
+
+          <!-- BARRE DE PROGRESSION -->
+          <div id="uploadProgressContainer" style="display: none; width: 100%; height: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-primary); border-radius: 6px; overflow: hidden; margin-top: 5px;">
+            <div id="uploadProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #8b5cf6); transition: width 0.2s ease;"></div>
+          </div>
+          <p id="uploadProgressText" style="margin: 0; font-size: 0.85rem; color: #cbd5e1; text-align: center; display: none;">0%</p>
         </div>
         
         <p id="liveryUploadMsg" style="margin-top: 15px; font-weight: bold;"></p>
       </div>
     `;
 
-    $("btnUploadLivery").onclick = async () => {
+    $("btnUploadLivery").onclick = () => {
       const fileInput = $("liveryFileInput");
       const file = fileInput.files[0];
       const msgBox = $("liveryUploadMsg");
@@ -931,8 +937,7 @@ async function renderLiverySection() {
         return;
       }
 
-      // 🛡️ VÉRIFICATION STRICTE DU NOM DU FICHIER (Regex)
-      // Accepte: numéro (2-999) + espace + tiret + espace + Nom_Prenom + (éventuels autres caractères ex: _2) + .zip
+      // Regex stricte pour "### - NOM_Prenom.zip"
       const namePattern = /^(?:[2-9]|[1-9]\d|[1-9]\d{2})\s*-\s*[a-zA-ZÀ-ÿ\-]+_[a-zA-ZÀ-ÿ\-]+.*\.zip$/i;
       
       if (!namePattern.test(fileName)) {
@@ -949,33 +954,73 @@ async function renderLiverySection() {
 
       const btn = $("btnUploadLivery");
       btn.disabled = true;
-      btn.textContent = "Envoi en cours (patientez)...";
+      btn.textContent = "Préparation de l'envoi...";
       msgBox.textContent = "";
 
-      try {
-        // Enregistre avec le vrai nom du fichier pour faciliter le travail des admins
-        const storageRef = ref(storage, `livrees_s10/${fileName}`);
-        
-        await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(storageRef);
-        
-        await updateDoc(doc(db, "estacup_s10_signups", currentUid), {
-          liveryUrl: downloadUrl,
-          liveryUploadedAt: new Date()
-        });
+      const progressContainer = $("uploadProgressContainer");
+      const progressBar = $("uploadProgressBar");
+      const progressText = $("uploadProgressText");
 
-        msgBox.style.color = "#10b981";
-        msgBox.textContent = "✅ Livrée envoyée avec succès !";
-        
-        setTimeout(renderLiverySection, 1500);
+      // On affiche la barre de progression
+      progressContainer.style.display = "block";
+      progressText.style.display = "block";
+      progressBar.style.background = "linear-gradient(90deg, #38bdf8, #8b5cf6)";
 
-      } catch (err) {
-        console.error("Erreur upload livrée:", err);
-        msgBox.style.color = "#f87171";
-        msgBox.textContent = "Erreur lors de l'envoi. Vérifiez votre connexion ou vos droits Firebase Storage.";
-        btn.disabled = false;
-        btn.textContent = "📤 Uploader la livrée";
-      }
+      const storageRef = ref(storage, `livrees_s10/${fileName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      // On écoute la progression
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          progressBar.style.width = progress + '%';
+          
+          const transferredMb = (snapshot.bytesTransferred / 1024 / 1024).toFixed(1);
+          const totalMb = (snapshot.totalBytes / 1024 / 1024).toFixed(1);
+          progressText.textContent = `${Math.round(progress)}% (${transferredMb} Mo / ${totalMb} Mo)`;
+        }, 
+        (err) => {
+          // GESTION DES ERREURS
+          console.error("Erreur upload livrée:", err);
+          msgBox.style.color = "#f87171";
+          
+          if (err.code === 'storage/unauthorized') {
+            msgBox.textContent = "❌ Accès refusé : Vérifiez les règles Firebase Storage (Rules).";
+          } else {
+            msgBox.textContent = "❌ Erreur lors de l'envoi (Code: " + err.code + ").";
+          }
+          
+          btn.disabled = false;
+          btn.textContent = "📤 Uploader la livrée";
+          progressBar.style.background = "#f87171"; // Passe au rouge
+        }, 
+        async () => {
+          // SUCCÈS DE L'ENVOI
+          try {
+            btn.textContent = "Finalisation...";
+            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            
+            await updateDoc(doc(db, "estacup_s10_signups", currentUid), {
+              liveryUrl: downloadUrl,
+              liveryUploadedAt: new Date()
+            });
+
+            msgBox.style.color = "#10b981";
+            msgBox.textContent = "✅ Livrée envoyée avec succès !";
+            progressBar.style.background = "#10b981"; // Passe au vert
+            progressText.textContent = "100% - Terminé !";
+            
+            setTimeout(renderLiverySection, 2000);
+
+          } catch (error) {
+            console.error("Erreur lors de la mise à jour Firestore:", error);
+            msgBox.style.color = "#f87171";
+            msgBox.textContent = "Erreur lors de l'enregistrement final.";
+            btn.disabled = false;
+            btn.textContent = "📤 Uploader la livrée";
+          }
+        }
+      );
     };
 
   } catch (e) {
