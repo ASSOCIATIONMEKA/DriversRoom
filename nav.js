@@ -62,7 +62,7 @@ function injectNavbar() {
     // Ciblage intelligent de l'élément de réception ou repli sur le haut du body
     const targetDiv = document.getElementById("global-navbar");
     if (targetDiv) {
-        targetDiv.innerHTML = navbarHTML;
+        targetDiv.outerHTML = navbarHTML;
     } else {
         document.body.insertAdjacentHTML('afterbegin', navbarHTML);
     }
