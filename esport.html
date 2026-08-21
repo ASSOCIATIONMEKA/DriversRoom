@@ -239,7 +239,7 @@
               <td><strong style="color: #38bdf8;">P6</strong></td>
             </tr>
 
-            <!-- CFS GOFIR GT3 -->
+            <!-- CFS GOFIR 2026 (GT3) -->
             <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
@@ -265,7 +265,7 @@
               <td>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <div class="row-tier">
-                    <span style="color: #f59e0b; font-weight: bold;">CHAMPION</span>
+                    <span style="color: #f59e0b; font-weight: bold;">P1</span>
                     <span style="color: #38bdf8;">P9</span>
                   </div>
                   <span class="arrow-icon" id="arrow">▼</span>
@@ -273,7 +273,7 @@
               </td>
             </tr>
             
-            <!-- DÉTAILS DÉROULANTS GT3 -->
+            <!-- DÉTAILS DÉROULANTS GT3 2026 -->
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
@@ -355,7 +355,7 @@
               </td>
             </tr>
 
-            <!-- CFS GOFIR GT4 AMATEUR -->
+            <!-- CFS GOFIR 2025-2026 (GT4 AM) -->
             <tr class="clickable-row" onclick="toggleGt4Details()">
               <td>2025-2026</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
@@ -371,7 +371,7 @@
               </td>
             </tr>
 
-            <!-- DÉTAILS DÉROULANTS GT4 -->
+            <!-- DÉTAILS DÉROULANTS GT4 2025-2026 -->
             <tr class="details-row" id="gt4-details-row">
               <td colspan="7">
                 <div class="details-content">
@@ -410,6 +410,57 @@
               </td>
             </tr>
 
+            <!-- CFS GOFIR 2024-2025 (PRO - NOUVEAU) -->
+            <tr class="clickable-row" onclick="togglePro2024Details()">
+              <td>2024-2025</td>
+              <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
+              <td><strong>CFS GoFiR (GT3 Pro)</strong></td>
+              <td>Porsche 911 GT3R (n°717)</td>
+              <td>PRO</td>
+              <td>Nicolas Moreau, Alexandre Maufroy</td>
+              <td>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #94a3b8; font-weight: bold;">P19 (PRO)</span>
+                  <span class="arrow-icon" id="arrow-pro2024">▼</span>
+                </div>
+              </td>
+            </tr>
+
+            <!-- DÉTAILS DÉROULANTS PRO 2024-2025 -->
+            <tr class="details-row" id="pro2024-details-row">
+              <td colspan="7">
+                <div class="details-content">
+                  <div class="pilot-section-title">🏎️ Équipage Porsche 911 GT3R n°717 (Classement Final : 19ème - PRO | 177 pts) :</div>
+                  <div class="rounds-grid">
+                    <div class="round-card">
+                      <div class="round-info"><span class="round-name">Prologue : Spa (4h)</span><span class="round-date">12/10/2024</span></div>
+                      <span style="color: #38bdf8; font-weight: bold;">P14</span>
+                    </div>
+                    <div class="round-card">
+                      <div class="round-info"><span class="round-name">Manche 1 : Mugello (6h)</span><span class="round-date">02/11/2024</span></div>
+                      <span style="color: #38bdf8; font-weight: bold;">P7</span>
+                    </div>
+                    <div class="round-card">
+                      <div class="round-info"><span class="round-name">Manche 2 : Nürburgring (4h)</span><span class="round-date">11/01/2025</span></div>
+                      <span style="color: #38bdf8; font-weight: bold;">P5</span>
+                    </div>
+                    <div class="round-card">
+                      <div class="round-info"><span class="round-name">Manche 3 : Silverstone (6h)</span><span class="round-date">08/02/2025</span></div>
+                      <span style="color: #38bdf8; font-weight: bold;">P6</span>
+                    </div>
+                    <div class="round-card">
+                      <div class="round-info"><span class="round-name">Manche 4 : Portimão (4h)</span><span class="round-date">08/03/2025</span></div>
+                      <span style="color: #38bdf8; font-weight: bold;">P22</span>
+                    </div>
+                    <div class="round-card">
+                      <div class="round-info"><span class="round-name">Manche 5 : Monza (6h)</span><span class="round-date">12/04/2025</span></div>
+                      <span style="color: #38bdf8; font-weight: bold;">P36</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
           </tbody>
         </table>
       </div>
@@ -430,6 +481,14 @@
     function toggleGt4Details() {
       const row = document.getElementById('gt4-details-row');
       const arrow = document.getElementById('arrow-gt4');
+      const isVisible = row.style.display === 'table-row';
+      row.style.display = isVisible ? 'none' : 'table-row';
+      arrow.classList.toggle('open', !isVisible);
+    }
+
+    function togglePro2024Details() {
+      const row = document.getElementById('pro2024-details-row');
+      const arrow = document.getElementById('arrow-pro2024');
       const isVisible = row.style.display === 'table-row';
       row.style.display = isVisible ? 'none' : 'table-row';
       arrow.classList.toggle('open', !isVisible);
