@@ -63,10 +63,14 @@
       color: #f8fafc;
     }
 
-    /* Style pour les pilotes externes (plus foncés/grisés) */
+    /* Style pour les pilotes externes (plus foncés/grisés) et MEKA mis en avant */
     .guest-pilot {
       color: #64748b;
       font-weight: normal;
+    }
+    .meka-pilot {
+      color: #ffffff;
+      font-weight: bold;
     }
 
     /* Ligne cliquable (Championnat) */
@@ -195,7 +199,7 @@
       </div>
     </div>
 
-    <!-- PALMARÈS & HISTORIQUE -->
+    <!-- PALMARÈS & HISTORIQUE (CHRONOLOGIQUE INVERSÉ) -->
     <div class="course-box">
       <h2>Palmarès & Historique des courses</h2>
       <div style="overflow-x: auto;">
@@ -212,18 +216,8 @@
             </tr>
           </thead>
           <tbody>
-            <!-- 24H DE DAYTONA -->
-            <tr>
-              <td>17/01/2026</td>
-              <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
-              <td><strong>24H de Daytona</strong></td>
-              <td>Porsche 963 GTP</td>
-              <td>Split 24</td>
-              <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
-              <td><strong style="color: #38bdf8;">P6</strong></td>
-            </tr>
 
-            <!-- 24H SPA -->
+            <!-- 24H DE SPA (11/07/2026) -->
             <tr>
               <td>11/07/2026</td>
               <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
@@ -234,28 +228,6 @@
               <td><strong class="pos-p1">P1</strong></td>
             </tr>
 
-            <!-- 12H DE SEBRING -->
-            <tr>
-              <td>28/03/2026</td>
-              <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
-              <td><strong>12H de Sebring</strong></td>
-              <td>Porsche 963 GTP</td>
-              <td>Split 29</td>
-              <td>I. Guilbaud, M. Tomczyk, T. Jacobsen</td>
-              <td><strong style="color: #38bdf8;">P6</strong></td>
-            </tr>
-
-            <!-- 24H DU NÜRBURGRING (LRT BY MEKA) -->
-            <tr>
-              <td>07/06/2025</td>
-              <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
-              <td><strong>24H du Nürburgring</strong> <span style="font-size: 0.8rem; color: #94a3b8;">(LRT by MEKA)</span></td>
-              <td>Porsche 911 GT3 R</td>
-              <td>Split 5</td>
-              <td><span class="guest-pilot">W. Villatier, H. Lebatteux,</span> <strong>M. Tomczyk</strong><span class="guest-pilot">, A. Reverdy,</span> <strong>A. Maufroy</strong><span class="guest-pilot">, N. Vansteene</span></td>
-              <td><strong style="color: #38bdf8;">P38</strong></td>
-            </tr>
-
             <!-- CFS GOFIR 2026 (GT3) -->
             <tr class="clickable-row" onclick="toggleChampDetails()">
               <td>2026</td>
@@ -263,7 +235,7 @@
               <td><strong>CFS GoFiR</strong></td>
               <td>
                 <div class="row-tier">
-                  <div>Porsche 911 GT3R</div>
+                  <div>Porsche 911 GT3 R</div>
                   <div>Corvette Z06 GT3.R</div>
                 </div>
               </td>
@@ -294,7 +266,7 @@
             <tr class="details-row" id="champ-details-row">
               <td colspan="7">
                 <div class="details-content">
-                  <div class="pilot-section-title">👤 Marin Tomczyk (Porsche 911 GT3R - Split Access) :</div>
+                  <div class="pilot-section-title">👤 Marin Tomczyk (Porsche 911 GT3 R - Split Access) :</div>
                   <div class="rounds-grid">
                     <div class="round-card joker">
                       <div class="round-info"><span class="round-name">Manche 1 : Suzuka (Joker)</span><span class="round-date">25 fév. 2026</span></div>
@@ -372,6 +344,28 @@
               </td>
             </tr>
 
+            <!-- 12H DE SEBRING (28/03/2026) -->
+            <tr>
+              <td>28/03/2026</td>
+              <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
+              <td><strong>12H de Sebring</strong></td>
+              <td>Porsche 963 GTP</td>
+              <td>Split 29</td>
+              <td>I. Guilbaud, M. Tomczyk, T. Jacobsen</td>
+              <td><strong style="color: #38bdf8;">P6</strong></td>
+            </tr>
+
+            <!-- 24H DE DAYTONA (17/01/2026) -->
+            <tr>
+              <td>17/01/2026</td>
+              <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
+              <td><strong>24H de Daytona</strong></td>
+              <td>Porsche 963 GTP</td>
+              <td>Split 24</td>
+              <td>N. Moreau, I. Guilbaud, M. Tomczyk</td>
+              <td><strong style="color: #38bdf8;">P6</strong></td>
+            </tr>
+
             <!-- CFS GOFIR 2025-2026 (GT4 AM) -->
             <tr class="clickable-row" onclick="toggleGt4Details()">
               <td>2025-2026</td>
@@ -427,12 +421,23 @@
               </td>
             </tr>
 
+            <!-- 24H DU NÜRBURGRING (07/06/2025) -->
+            <tr>
+              <td>07/06/2025</td>
+              <td><span class="badge-type" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Course</span></td>
+              <td><strong>24H du Nürburgring</strong></td>
+              <td>Porsche 911 GT3 R</td>
+              <td>Split 5</td>
+              <td><span class="guest-pilot">W. Villatier, H. Lebatteux,</span> <span class="meka-pilot">M. Tomczyk</span><span class="guest-pilot">, A. Reverdy,</span> <span class="meka-pilot">A. Maufroy</span><span class="guest-pilot">, N. Vansteene</span></td>
+              <td><strong style="color: #38bdf8;">P38</strong></td>
+            </tr>
+
             <!-- CFS GOFIR 2024-2025 (PRO) -->
             <tr class="clickable-row" onclick="togglePro2024Details()">
               <td>2024-2025</td>
               <td><span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">Championnat</span></td>
               <td><strong>CFS GoFiR</strong></td>
-              <td>Porsche 911 GT3R</td>
+              <td>Porsche 911 GT3 R</td>
               <td>PRO</td>
               <td>Nicolas Moreau, Alexandre Maufroy</td>
               <td>
@@ -447,7 +452,7 @@
             <tr class="details-row" id="pro2024-details-row">
               <td colspan="7">
                 <div class="details-content">
-                  <div class="pilot-section-title">🏎️ Équipage Porsche 911 GT3R (Classement Final : 19ème - PRO) :</div>
+                  <div class="pilot-section-title">🏎️ Équipage Porsche 911 GT3 R (Classement Final : 19ème - PRO) :</div>
                   <div class="rounds-grid">
                     <div class="round-card">
                       <div class="round-info"><span class="round-name">Prologue : Spa (4h)</span><span class="round-date">12/10/2024</span></div>
