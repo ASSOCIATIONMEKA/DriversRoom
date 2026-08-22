@@ -46,6 +46,23 @@
     .loading-inline {display:flex;align-items:center;gap:.6rem;color:#cbd5e1}
     .loading-inline .spinner{width:28px;height:28px;border:3px solid #334155;border-top-color:#38bdf8;border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Bouton YouTube et conteneur des liens de rediffusion */
+    .btn-yt {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ff0000;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-yt:hover { background: #cc0000; transform: translateY(-1px); }
+    .replay-container { margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
   </style>
 </head>
 <body>
@@ -68,6 +85,60 @@
     <section id="section-results" class="section">
       <h3>Résultats de la saison</h3>
       <p class="muted-note">Cliquez sur une course pour afficher le <strong>classement complet</strong>.</p>
+      
+      <!-- Boutons de rediffusion YouTube par manche -->
+      <div style="display: flex; flex-direction: column; gap: 15px; margin: 20px 0;">
+        
+        <!-- R6 -->
+        <div class="course-box" style="padding: 15px 20px; margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-primary);">Round 6 - Spa-Francorchamps</strong>
+            <a href="https://www.youtube.com/watch?v=Zdd2wvV_Ewc" target="_blank" class="btn-yt">📺 Voir la rediffusion</a>
+          </div>
+        </div>
+
+        <!-- R5 -->
+        <div class="course-box" style="padding: 15px 20px; margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-primary);">Round 5 - Bahrain</strong>
+            <a href="https://www.youtube.com/watch?v=GzZtTNRKzQs" target="_blank" class="btn-yt">📺 Voir la rediffusion</a>
+          </div>
+        </div>
+
+        <!-- R4 (Pas de rediffusion) -->
+        <div class="course-box" style="padding: 15px 20px; margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-primary);">Round 4 - Charlotte</strong>
+            <span class="muted-note" style="font-style: italic;">ℹ️ Rediffusion non disponible</span>
+          </div>
+        </div>
+
+        <!-- R3 -->
+        <div class="course-box" style="padding: 15px 20px; margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-primary);">Round 3 - Sepang</strong>
+            <a href="https://www.youtube.com/watch?v=Tjr2BIrI3fI" target="_blank" class="btn-yt">📺 Voir la rediffusion</a>
+          </div>
+        </div>
+
+        <!-- R2 -->
+        <div class="course-box" style="padding: 15px 20px; margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-primary);">Round 2</strong>
+            <a href="https://www.youtube.com/watch?v=pR-R3fzxi10" target="_blank" class="btn-yt">📺 Voir la rediffusion</a>
+          </div>
+        </div>
+
+        <!-- R1 -->
+        <div class="course-box" style="padding: 15px 20px; margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-primary);">Round 1 - Road Atlanta</strong>
+            <a href="https://www.youtube.com/watch?v=hXFsq0OeK0w" target="_blank" class="btn-yt">📺 Voir la rediffusion</a>
+          </div>
+        </div>
+
+      </div>
+
       <ul id="raceHistory"><li>Chargement…</li></ul>
     </section>
 
@@ -89,3 +160,4 @@
   </div>
 </body>
 </html>
+```[cite: 1]
