@@ -206,7 +206,7 @@ function setupNavigation(isAdmin = false) {
     }
   }
 
-  buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
+  buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.dataset.section)));
   showSection("infos"); 
 }
 
@@ -1033,10 +1033,12 @@ function init3DGlobe() {
 function listenServerStatus() {
   const box = $("srvBox");
   const title = $("srvTitle");
+  const roundEl = $("srvRound");
   const sess = $("srvSession");
   const track = $("srvTrack");
   const pwd = $("srvPwd");
   const btn = $("btnJoinServer");
+  const liveBtnContainer = $("btnLiveTiming");
   
   if (!box || !title) return;
 
@@ -1044,8 +1046,16 @@ function listenServerStatus() {
     if (docSnap.exists()) {
       const data = docSnap.data();
       
+      roundEl.textContent = data.round || "—";
       sess.textContent = data.session || "—";
       track.textContent = data.track || "—";
+      
+      if (data.liveUrl) {
+        liveBtnContainer.href = data.liveUrl;
+        liveBtnContainer.style.display = "inline-block";
+      } else {
+        liveBtnContainer.style.display = "none";
+      }
       
       if (data.isOpen) {
         box.style.borderColor = "#34d399";
@@ -1058,7 +1068,7 @@ function listenServerStatus() {
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
         btn.textContent = "🚀 Rejoindre via Content Manager";
-        btn.onclick = () => window.location.href = "steam://run/244210";
+        btn.onclick = () => window.location.href = "https://acstuff.ru/s/q:race/online/join?httpPort=18078&ip=157.90.3.32";
       } else {
         box.style.borderColor = "#f59e0b";
         box.style.background = "rgba(245, 158, 11, 0.05)";
