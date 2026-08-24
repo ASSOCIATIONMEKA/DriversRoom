@@ -906,7 +906,7 @@ async function renderLiverySection() {
       return;
     }
 
-    const oneDriveLink = "VOTRE_LIEN_ONEDRIVE_ICI";
+    const oneDriveLink = "https://estaca-my.sharepoint.com/:f:/g/personal/meka_estaca_eu/IgCF2GbO4jLTTpORWbPSETEVAcRha7yQfBo-45BFVAUlZEU?e=hJ4aAa";
 
     host.innerHTML = `
       <div class="course-box">
