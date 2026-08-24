@@ -96,7 +96,7 @@
       padding: 0.5rem 1rem;
       border-radius: 0;
       border-bottom: 3px solid transparent !important;
-      margin-bottom: -2px; /* Pour chevaucher la bordure grise */
+      margin-bottom: -2px;
       transition: all 0.2s;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -428,12 +428,13 @@
 
     </section>
 
-    <!-- SECTION : 📡 SERVEURS & ACCÈS (AVEC FIREBASE LIVE) -->
+    <!-- SECTION : 📡 SERVEURS & ACCÈS -->
     <section id="section-serveurs" class="section hidden">
       <h2 class="section-main-title">Serveurs & Accès</h2>
       
       <div class="course-box" id="srvBox" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); transition: all 0.3s ease;">
         <h3 id="srvTitle">Statut du Serveur : <span style="color: #f59e0b;">🔴 FERMÉ</span></h3>
+        <p><strong>Manche actuelle :</strong> <span id="srvRound">—</span></p>
         <p><strong>Session actuelle :</strong> <span id="srvSession">—</span></p>
         <p><strong>Circuit actuel :</strong> <span id="srvTrack">—</span></p>
         
@@ -443,7 +444,12 @@
         <p>🔍 <strong>Nom du serveur :</strong> <code>MEKA SimRacing | ESTACUP S10</code></p>
         <p>🔑 <strong>Mot de passe :</strong> <code id="srvPwd" style="color: #f87171;">***</code></p>
         
-        <button id="btnJoinServer" style="margin-top: 15px; width: auto; opacity: 0.5; cursor: not-allowed;" disabled>🚀 Serveur fermé</button>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+          <button id="btnJoinServer" style="width: auto; opacity: 0.5; cursor: not-allowed;" disabled>🚀 Serveur fermé</button>
+          <a id="btnLiveTiming" href="#" target="_blank" style="display: none; text-decoration: none;">
+            <button class="btn-validate" style="width: auto; background: linear-gradient(135deg, #38bdf8, #2563eb);">📊 Voir le Live Timing</button>
+          </a>
+        </div>
       </div>
     </section>
 
