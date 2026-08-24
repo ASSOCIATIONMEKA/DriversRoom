@@ -1050,8 +1050,8 @@ function listenServerStatus() {
       sess.textContent = data.session || "—";
       track.textContent = data.track || "—";
       
-      // Gestion du lien du Live Timing
-      if (data.liveUrl) {
+      // Gestion de l'affichage et du lien du Live Timing
+      if (data.liveUrl && data.liveUrl.trim() !== "") {
         liveBtnContainer.href = data.liveUrl;
         liveBtnContainer.style.display = "inline-block";
       } else {
@@ -1069,7 +1069,8 @@ function listenServerStatus() {
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
         btn.textContent = "🚀 Rejoindre via Content Manager";
-        btn.onclick = () => window.location.href = "https://acstuff.ru/s/q:race/online/join?httpPort=18078&ip=157.90.3.32";
+        // Utilisation de window.open pour ouvrir dans un nouvel onglet sans quitter le site
+        btn.onclick = () => window.open("https://acstuff.ru/s/q:race/online/join?httpPort=18078&ip=157.90.3.32", "_blank");
       } else {
         box.style.borderColor = "#f59e0b";
         box.style.background = "rgba(245, 158, 11, 0.05)";
