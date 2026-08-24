@@ -155,7 +155,11 @@ function ensureDriversRoomButton() {
   const menu = document.querySelector(".admin-menu");
   if (!menu || document.getElementById("backToDriversRoom")) return;
   const btn = document.createElement("button");
-  btn.id = "backToDriversRoom"; btn.type = "button"; btn.textContent = "EstaCup Saison 10";
+  btn.id = "backToDriversRoom"; 
+  btn.type = "button"; 
+  btn.textContent = "Espace Pilote S10";
+  // Application du style violet/indigo similaire au bouton Espace Admin S10
+  btn.style.cssText = "background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;";
   btn.addEventListener("click", () => (window.location.href = "estacup-s10.html"));
   menu.appendChild(btn);
 }
