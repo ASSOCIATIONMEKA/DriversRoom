@@ -50,6 +50,7 @@ function injectNavbar() {
           
           <a href="https://discord.gg/jB6yDhQFyw" target="_blank">DISCORD</a>
           <a href="https://twitch.tv/asso_meka" target="_blank">TWITCH</a>
+          <a href="https://www.youtube.com/@asso_meka" target="_blank">YOUTUBE</a>
           
           <div id="nav-auth-zone" style="display: inline-block; margin-left: 1rem;">
              ${fastCheckLoggedIn 
