@@ -180,7 +180,7 @@ function setupNavigation(isAdmin = false) {
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
   goToAdmin?.addEventListener("click", () => (window.location.href = "admin-s10.html"));
 
-  const buttons  = document.querySelectorAll('.menu button[data-section]');
+  const buttons  = document.querySelectorAll('.menu > button[data-section]');
   const sections = document.querySelectorAll('.section');
 
   function showSection(key) {
@@ -193,12 +193,18 @@ function setupNavigation(isAdmin = false) {
       else btn.classList.remove("active");
     });
 
+    // Aiguillage selon la section ouverte
     if (key === "championship" && lastUserData) {
       setupChampionshipSubnav();
-      showChampionshipSub("vehicule");
+      showChampionshipSub("reglement");
       setupMekaQuestionnaire(lastUserData);
       loadEstacupEngages();
       renderVoteCircuit();
+    }
+    else if (key === "paddock" && lastUserData) {
+      setupPaddockSubnav();
+      showPaddockSub("contenu");
+      renderLiverySection(); 
     }
     else if (key === "results" && currentUid) {
       setupResultsSubnav();
@@ -215,7 +221,7 @@ function setupNavigation(isAdmin = false) {
   }
 
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
-  showSection("infos");
+  showSection("infos"); 
 }
 
 /* --- Sous-menus Le Championnat --- */
@@ -236,15 +242,22 @@ function showChampionshipSub(key) {
   if (key === "circuits") {
     setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
   }
-  else if (key === "engages") {
-    loadEstacupEngages();
-  }
-  else if (key === "inscription") {
-    if (lastUserData) setupMekaQuestionnaire(lastUserData);
-  }
-  else if (key === "livree") {
-    renderLiverySection();
-  }
+}
+
+/* --- Sous-menus Paddock --- */
+function setupPaddockSubnav() {
+  const subs = document.querySelectorAll("#paddockSubnav .pad-sub-btn");
+  subs.forEach(btn => { btn.onclick = () => showPaddockSub(btn.dataset.sub); });
+}
+function showPaddockSub(key) {
+  document.querySelectorAll('.pad-subsection').forEach(b => b.classList.add("hidden"));
+  const block = $("pad-sub-" + key);
+  if (block) block.classList.remove("hidden");
+
+  document.querySelectorAll("#paddockSubnav .pad-sub-btn").forEach(btn => {
+    if (btn.dataset.sub === key) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
 }
 
 /* --- Sous-menus Résultats --- */
