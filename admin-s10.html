@@ -260,6 +260,10 @@
               </select>
             </div>
             <div>
+              <label for="adminSrvRound">Manche actuelle :</label>
+              <input type="text" id="adminSrvRound" placeholder="Ex: Prologue, Manche 1..." />
+            </div>
+            <div>
               <label for="adminSrvSession">Session en cours :</label>
               <input type="text" id="adminSrvSession" placeholder="Ex: Practice" />
             </div>
@@ -271,12 +275,15 @@
               <label for="adminSrvPwd">Mot de passe :</label>
               <input type="text" id="adminSrvPwd" placeholder="Ex: meka2026" />
             </div>
+            <div style="grid-column: 1 / -1;">
+              <label for="adminSrvLive">Lien du Live Timing :</label>
+              <input type="url" id="adminSrvLive" placeholder="https://de2.assettohosting.com:40078/live-timing" />
+            </div>
           </div>
           <button id="btnSaveServer" style="margin-top:20px;">💾 Mettre à jour en direct</button>
         </div>
       </section>
 
-      <button id="goToDashboard" style="margin-top: 20px;">Retour à la salle des pilotes</button>
     </div>
 
     <p id="notAdmin" class="error hidden">Accès refusé : compte non administrateur.</p>
