@@ -286,7 +286,7 @@ function updateIncidentList() {
     const li = document.createElement("li");
     li.innerHTML = `<strong>${p.name}</strong> — Avant : ${p.before} → <input type="number" value="${p.after}" data-i="${i}" style="width:100px;text-align:center;font-size:1.1em;padding:4px;" /> pts
       <button type="button" class="remove" data-i="${i}" title="Retirer">✖</button>`;
-    li.appendChild(li);
+    list.appendChild(li);
   });
   list.querySelectorAll("input").forEach(inp => inp.addEventListener("input", (e) => {
     const idx = parseInt(e.target.dataset.i, 10); const val = parseInt(e.target.value, 10);
@@ -863,8 +863,6 @@ function renderPreviewTables() {
   block.style.display = "block";
 }
 
-function enableDragAndDropForBox(box, rowsRef) {} 
-
 async function handleAnalyzeJson() {
   ImportState.isEstacup = $("isEstacup")?.value === "yes";
   ImportState.roundText = $("estcRoundText")?.value?.trim() || "";
@@ -935,16 +933,13 @@ async function saveImportedResults() {
 
     await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: ImportState.isEstacup, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
   }
-  await recalcAllEloFromCourses(); alert("Importation terminée !"); await loadCourses();
+  alert("Importation terminée !"); await loadCourses();
 }
 
 function buildBaseName() {
   const circuit = $("raceCircuit")?.value?.trim() || "";
   return $("isEstacup")?.value === "yes" ? `ESTACUP • Round ${$("estcRoundText")?.value?.trim()} • ${circuit}` : `${$("raceName")?.value?.trim()} • ${circuit}`;
 }
-
-function ensureEditorScreen() { return $("courseEditorScreen") || document.createElement("div"); }
-function enterEditorMode() {} function exitEditorMode() {}
 
 async function loadCourses() {
   const courseList = document.getElementById("courseList"); if (!courseList) return;
@@ -962,8 +957,6 @@ async function loadCourses() {
     });
   });
 }
-
-async function openCourseEditor(courseId, opts = {}) {}
 
 async function loadIncidentHistory() {
   const box = document.getElementById("incidentHistory"); if (box) box.innerHTML = "<p class='muted'>Aucun incident.</p>";
@@ -987,8 +980,8 @@ async function loadEstacupSignups() {
     usersSnap.forEach(u => usersById.set(u.id, u.data()));
 
     const pending = [];
-    const validatedTodo = []; // Validated, livery NOT implemented
-    const validatedDone = []; // Validated, livery implemented
+    const validatedTodo = []; 
+    const validatedDone = []; 
 
     snap.forEach(docu => {
       const sData = docu.data();
@@ -1009,7 +1002,6 @@ async function loadEstacupSignups() {
         }
       }
 
-      // ✨ NOUVEAU : Récupération et formatage de la date d'inscription
       let regDateText = "Date inconnue";
       if (sData.updatedAt) {
         const d = toDateVal(sData.updatedAt);
@@ -1044,7 +1036,7 @@ async function loadEstacupSignups() {
         car: sData.carChoice || "Ligier JS P320",
         steam: steamId,
         age: ageText,
-        regDate: regDateText, // 👈 Ajout de la date ici
+        regDate: regDateText, 
         licence: licence,
         licColor: licColor,
         payStatus: payStatus,
@@ -1089,7 +1081,6 @@ async function loadEstacupSignups() {
 
     list.innerHTML = html;
 
-    // --- EN ATTENTE : Bouton VALIDER et bouton REFUSER (Supprimer) ---
     const renderPendingCard = (p) => `
       <div class="course-box" style="border-left: 4px solid #f59e0b; position: relative; padding: 1.5rem;">
         <h4 style="margin-top:0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem;">
@@ -1122,7 +1113,6 @@ async function loadEstacupSignups() {
         pending.forEach(p => pendingContainer.insertAdjacentHTML("beforeend", renderPendingCard(p)));
     }
 
-    // --- FONCTION D'AFFICHAGE DES TABLEAUX (Livrées à intégrer / complètes) ---
     const renderTable = (pilotsArray, containerId) => {
       const container = document.getElementById(containerId);
       if (pilotsArray.length === 0) {
@@ -1190,11 +1180,9 @@ async function loadEstacupSignups() {
       container.innerHTML = tableHtml;
     };
 
-    // Affichage des deux tableaux
     renderTable(validatedTodo, "validatedTodoGrid");
     renderTable(validatedDone, "validatedDoneGrid");
 
-    // Gestionnaires d'événements pour les boutons Valider
     document.querySelectorAll('.btn-validate-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.target.getAttribute('data-id');
@@ -1205,10 +1193,9 @@ async function loadEstacupSignups() {
       });
     });
 
-    // Gestionnaires d'événements pour les boutons Supprimer / Refuser
     document.querySelectorAll('.btn-delete-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        if(!confirm("Êtes-vous sûr de vouloir supprimer définitivement cette inscription ? Le pilote devra refaire sa demande s'il souhaite participer.")) return;
+        if(!confirm("Êtes-vous sûr de vouloir supprimer définitivement cette inscription ?")) return;
         const id = e.target.getAttribute('data-id');
         e.target.disabled = true;
         await deleteDoc(doc(db, "estacup_s10_signups", id));
@@ -1216,19 +1203,18 @@ async function loadEstacupSignups() {
       });
     });
 
-    // Gestionnaires d'événements pour les cases à cocher Livrée
     document.querySelectorAll('.cb-livery-implemented').forEach(cb => {
       cb.addEventListener('change', async (e) => {
         const id = e.target.getAttribute('data-id');
         const isChecked = e.target.checked;
-        e.target.disabled = true; // Désactive pendant la sauvegarde
+        e.target.disabled = true;
         try {
           await updateDoc(doc(db, "estacup_s10_signups", id), { liveryImplemented: isChecked });
-          loadEstacupSignups(); // Recharge pour classer dans le bon tableau
+          loadEstacupSignups();
         } catch (err) {
           console.error("Erreur mise à jour livrée :", err);
           alert("Erreur lors de la mise à jour.");
-          e.target.checked = !isChecked; // Annule
+          e.target.checked = !isChecked; 
           e.target.disabled = false;
         }
       });
@@ -1240,8 +1226,46 @@ async function loadEstacupSignups() {
   }
 }
 
-/* ---------------- VOTES & ACCESSEURS AUTO ---------------- */
 async function loadVotesResults() { if($("q3_total")) $("q3_total").textContent = "Total : 0"; }
 
+/* ---------------- STATUT DU SERVEUR (LIVE) ---------------- */
+async function loadServerStatusAdmin() {
+  try {
+    const snap = await getDoc(doc(db, "config", "server_s10"));
+    if (snap.exists()) {
+      const d = snap.data();
+      if ($("adminSrvOpen")) $("adminSrvOpen").value = d.isOpen ? "true" : "false";
+      if ($("adminSrvSession")) $("adminSrvSession").value = d.session || "";
+      if ($("adminSrvTrack")) $("adminSrvTrack").value = d.track || "";
+      if ($("adminSrvPwd")) $("adminSrvPwd").value = d.password || "";
+    }
+  } catch (err) {
+    console.error("Erreur chargement statut serveur :", err);
+  }
+}
+
+const btnSaveServer = document.getElementById("btnSaveServer");
+if (btnSaveServer) {
+  btnSaveServer.addEventListener("click", async () => {
+    btnSaveServer.textContent = "⏳ Enregistrement...";
+    try {
+      await setDoc(doc(db, "config", "server_s10"), {
+        isOpen: $("adminSrvOpen").value === "true",
+        session: $("adminSrvSession").value.trim(),
+        track: $("adminSrvTrack").value.trim(),
+        password: $("adminSrvPwd").value.trim()
+      });
+      btnSaveServer.textContent = "✅ Mis à jour en direct !";
+      setTimeout(() => btnSaveServer.textContent = "💾 Mettre à jour en direct", 2500);
+    } catch (err) {
+      console.error(err);
+      btnSaveServer.textContent = "❌ Erreur";
+    }
+  });
+}
+
 window.loadCourses = loadCourses;
-document.addEventListener("DOMContentLoaded", () => { if ($("section-courses")) loadCourses(); });
+document.addEventListener("DOMContentLoaded", () => { 
+  if ($("section-courses")) loadCourses(); 
+  loadServerStatusAdmin();
+});
