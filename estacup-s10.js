@@ -174,13 +174,13 @@ async function getRaceHistoryEntry(uid, raceId) {
 }
 function toFiniteNumber(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
 
-/* ======================== GESTION DES MENUS ======================== */
+/* ======================== GESTION DES MENUS (NOUVELLE STRUCTURE) ======================== */
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin");
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
   goToAdmin?.addEventListener("click", () => (window.location.href = "admin-s10.html"));
 
-  const buttons  = document.querySelectorAll('nav.menu > button[data-section]');
+  const buttons  = document.querySelectorAll('#mainNav > button[data-section]');
   const sections = document.querySelectorAll('.section');
 
   function showSection(key) {
@@ -194,11 +194,15 @@ function setupNavigation(isAdmin = false) {
     });
 
     if (key === "championship" && lastUserData) {
-      setupChampionshipSubnav();
-      showChampionshipSub("reglement");
+      setupChampCategories();
+      showChampCategory("admin"); // Par défaut : onglet Administratif
       setupMekaQuestionnaire(lastUserData);
       loadEstacupEngages();
       renderVoteCircuit();
+    }
+    else if (key === "infos" && currentUid) {
+      if(typeof loadMRating === "function") loadMRating(currentUid);
+      if(typeof loadMSafety === "function") loadMSafety(currentUid);
     }
   }
 
@@ -206,31 +210,64 @@ function setupNavigation(isAdmin = false) {
   showSection("infos"); 
 }
 
-/* --- Sous-menus Le Championnat (TOUT GROUPÉ ICI) --- */
-function setupChampionshipSubnav() {
-  const subs = document.querySelectorAll("#championshipSubnav .champ-sub-btn");
-  subs.forEach(btn => { btn.onclick = () => showChampionshipSub(btn.dataset.sub); });
+/* --- Gestion à 2 Niveaux pour "Le Championnat" --- */
+function setupChampCategories() {
+  const catBtns = document.querySelectorAll("#champCategoryNav button[data-cat]");
+  catBtns.forEach(btn => {
+    btn.onclick = () => showChampCategory(btn.dataset.cat);
+  });
   
+  const subBtns = document.querySelectorAll(".champ-sub-btn");
+  subBtns.forEach(btn => {
+    btn.onclick = () => showChampionshipSub(btn.dataset.sub);
+  });
+
+  // Toggles pour les classements joker
   const chkP = $("jokerTogglePilots"); if (chkP) chkP.onchange = () => { if(typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings(); };
   const chkT = $("jokerToggleTeams"); if (chkT) chkT.onchange = () => { if(typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings(); };
 }
-function showChampionshipSub(key) {
-  document.querySelectorAll('.champ-subsection').forEach(b => b.classList.add("hidden"));
-  const block = $("champ-sub-" + key);
-  if (block) block.classList.remove("hidden");
 
-  document.querySelectorAll("#championshipSubnav .champ-sub-btn").forEach(btn => {
-    if (btn.dataset.sub === key) btn.classList.add("active");
+function showChampCategory(catKey) {
+  // 1. Activer le bouton catégorie NIVEAU 1
+  document.querySelectorAll("#champCategoryNav button[data-cat]").forEach(btn => {
+    if (btn.dataset.cat === catKey) btn.classList.add("active");
     else btn.classList.remove("active");
   });
 
-  // Aiguillage des chargements selon le bouton
-  if (key === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
-  if (key === "livree") renderLiverySection();
-  if (key === "courses") loadResults(currentUid);
-  if (key === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
-  if (key === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
-  if (key === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
+  // 2. Afficher le container de boutons NIVEAU 2 correspondant
+  document.querySelectorAll(".champ-cat-container").forEach(c => c.classList.add("hidden"));
+  const activeNav = document.getElementById("cat-" + catKey);
+  
+  if (activeNav) {
+    activeNav.classList.remove("hidden");
+    
+    // 3. Cliquer automatiquement sur le premier sous-bouton pour afficher un contenu par défaut
+    const firstSubBtn = activeNav.querySelector(".champ-sub-btn");
+    if (firstSubBtn) {
+      showChampionshipSub(firstSubBtn.dataset.sub);
+    }
+  }
+}
+
+function showChampionshipSub(subKey) {
+  // 1. Cacher tous les contenus
+  document.querySelectorAll('.champ-subsection').forEach(b => b.classList.add("hidden"));
+  const block = $("champ-sub-" + subKey);
+  if (block) block.classList.remove("hidden");
+
+  // 2. Mettre en surbrillance le sous-bouton NIVEAU 2
+  document.querySelectorAll(".champ-sub-btn").forEach(btn => {
+    if (btn.dataset.sub === subKey) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+
+  // 3. Lancer les scripts spécifiques selon l'onglet
+  if (subKey === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
+  if (subKey === "livree") renderLiverySection();
+  if (subKey === "courses") loadResults(currentUid);
+  if (subKey === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
+  if (subKey === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
+  if (subKey === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
 }
 
 
