@@ -82,12 +82,14 @@
   <div class="container" style="margin-top: 3rem;">
     <h2 style="margin-bottom: 2rem;">EstaCup Saison 10</h2>
 
+    <!-- MENU PRINCIPAL -->
     <nav class="menu">
       <button data-section="infos">Mes informations</button>
-      <button data-section="championship">Le Championnat</button>
-      <button data-section="results">Résultats</button>
-      <button data-section="reclamations">Réclamations</button>
-      <!-- Bouton Admin modifié en violet/indigo -->
+      <button data-section="championship">🏆 Le Championnat</button>
+      <button data-section="paddock">💾 Paddock & Mods</button>
+      <button data-section="serveurs">📡 Serveurs & Accès</button>
+      <button data-section="results">📊 Résultats</button>
+      <button data-section="reclamations">⚖️ Direction de Course</button>
       <button id="goToAdmin" class="hidden" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
     </nav>
 
@@ -145,21 +147,32 @@
       </div>
     </section>
 
-    <!-- SECTION : LE CHAMPIONNAT -->
+    <!-- SECTION : 🏆 LE CHAMPIONNAT -->
     <section id="section-championship" class="section hidden">
       <h2 class="section-main-title">Le Championnat</h2>
 
       <nav class="menu" id="championshipSubnav" style="margin-top:-10px;margin-bottom:20px; border: none; background: transparent;">
+        <button data-sub="reglement" class="champ-sub-btn">Règlement Officiel</button>
         <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
         <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
         <button data-sub="inscription" class="champ-sub-btn">Inscription</button>
         <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
         <button data-sub="votecircuit" class="champ-sub-btn">Votes des circuits</button>
-        <button data-sub="livree" class="champ-sub-btn">Déposer ma livrée</button>
       </nav>
 
+      <!-- LE RÈGLEMENT -->
+      <div id="champ-sub-reglement" class="champ-subsection">
+        <h3>Règlement de l'ESTACUP Saison 10</h3>
+        <div class="course-box">
+          <p>Consultez ou téléchargez le règlement sportif et technique officiel du championnat.</p>
+          <a href="#" target="_blank" style="text-decoration: none;">
+            <button class="btn-validate">📄 Ouvrir le Règlement (PDF)</button>
+          </a>
+        </div>
+      </div>
+
       <!-- LE VÉHICULE (AVEC SKETCHFAB) -->
-      <div id="champ-sub-vehicule" class="champ-subsection">
+      <div id="champ-sub-vehicule" class="champ-subsection hidden">
         <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
         <div class="course-box" style="text-align: center;">
           
@@ -251,12 +264,60 @@
         <h3>Votes des circuits</h3>
         <div id="voteCircuitHost"></div>
       </div>
+    </section>
 
-      <div id="champ-sub-livree" class="champ-subsection hidden">
+    <!-- SECTION : 💾 PADDOCK & MODS -->
+    <section id="section-paddock" class="section hidden">
+      <h2 class="section-main-title">Paddock & Téléchargements</h2>
+
+      <nav class="menu" id="paddockSubnav" style="margin-top:-10px;margin-bottom:20px; border: none; background: transparent;">
+        <button data-sub="contenu" class="pad-sub-btn">Télécharger le contenu</button>
+        <button data-sub="mods" class="pad-sub-btn">Mods obligatoires</button>
+        <button data-sub="livree" class="pad-sub-btn">Déposer ma livrée</button>
+      </nav>
+
+      <div id="pad-sub-contenu" class="pad-subsection">
+        <h3>Contenu du jeu (Voiture & Circuits)</h3>
+        <div class="course-box">
+          <p>Téléchargez le pack complet contenant la Ligier JS P320 et tous les circuits de la saison.</p>
+          <button class="btn-validate">📥 Télécharger le Pack S10</button>
+        </div>
+      </div>
+
+      <div id="pad-sub-mods" class="pad-subsection hidden">
+        <h3>Mods & Utilitaires</h3>
+        <div class="course-box">
+          <p>Liste des mods nécessaires pour rouler sur nos serveurs (CSP, Sol/Pure, Real Penalty...).</p>
+          <ul>
+            <li><strong>Content Manager & CSP :</strong> Requis (Version 0.2.x recommandée)</li>
+            <li><strong>Real Penalty :</strong> <a href="#" style="color:#38bdf8;">Télécharger ici</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="pad-sub-livree" class="pad-subsection hidden">
         <h3>Déposer ma livrée</h3>
         <div id="liveryUploadHost"></div>
       </div>
+    </section>
 
+    <!-- SECTION : 📡 SERVEURS & ACCÈS -->
+    <section id="section-serveurs" class="section hidden">
+      <h2 class="section-main-title">Serveurs & Accès</h2>
+      
+      <div class="course-box" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.05);">
+        <h3>Statut du Serveur : <span style="color: #34d399;">🟢 OUVERT</span></h3>
+        <p><strong>Session actuelle :</strong> Entraînement Libre (Practice)</p>
+        <p><strong>Circuit actuel :</strong> Silverstone (Prologue)</p>
+        
+        <hr style="border-color: var(--border-primary); margin: 15px 0;">
+        
+        <h4 style="margin-bottom: 10px;">Informations de connexion</h4>
+        <p>🔍 <strong>Nom du serveur :</strong> <code>MEKA SimRacing | ESTACUP S10 | Practice</code></p>
+        <p>🔑 <strong>Mot de passe :</strong> <code>meka2026</code></p>
+        
+        <button style="margin-top: 15px; width: auto;" onclick="window.location.href='steam://run/244210'">🚀 Rejoindre via Content Manager</button>
+      </div>
     </section>
 
     <!-- SECTION : RÉSULTATS -->
