@@ -5,103 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin S10 - ESTACUP</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- 🟢 CORRECTION 1 : Chargement du script spécifique de la Saison 10 -->
   <script type="module" src="admin-s10.js" defer></script>
   <style>
     /* Résumé des voitures ESTACUP */
-    #estacupCarSummary {
-      margin: 6px 0 10px;
-    }
-    .car-summary-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    #estacupCarSummary { margin: 6px 0 10px; }
+    .car-summary-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .car-summary-item {
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      font-size: 0.85rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+      padding: 4px 10px; border-radius: 999px; background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.5); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;
     }
-    .car-summary-label {
-      opacity: 0.85;
-    }
-    .car-summary-count {
-      font-weight: 600;
-    }
+    .car-summary-label { opacity: 0.85; }
+    .car-summary-count { font-weight: 600; }
 
     /* Header carte ESTACUP + pill livrée */
-    .estacup-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-    .estacup-card-header h4 {
-      margin: 0;
-    }
+    .estacup-card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .estacup-card-header h4 { margin: 0; }
     .livery-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.9);
-      font-size: 0.8rem;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7); background: rgba(15, 23, 42, 0.9); font-size: 0.8rem; white-space: nowrap;
     }
-    .livery-pill input[type="checkbox"] {
-      accent-color: #22d3ee;
-      transform: scale(1.1);
-    }
+    .livery-pill input[type="checkbox"] { accent-color: #22d3ee; transform: scale(1.1); }
 
-    /* Licence pill (Rookie / Challenger / Pro) */
-    .license-pill {
-      margin-left: 4px;
-      min-width: 95px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid #4b5563;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 0.85rem;
-      text-align: center;
-    }
-    .license-pill-rookie {
-      border-color: #16a34a;
-      color: #bbf7d0;
-    }
-    .license-pill-challenger {
-      border-color: #2563eb;
-      color: #bfdbfe;
-    }
-    .license-pill-pro {
-      border-color: #dc2626;
-      color: #fecaca;
-    }
+    /* Licence pill */
+    .license-pill { margin-left: 4px; min-width: 95px; padding: 2px 8px; border-radius: 999px; border: 1px solid #4b5563; background: #020617; color: #e5e7eb; font-size: 0.85rem; text-align: center; }
+    .license-pill-rookie { border-color: #16a34a; color: #bbf7d0; }
+    .license-pill-challenger { border-color: #2563eb; color: #bfdbfe; }
+    .license-pill-pro { border-color: #dc2626; color: #fecaca; }
   </style>
 </head>
 <body>
   <script type="module" src="nav.js" defer></script>
 
   <div class="container">
-    <!-- 🟢 CORRECTION 2 : L'ID adminOnly englobe désormais le titre et les menus pour éviter le blocage visuel partiel -->
     <div id="adminOnly" class="hidden">
       <h2>Interface administrateur S10</h2>
       <p>Bienvenue, <span id="adminName"></span></p>
 
       <nav class="admin-menu" style="display:flex;gap:10px;margin-bottom:20px;">
-        <button data-section="results"> Création Résultats</button>
+        <button data-section="results">Création Résultats</button>
         <button data-section="incidents">Gestion Incidents</button>
         <button data-section="courses">Liste des Courses</button>
         <button data-section="estacup">Gestion ESTACUP</button>
         <button data-section="votes">Votes</button>
+        <button data-section="serveur">Statut Serveur</button>
       </nav>
 
       <section id="section-results" class="admin-section hidden">
@@ -214,15 +160,12 @@
 
       <section id="section-incidents" class="admin-section hidden">
         <h3>Incidents / Réclamations</h3>
-
         <div class="course-box" style="margin-bottom:24px">
           <h4>Réclamations reçues</h4>
           <div id="reclamationsBox"></div>
         </div>
-
         <div class="course-box">
           <h4>Créer / Enregistrer un incident</h4>
-
           <div style="display:grid;gap:10px;grid-template-columns:1fr auto;">
             <div>
               <label for="incidentPilotSelect">Pilote impliqué :</label>
@@ -232,19 +175,14 @@
               <button type="button" id="addIncidentPilot">➕ Ajouter</button>
             </div>
           </div>
-
           <ul id="incidentList" class="incident-list"></ul>
-
           <label for="incidentRaceSelect" style="margin-top:16px;display:block">Course concernée :</label>
           <select id="incidentRaceSelect"></select>
-
           <textarea id="incidentDescription" placeholder="Description de l'incident" rows="3" style="margin-top:10px"></textarea>
-
           <div style="margin-top:10px">
             <button type="button" id="submitIncident">✅ Enregistrer l'incident</button>
           </div>
         </div>
-
         <div id="incidentHistory" style="margin-top:24px"></div>
       </section>
 
@@ -270,7 +208,6 @@
 
       <section id="section-votes" class="admin-section hidden">
         <h3>Votes — Résultats</h3>
-
         <div class="course-box">
           <h4 style="margin:0 0 10px">Round 3</h4>
           <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px">
@@ -280,7 +217,6 @@
           <div class="bar bar-a" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
             <span id="q3_a_bar" style="display:block;height:100%;background:#22d3ee;width:0%"></span>
           </div>
-
           <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:10px 0 8px">
             <div>🇲🇾 Sepang</div>
             <div><strong id="q3_b_cnt">0</strong> (<span id="q3_b_pct">0%</span>)</div>
@@ -288,7 +224,6 @@
           <div class="bar bar-b" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
             <span id="q3_b_bar" style="display:block;height:100%;background:#a78bfa;width:0%"></span>
           </div>
-
           <div class="muted" id="q3_total" style="margin-top:6px">Total : 0</div>
         </div>
 
@@ -301,7 +236,6 @@
           <div class="bar bar-a" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
             <span id="q5_a_bar" style="display:block;height:100%;background:#22d3ee;width:0%"></span>
           </div>
-
           <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:10px 0 8px">
             <div>🇶🇦 Losail</div>
             <div><strong id="q5_b_cnt">0</strong> (<span id="q5_b_pct">0%</span>)</div>
@@ -309,16 +243,40 @@
           <div class="bar bar-b" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
             <span id="q5_b_bar" style="display:block;height:100%;background:#a78bfa;width:0%"></span>
           </div>
-
           <div class="muted" id="q5_total" style="margin-top:6px">Total : 0</div>
         </div>
-
-        <p class="muted" style="margin-top:10px">
-          Comptage depuis <code>estacup_votes</code> (1 doc par utilisateur : <code>q3</code>, <code>q5</code>, <code>locked</code>).
-        </p>
       </section>
 
-      <button id="goToDashboard">Retour à la salle des pilotes</button>
+      <!-- SECTION CONTRÔLE SERVEUR LIVE -->
+      <section id="section-serveur" class="admin-section hidden">
+        <h3>Statut du Serveur (Live)</h3>
+        <div class="course-box">
+          <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:end;">
+            <div>
+              <label for="adminSrvOpen">Le serveur est-il ouvert ?</label>
+              <select id="adminSrvOpen">
+                <option value="false">🔴 FERMÉ</option>
+                <option value="true">🟢 OUVERT</option>
+              </select>
+            </div>
+            <div>
+              <label for="adminSrvSession">Session en cours :</label>
+              <input type="text" id="adminSrvSession" placeholder="Ex: Practice" />
+            </div>
+            <div>
+              <label for="adminSrvTrack">Circuit actuel :</label>
+              <input type="text" id="adminSrvTrack" placeholder="Ex: Silverstone" />
+            </div>
+            <div>
+              <label for="adminSrvPwd">Mot de passe :</label>
+              <input type="text" id="adminSrvPwd" placeholder="Ex: meka2026" />
+            </div>
+          </div>
+          <button id="btnSaveServer" style="margin-top:20px;">💾 Mettre à jour en direct</button>
+        </div>
+      </section>
+
+      <button id="goToDashboard" style="margin-top: 20px;">Retour à la salle des pilotes</button>
     </div>
 
     <p id="notAdmin" class="error hidden">Accès refusé : compte non administrateur.</p>
