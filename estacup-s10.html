@@ -74,21 +74,6 @@
       letter-spacing: 1px;
       text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
     }
-
-    /* Styles pour l'organisation du sous-menu Championnat */
-    .subnav-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
-    .subnav-group { 
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; 
-      background: rgba(15,23,42,0.5); padding: 12px 16px; 
-      border-radius: 12px; border: 1px solid var(--border-primary); 
-    }
-    .subnav-label { 
-      font-size: 0.85rem; color: var(--accent-primary); font-weight: 700; 
-      text-transform: uppercase; width: 140px; flex-shrink: 0; 
-    }
-    @media (max-width: 768px) {
-      .subnav-label { width: 100%; margin-bottom: 5px; }
-    }
   </style>
 </head>
 <body>
@@ -97,8 +82,8 @@
   <div class="container" style="margin-top: 3rem;">
     <h2 style="margin-bottom: 2rem;">EstaCup Saison 10</h2>
 
-    <!-- MENU PRINCIPAL ÉPURÉ -->
-    <nav class="menu">
+    <!-- MENU PRINCIPAL ÉPURÉ (Niveau 0) -->
+    <nav class="menu" id="mainNav">
       <button data-section="infos">Mes informations</button>
       <button data-section="championship">🏆 Le Championnat</button>
       <button data-section="serveurs">📡 Serveurs & Accès</button>
@@ -159,45 +144,49 @@
       </div>
     </section>
 
-    <!-- SECTION : 🏆 LE CHAMPIONNAT (TOUT REGROUPÉ) -->
+    <!-- SECTION : 🏆 LE CHAMPIONNAT -->
     <section id="section-championship" class="section hidden">
       <h2 class="section-main-title">Le Championnat</h2>
 
-      <!-- SOUS-MENU ORGANISÉ PAR GROUPES -->
-      <div class="subnav-container" id="championshipSubnav">
+      <!-- NIVEAU 1 : CATÉGORIES PRINCIPALES -->
+      <nav class="menu" id="champCategoryNav" style="margin-top:-10px; margin-bottom:10px; border: none; background: transparent;">
+        <button data-cat="admin">📋 Administratif</button>
+        <button data-cat="piste">🏎️ La Piste</button>
+        <button data-cat="paddock">💾 Paddock & Mods</button>
+        <button data-cat="resultats">📊 Résultats</button>
+      </nav>
+
+      <!-- NIVEAU 2 : CONTENEURS DE SOUS-BOUTONS (Visibles selon la catégorie) -->
+      <div id="champSubnavsContainer">
         
-        <!-- GROUPE 1 : Administratif -->
-        <div class="subnav-group">
-          <span class="subnav-label">Administratif</span>
-          <button data-sub="reglement" class="champ-sub-btn menu-btn">Règlement</button>
-          <button data-sub="inscription" class="champ-sub-btn menu-btn">Inscription</button>
-          <button data-sub="engages" class="champ-sub-btn menu-btn">Engagés</button>
-          <button data-sub="reclamations" class="champ-sub-btn menu-btn">Réclamations</button>
-        </div>
+        <!-- Sous-menu : Administratif -->
+        <nav id="cat-admin" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+          <button data-sub="reglement" class="champ-sub-btn">Règlement Officiel</button>
+          <button data-sub="inscription" class="champ-sub-btn">Inscription</button>
+          <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
+          <button data-sub="reclamations" class="champ-sub-btn">Réclamations</button>
+        </nav>
 
-        <!-- GROUPE 2 : La Piste -->
-        <div class="subnav-group">
-          <span class="subnav-label">La Piste</span>
-          <button data-sub="vehicule" class="champ-sub-btn menu-btn">Le véhicule</button>
-          <button data-sub="circuits" class="champ-sub-btn menu-btn">Les circuits</button>
-          <button data-sub="votecircuit" class="champ-sub-btn menu-btn">Votes</button>
-        </div>
+        <!-- Sous-menu : La Piste -->
+        <nav id="cat-piste" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+          <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
+          <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
+          <button data-sub="votecircuit" class="champ-sub-btn">Votes des circuits</button>
+        </nav>
 
-        <!-- GROUPE 3 : Paddock & Mods -->
-        <div class="subnav-group">
-          <span class="subnav-label">Paddock & Mods</span>
-          <button data-sub="contenu" class="champ-sub-btn menu-btn">Télécharger le pack</button>
-          <button data-sub="mods" class="champ-sub-btn menu-btn">Mods obligatoires</button>
-          <button data-sub="livree" class="champ-sub-btn menu-btn">Déposer ma livrée</button>
-        </div>
+        <!-- Sous-menu : Paddock & Mods -->
+        <nav id="cat-paddock" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+          <button data-sub="contenu" class="champ-sub-btn">Télécharger le pack</button>
+          <button data-sub="mods" class="champ-sub-btn">Mods obligatoires</button>
+          <button data-sub="livree" class="champ-sub-btn">Déposer ma livrée</button>
+        </nav>
 
-        <!-- GROUPE 4 : Résultats -->
-        <div class="subnav-group">
-          <span class="subnav-label">Résultats</span>
-          <button data-sub="courses" class="champ-sub-btn menu-btn">Courses</button>
-          <button data-sub="rankpilots" class="champ-sub-btn menu-btn">Classement Pilotes</button>
-          <button data-sub="rankteams" class="champ-sub-btn menu-btn">Classement Équipes</button>
-        </div>
+        <!-- Sous-menu : Résultats -->
+        <nav id="cat-resultats" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+          <button data-sub="courses" class="champ-sub-btn">Courses</button>
+          <button data-sub="rankpilots" class="champ-sub-btn">Classement Pilotes</button>
+          <button data-sub="rankteams" class="champ-sub-btn">Classement Équipes</button>
+        </nav>
 
       </div>
 
