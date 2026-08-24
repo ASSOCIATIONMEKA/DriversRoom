@@ -48,9 +48,18 @@ function injectNavbar() {
           <!-- 🟢 NOUVEL ONGLET : NOS PARTENAIRES -->
           <a href="partenaires.html">NOS PARTENAIRES</a>
           
-          <a href="https://discord.gg/jB6yDhQFyw" target="_blank">DISCORD</a>
-          <a href="https://twitch.tv/asso_meka" target="_blank">TWITCH</a>
-          <a href="https://www.youtube.com/@asso_meka" target="_blank">YOUTUBE</a>
+          <!-- 🔴 RÉSEAUX SOCIAUX EN LOGOS -->
+          <div style="display: flex; gap: 1.2rem; align-items: center; margin-left: 0.5rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1.5rem;">
+              <a href="https://discord.gg/jB6yDhQFyw" target="_blank" title="Discord" style="display: flex; align-items: center;">
+                <img src="logos/discord-logo.png" alt="Discord" style="height: 24px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" />
+              </a>
+              <a href="https://twitch.tv/asso_meka" target="_blank" title="Twitch" style="display: flex; align-items: center;">
+                <img src="logos/twitch-logo.png" alt="Twitch" style="height: 24px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" />
+              </a>
+              <a href="https://www.youtube.com/@asso_meka" target="_blank" title="YouTube" style="display: flex; align-items: center;">
+                <img src="logos/youtube-logo.png" alt="YouTube" style="height: 24px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" />
+              </a>
+          </div>
           
           <div id="nav-auth-zone" style="display: inline-block; margin-left: 1rem;">
              ${fastCheckLoggedIn 
