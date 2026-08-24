@@ -74,6 +74,76 @@
       letter-spacing: 1px;
       text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
     }
+
+    /* --- NOUVEAU DESIGN DE NAVIGATION INTERNE (TABS & PILLS) --- */
+    
+    /* 1. Onglets Catégories (Style minimaliste souligné) */
+    .category-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0;
+      flex-wrap: wrap;
+    }
+    .category-tabs button {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0;
+      border-bottom: 3px solid transparent !important;
+      margin-bottom: -2px; /* Pour chevaucher la bordure grise */
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .category-tabs button:hover {
+      color: var(--text-primary);
+      transform: none;
+    }
+    .category-tabs button.active {
+      color: var(--accent-primary);
+      border-bottom-color: var(--accent-primary) !important;
+      font-weight: 800;
+    }
+
+    /* 2. Sous-menus Pilules (Style épuré sans fond encombrant) */
+    .subcat-pills {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 2.5rem;
+    }
+    .subcat-pills button {
+      background: rgba(30, 37, 48, 0.6) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: var(--text-secondary);
+      padding: 0.6rem 1.25rem !important;
+      font-size: 0.95rem !important;
+      border-radius: 999px !important;
+      box-shadow: none !important;
+      transition: all 0.2s;
+      font-weight: 500 !important;
+      text-transform: none !important;
+      letter-spacing: normal !important;
+    }
+    .subcat-pills button:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      transform: translateY(-2px) !important;
+      color: white;
+    }
+    .subcat-pills button.active {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
+      color: white !important;
+      border-color: transparent !important;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important;
+      font-weight: 700 !important;
+    }
   </style>
 </head>
 <body>
@@ -144,23 +214,23 @@
       </div>
     </section>
 
-    <!-- SECTION : 🏆 LE CHAMPIONNAT -->
+    <!-- SECTION : 🏆 LE CHAMPIONNAT (TOUT REGROUPÉ) -->
     <section id="section-championship" class="section hidden">
       <h2 class="section-main-title">Le Championnat</h2>
 
-      <!-- NIVEAU 1 : CATÉGORIES PRINCIPALES -->
-      <nav class="menu" id="champCategoryNav" style="margin-top:-10px; margin-bottom:10px; border: none; background: transparent;">
+      <!-- NIVEAU 1 : CATÉGORIES PRINCIPALES (Design Onglets épurés) -->
+      <nav class="category-tabs" id="champCategoryNav">
         <button data-cat="admin">📋 Administratif</button>
         <button data-cat="piste">🏎️ La Piste</button>
         <button data-cat="paddock">💾 Paddock & Mods</button>
         <button data-cat="resultats">📊 Résultats</button>
       </nav>
 
-      <!-- NIVEAU 2 : CONTENEURS DE SOUS-BOUTONS (Visibles selon la catégorie) -->
+      <!-- NIVEAU 2 : SOUS-MENUS EN PILULES -->
       <div id="champSubnavsContainer">
         
         <!-- Sous-menu : Administratif -->
-        <nav id="cat-admin" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+        <nav id="cat-admin" class="subcat-pills champ-cat-container hidden">
           <button data-sub="reglement" class="champ-sub-btn">Règlement Officiel</button>
           <button data-sub="inscription" class="champ-sub-btn">Inscription</button>
           <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
@@ -168,21 +238,21 @@
         </nav>
 
         <!-- Sous-menu : La Piste -->
-        <nav id="cat-piste" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+        <nav id="cat-piste" class="subcat-pills champ-cat-container hidden">
           <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
           <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
           <button data-sub="votecircuit" class="champ-sub-btn">Votes des circuits</button>
         </nav>
 
         <!-- Sous-menu : Paddock & Mods -->
-        <nav id="cat-paddock" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+        <nav id="cat-paddock" class="subcat-pills champ-cat-container hidden">
           <button data-sub="contenu" class="champ-sub-btn">Télécharger le pack</button>
           <button data-sub="mods" class="champ-sub-btn">Mods obligatoires</button>
           <button data-sub="livree" class="champ-sub-btn">Déposer ma livrée</button>
         </nav>
 
         <!-- Sous-menu : Résultats -->
-        <nav id="cat-resultats" class="menu champ-cat-container hidden" style="margin-top:0; margin-bottom:30px; padding: 10px; background: rgba(15,23,42,0.7); border-radius: 12px; border: 1px solid var(--border-primary);">
+        <nav id="cat-resultats" class="subcat-pills champ-cat-container hidden">
           <button data-sub="courses" class="champ-sub-btn">Courses</button>
           <button data-sub="rankpilots" class="champ-sub-btn">Classement Pilotes</button>
           <button data-sub="rankteams" class="champ-sub-btn">Classement Équipes</button>
