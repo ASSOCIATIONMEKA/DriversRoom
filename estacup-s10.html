@@ -74,6 +74,21 @@
       letter-spacing: 1px;
       text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
     }
+
+    /* Styles pour l'organisation du sous-menu Championnat */
+    .subnav-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
+    .subnav-group { 
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; 
+      background: rgba(15,23,42,0.5); padding: 12px 16px; 
+      border-radius: 12px; border: 1px solid var(--border-primary); 
+    }
+    .subnav-label { 
+      font-size: 0.85rem; color: var(--accent-primary); font-weight: 700; 
+      text-transform: uppercase; width: 140px; flex-shrink: 0; 
+    }
+    @media (max-width: 768px) {
+      .subnav-label { width: 100%; margin-bottom: 5px; }
+    }
   </style>
 </head>
 <body>
@@ -82,14 +97,11 @@
   <div class="container" style="margin-top: 3rem;">
     <h2 style="margin-bottom: 2rem;">EstaCup Saison 10</h2>
 
-    <!-- MENU PRINCIPAL -->
+    <!-- MENU PRINCIPAL ÉPURÉ -->
     <nav class="menu">
       <button data-section="infos">Mes informations</button>
       <button data-section="championship">🏆 Le Championnat</button>
-      <button data-section="paddock">💾 Paddock & Mods</button>
       <button data-section="serveurs">📡 Serveurs & Accès</button>
-      <button data-section="results">📊 Résultats</button>
-      <button data-section="reclamations">⚖️ Direction de Course</button>
       <button id="goToAdmin" class="hidden" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
     </nav>
 
@@ -147,21 +159,52 @@
       </div>
     </section>
 
-    <!-- SECTION : 🏆 LE CHAMPIONNAT -->
+    <!-- SECTION : 🏆 LE CHAMPIONNAT (TOUT REGROUPÉ) -->
     <section id="section-championship" class="section hidden">
       <h2 class="section-main-title">Le Championnat</h2>
 
-      <nav class="menu" id="championshipSubnav" style="margin-top:-10px;margin-bottom:20px; border: none; background: transparent;">
-        <button data-sub="reglement" class="champ-sub-btn">Règlement Officiel</button>
-        <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
-        <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
-        <button data-sub="inscription" class="champ-sub-btn">Inscription</button>
-        <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
-        <button data-sub="votecircuit" class="champ-sub-btn">Votes des circuits</button>
-      </nav>
+      <!-- SOUS-MENU ORGANISÉ PAR GROUPES -->
+      <div class="subnav-container" id="championshipSubnav">
+        
+        <!-- GROUPE 1 : Administratif -->
+        <div class="subnav-group">
+          <span class="subnav-label">Administratif</span>
+          <button data-sub="reglement" class="champ-sub-btn menu-btn">Règlement</button>
+          <button data-sub="inscription" class="champ-sub-btn menu-btn">Inscription</button>
+          <button data-sub="engages" class="champ-sub-btn menu-btn">Engagés</button>
+          <button data-sub="reclamations" class="champ-sub-btn menu-btn">Réclamations</button>
+        </div>
 
-      <!-- LE RÈGLEMENT -->
-      <div id="champ-sub-reglement" class="champ-subsection">
+        <!-- GROUPE 2 : La Piste -->
+        <div class="subnav-group">
+          <span class="subnav-label">La Piste</span>
+          <button data-sub="vehicule" class="champ-sub-btn menu-btn">Le véhicule</button>
+          <button data-sub="circuits" class="champ-sub-btn menu-btn">Les circuits</button>
+          <button data-sub="votecircuit" class="champ-sub-btn menu-btn">Votes</button>
+        </div>
+
+        <!-- GROUPE 3 : Paddock & Mods -->
+        <div class="subnav-group">
+          <span class="subnav-label">Paddock & Mods</span>
+          <button data-sub="contenu" class="champ-sub-btn menu-btn">Télécharger le pack</button>
+          <button data-sub="mods" class="champ-sub-btn menu-btn">Mods obligatoires</button>
+          <button data-sub="livree" class="champ-sub-btn menu-btn">Déposer ma livrée</button>
+        </div>
+
+        <!-- GROUPE 4 : Résultats -->
+        <div class="subnav-group">
+          <span class="subnav-label">Résultats</span>
+          <button data-sub="courses" class="champ-sub-btn menu-btn">Courses</button>
+          <button data-sub="rankpilots" class="champ-sub-btn menu-btn">Classement Pilotes</button>
+          <button data-sub="rankteams" class="champ-sub-btn menu-btn">Classement Équipes</button>
+        </div>
+
+      </div>
+
+      <!-- ================= CONTENUS DES SOUS-SECTIONS ================= -->
+
+      <!-- RÈGLEMENT -->
+      <div id="champ-sub-reglement" class="champ-subsection hidden">
         <h3>Règlement de l'ESTACUP Saison 10</h3>
         <div class="course-box">
           <p>Consultez ou téléchargez le règlement sportif et technique officiel du championnat.</p>
@@ -171,72 +214,7 @@
         </div>
       </div>
 
-      <!-- LE VÉHICULE (AVEC SKETCHFAB) -->
-      <div id="champ-sub-vehicule" class="champ-subsection hidden">
-        <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
-        <div class="course-box" style="text-align: center;">
-          
-          <!-- LECTEUR 3D SKETCHFAB -->
-          <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); box-shadow: var(--shadow-lg);">
-            <iframe 
-              title="Ligier JSP325 LMP3" 
-              frameborder="0" 
-              allowfullscreen 
-              mozallowfullscreen="true" 
-              webkitallowfullscreen="true" 
-              allow="autoplay; fullscreen; xr-spatial-tracking" 
-              src="https://sketchfab.com/models/f3f799b94c764601a4b773a93ebb97c0/embed?autostart=0&ui_theme=dark&dnt=1" 
-              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-            </iframe>
-          </div>
-          
-          <p class="muted-note" style="margin-top: -10px; margin-bottom: 15px;">
-            🖱️ <em>Cliquez sur le bouton Play pour charger le modèle, puis faites glisser pour tourner autour de la voiture</em>
-          </p>
-
-          <p style="font-size: 1.15rem; margin-bottom: 2rem; color: var(--text-primary);">Pour cette 10ème saison de l'ESTACUP, nous passons à la vitesse supérieure avec un prototype taillé pour l'endurance et la performance pure : la <strong>Ligier JS P320</strong>.</p>
-          
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 2rem;">
-            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
-              <strong style="color: var(--accent-primary);">Moteur</strong><br>V8 Nissan VK56 5.6L
-            </div>
-            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
-              <strong style="color: var(--accent-primary);">Puissance</strong><br>~ 455 Chevaux
-            </div>
-            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
-              <strong style="color: var(--accent-primary);">Poids</strong><br>950 kg
-            </div>
-            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
-              <strong style="color: var(--accent-primary);">Aérodynamisme</strong><br>High Downforce
-            </div>
-          </div>
-          
-          <p style="text-align: left; color: var(--text-muted); line-height: 1.8;">
-            Dépourvue d'ABS et d'aides électroniques intrusives, la catégorie LMP3 demande une grande finesse sur la pédale de frein. Son appui aérodynamique monstrueux généré par le fond plat et l'aileron arrière permet des passages en courbe à très haute vitesse, mais attention à la remise des gaz : le couple brutal du V8 atmosphérique Nissan ne pardonne aucune erreur en sortie de virage. Préparez-vous pour un pilotage brut, radical et extrêmement exigeant !
-          </p>
-        </div>
-      </div>
-
-      <!-- LES CIRCUITS (AVEC GLOBE 3D) -->
-      <div id="champ-sub-circuits" class="champ-subsection hidden">
-        <h3>Le Calendrier de la Saison 10</h3>
-        <div class="course-box" style="text-align: center; padding: 1.5rem;">
-          <p style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 1.5rem;">Un tour du monde sur les tracés les plus exigeants de la planète.</p>
-          
-          <p class="muted-note" style="margin-bottom: 10px;">
-            🖱️ <em>Faites tourner le globe pour découvrir les destinations !</em>
-          </p>
-
-          <div id="globeContainer" style="width: 100%; height: 450px; background: #050810; border-radius: 12px; border: 1px solid var(--border-primary); margin-bottom: 2rem; cursor: grab; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
-            <!-- Le globe s'injectera ici via JS -->
-          </div>
-
-          <div id="circuitTextList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;">
-            <!-- Rempli par JavaScript -->
-          </div>
-        </div>
-      </div>
-
+      <!-- INSCRIPTION -->
       <div id="champ-sub-inscription" class="champ-subsection hidden">
         <h3>Inscription ESTACUP</h3>
         <div id="mekaQuestionnaire">
@@ -255,28 +233,84 @@
         <div id="estacupFormContainer" class="hidden"></div>
       </div>
 
+      <!-- ENGAGÉS -->
       <div id="champ-sub-engages" class="champ-subsection hidden">
         <h3>Liste des engagés</h3>
         <div id="estacupEngages"></div>
       </div>
 
+      <!-- RÉCLAMATIONS -->
+      <div id="champ-sub-reclamations" class="champ-subsection hidden">
+        <h3>Dépôt de Réclamation</h3>
+        <p class="muted-note" style="margin-bottom:10px;">
+          Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
+        </p>
+        <div class="course-box">
+          <label for="reclamDate">Date de la course :</label>
+          <input id="reclamDate" type="date" />
+          <label for="reclamSplit">Split :</label>
+          <select id="reclamSplit">
+            <option value="">-- Choisir un split --</option>
+            <option value="1">Split 1</option>
+            <option value="2">Split 2</option>
+          </select>
+          <label for="reclamDesc">Description de l'incident :</label>
+          <textarea id="reclamDesc" placeholder="Décrivez précisément l'incident (tour, virage, pilotes impliqués, etc.)" rows="5"></textarea>
+          <label for="reclamVideo">Lien de la vidéo YouTube (obligatoire) :</label>
+          <input id="reclamVideo" type="url" placeholder="https://youtu.be/..." />
+          <button id="submitReclam">📨 Envoyer la réclamation</button>
+        </div>
+        <div id="reclamHistory" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- LE VÉHICULE -->
+      <div id="champ-sub-vehicule" class="champ-subsection hidden">
+        <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
+        <div class="course-box" style="text-align: center;">
+          <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); box-shadow: var(--shadow-lg);">
+            <iframe title="Ligier JSP325 LMP3" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" src="https://sketchfab.com/models/f3f799b94c764601a4b773a93ebb97c0/embed?autostart=0&ui_theme=dark&dnt=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+          </div>
+          <p class="muted-note" style="margin-top: -10px; margin-bottom: 15px;">🖱️ <em>Cliquez sur le bouton Play pour charger le modèle, puis faites glisser pour tourner autour de la voiture</em></p>
+          <p style="font-size: 1.15rem; margin-bottom: 2rem; color: var(--text-primary);">Pour cette 10ème saison de l'ESTACUP, nous passons à la vitesse supérieure avec un prototype taillé pour l'endurance et la performance pure : la <strong>Ligier JS P320</strong>.</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 2rem;">
+            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+              <strong style="color: var(--accent-primary);">Moteur</strong><br>V8 Nissan VK56 5.6L
+            </div>
+            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+              <strong style="color: var(--accent-primary);">Puissance</strong><br>~ 455 Chevaux
+            </div>
+            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+              <strong style="color: var(--accent-primary);">Poids</strong><br>950 kg
+            </div>
+            <div style="background: rgba(15,23,42,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-secondary);">
+              <strong style="color: var(--accent-primary);">Aérodynamisme</strong><br>High Downforce
+            </div>
+          </div>
+          <p style="text-align: left; color: var(--text-muted); line-height: 1.8;">
+            Dépourvue d'ABS et d'aides électroniques intrusives, la catégorie LMP3 demande une grande finesse sur la pédale de frein. Son appui aérodynamique monstrueux généré par le fond plat et l'aileron arrière permet des passages en courbe à très haute vitesse, mais attention à la remise des gaz : le couple brutal du V8 atmosphérique Nissan ne pardonne aucune erreur en sortie de virage.
+          </p>
+        </div>
+      </div>
+
+      <!-- LES CIRCUITS -->
+      <div id="champ-sub-circuits" class="champ-subsection hidden">
+        <h3>Le Calendrier de la Saison 10</h3>
+        <div class="course-box" style="text-align: center; padding: 1.5rem;">
+          <p style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 1.5rem;">Un tour du monde sur les tracés les plus exigeants de la planète.</p>
+          <p class="muted-note" style="margin-bottom: 10px;">🖱️ <em>Faites tourner le globe pour découvrir les destinations !</em></p>
+          <div id="globeContainer" style="width: 100%; height: 450px; background: #050810; border-radius: 12px; border: 1px solid var(--border-primary); margin-bottom: 2rem; cursor: grab; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);"></div>
+          <div id="circuitTextList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;"></div>
+        </div>
+      </div>
+
+      <!-- VOTES CIRCUITS -->
       <div id="champ-sub-votecircuit" class="champ-subsection hidden">
         <h3>Votes des circuits</h3>
         <div id="voteCircuitHost"></div>
       </div>
-    </section>
 
-    <!-- SECTION : 💾 PADDOCK & MODS -->
-    <section id="section-paddock" class="section hidden">
-      <h2 class="section-main-title">Paddock & Téléchargements</h2>
-
-      <nav class="menu" id="paddockSubnav" style="margin-top:-10px;margin-bottom:20px; border: none; background: transparent;">
-        <button data-sub="contenu" class="pad-sub-btn">Télécharger le contenu</button>
-        <button data-sub="mods" class="pad-sub-btn">Mods obligatoires</button>
-        <button data-sub="livree" class="pad-sub-btn">Déposer ma livrée</button>
-      </nav>
-
-      <div id="pad-sub-contenu" class="pad-subsection">
+      <!-- CONTENU (PACK) -->
+      <div id="champ-sub-contenu" class="champ-subsection hidden">
         <h3>Contenu du jeu (Voiture & Circuits)</h3>
         <div class="course-box">
           <p>Téléchargez le pack complet contenant la Ligier JS P320 et tous les circuits de la saison.</p>
@@ -284,7 +318,8 @@
         </div>
       </div>
 
-      <div id="pad-sub-mods" class="pad-subsection hidden">
+      <!-- MODS -->
+      <div id="champ-sub-mods" class="champ-subsection hidden">
         <h3>Mods & Utilitaires</h3>
         <div class="course-box">
           <p>Liste des mods nécessaires pour rouler sur nos serveurs (CSP, Sol/Pure, Real Penalty...).</p>
@@ -295,10 +330,43 @@
         </div>
       </div>
 
-      <div id="pad-sub-livree" class="pad-subsection hidden">
+      <!-- LIVRÉE -->
+      <div id="champ-sub-livree" class="champ-subsection hidden">
         <h3>Déposer ma livrée</h3>
         <div id="liveryUploadHost"></div>
       </div>
+
+      <!-- COURSES (RÉSULTATS) -->
+      <div id="champ-sub-courses" class="champ-subsection hidden">
+        <h3>Résultats des Manches</h3>
+        <p class="muted-note">Cliquez sur une course pour afficher le <strong>classement complet</strong>.</p>
+        <ul id="raceHistory"><li>Chargement…</li></ul>
+      </div>
+
+      <!-- RANK PILOTES -->
+      <div id="champ-sub-rankpilots" class="champ-subsection hidden">
+        <h3>Classement Pilotes</h3>
+        <div class="joker-toggle">
+          <label for="jokerTogglePilots">
+            <input type="checkbox" id="jokerTogglePilots">
+            <span>Classement avec la <strong>course joker</strong></span>
+          </label>
+        </div>
+        <div id="estacupPilotStandings" class="course-box"><p>Chargement…</p></div>
+      </div>
+
+      <!-- RANK ÉQUIPES -->
+      <div id="champ-sub-rankteams" class="champ-subsection hidden">
+        <h3>Classement Équipes</h3>
+        <div class="joker-toggle">
+          <label for="jokerToggleTeams">
+            <input type="checkbox" id="jokerToggleTeams">
+            <span>Classement avec la <strong>course joker</strong></span>
+          </label>
+        </div>
+        <div id="estacupTeamStandings" class="course-box"><p>Chargement…</p></div>
+      </div>
+
     </section>
 
     <!-- SECTION : 📡 SERVEURS & ACCÈS -->
@@ -318,85 +386,6 @@
         
         <button style="margin-top: 15px; width: auto;" onclick="window.location.href='steam://run/244210'">🚀 Rejoindre via Content Manager</button>
       </div>
-    </section>
-
-    <!-- SECTION : RÉSULTATS -->
-    <section id="section-results" class="section hidden">
-      <h2 class="section-main-title">Résultats & Classements</h2>
-
-      <nav class="menu" id="resultsSubnav" style="margin-top:-10px;margin-bottom:20px; border: none; background: transparent;">
-        <button data-sub="courses" class="res-sub-btn">Courses</button>
-        <button data-sub="rankpilots" class="res-sub-btn">Classement Pilotes</button>
-        <button data-sub="rankteams" class="res-sub-btn">Classement Équipes</button>
-      </nav>
-
-      <div id="res-sub-courses" class="res-subsection">
-        <h3>Résultats des Manches</h3>
-        <p class="muted-note">Cliquez sur une course pour afficher le <strong>classement complet</strong>.</p>
-        <ul id="raceHistory"><li>Chargement…</li></ul>
-      </div>
-
-      <div id="res-sub-rankpilots" class="res-subsection hidden">
-        <h3>Classement Pilotes</h3>
-        <div class="joker-toggle">
-          <label for="jokerTogglePilots">
-            <input type="checkbox" id="jokerTogglePilots">
-            <span>
-              Classement avec la <strong>course joker</strong>
-            </span>
-          </label>
-        </div>
-        <div id="estacupPilotStandings" class="course-box">
-          <p>Chargement…</p>
-        </div>
-      </div>
-
-      <div id="res-sub-rankteams" class="res-subsection hidden">
-        <h3>Classement Équipes</h3>
-        <div class="joker-toggle">
-          <label for="jokerToggleTeams">
-            <input type="checkbox" id="jokerToggleTeams">
-            <span>
-              Classement avec la <strong>course joker</strong>
-            </span>
-          </label>
-        </div>
-        <div id="estacupTeamStandings" class="course-box">
-          <p>Chargement…</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION : RÉCLAMATIONS -->
-    <section id="section-reclamations" class="section hidden">
-      <h2 class="section-main-title">Direction de Course</h2>
-
-      <h3>Dépôt de Réclamation</h3>
-      <p class="muted-note" style="margin-bottom:10px;">
-        Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
-      </p>
-
-      <div class="course-box">
-        <label for="reclamDate">Date de la course :</label>
-        <input id="reclamDate" type="date" />
-
-        <label for="reclamSplit">Split :</label>
-        <select id="reclamSplit">
-          <option value="">-- Choisir un split --</option>
-          <option value="1">Split 1</option>
-          <option value="2">Split 2</option>
-        </select>
-
-        <label for="reclamDesc">Description de l'incident :</label>
-        <textarea id="reclamDesc" placeholder="Décrivez précisément l'incident (tour, virage, pilotes impliqués, etc.)" rows="5"></textarea>
-
-        <label for="reclamVideo">Lien de la vidéo YouTube (obligatoire) :</label>
-        <input id="reclamVideo" type="url" placeholder="https://youtu.be/..." />
-
-        <button id="submitReclam">📨 Envoyer la réclamation</button>
-      </div>
-
-      <div id="reclamHistory" style="margin-top:20px;"></div>
     </section>
 
   </div>
