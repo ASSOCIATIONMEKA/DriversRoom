@@ -428,22 +428,22 @@
 
     </section>
 
-    <!-- SECTION : 📡 SERVEURS & ACCÈS -->
+    <!-- SECTION : 📡 SERVEURS & ACCÈS (AVEC FIREBASE LIVE) -->
     <section id="section-serveurs" class="section hidden">
       <h2 class="section-main-title">Serveurs & Accès</h2>
       
-      <div class="course-box" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.05);">
-        <h3>Statut du Serveur : <span style="color: #34d399;">🟢 OUVERT</span></h3>
-        <p><strong>Session actuelle :</strong> Entraînement Libre (Practice)</p>
-        <p><strong>Circuit actuel :</strong> Silverstone (Prologue)</p>
+      <div class="course-box" id="srvBox" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); transition: all 0.3s ease;">
+        <h3 id="srvTitle">Statut du Serveur : <span style="color: #f59e0b;">🔴 FERMÉ</span></h3>
+        <p><strong>Session actuelle :</strong> <span id="srvSession">—</span></p>
+        <p><strong>Circuit actuel :</strong> <span id="srvTrack">—</span></p>
         
         <hr style="border-color: var(--border-primary); margin: 15px 0;">
         
         <h4 style="margin-bottom: 10px;">Informations de connexion</h4>
-        <p>🔍 <strong>Nom du serveur :</strong> <code>MEKA SimRacing | ESTACUP S10 | Practice</code></p>
-        <p>🔑 <strong>Mot de passe :</strong> <code>meka2026</code></p>
+        <p>🔍 <strong>Nom du serveur :</strong> <code>MEKA SimRacing | ESTACUP S10</code></p>
+        <p>🔑 <strong>Mot de passe :</strong> <code id="srvPwd" style="color: #f87171;">***</code></p>
         
-        <button style="margin-top: 15px; width: auto;" onclick="window.location.href='steam://run/244210'">🚀 Rejoindre via Content Manager</button>
+        <button id="btnJoinServer" style="margin-top: 15px; width: auto; opacity: 0.5; cursor: not-allowed;" disabled>🚀 Serveur fermé</button>
       </div>
     </section>
 
