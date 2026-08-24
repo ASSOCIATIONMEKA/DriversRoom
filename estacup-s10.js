@@ -180,7 +180,7 @@ function setupNavigation(isAdmin = false) {
   if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
   goToAdmin?.addEventListener("click", () => (window.location.href = "admin-s10.html"));
 
-  const buttons  = document.querySelectorAll('.menu > button[data-section]');
+  const buttons  = document.querySelectorAll('nav.menu > button[data-section]');
   const sections = document.querySelectorAll('.section');
 
   function showSection(key) {
@@ -193,7 +193,6 @@ function setupNavigation(isAdmin = false) {
       else btn.classList.remove("active");
     });
 
-    // Aiguillage selon la section ouverte
     if (key === "championship" && lastUserData) {
       setupChampionshipSubnav();
       showChampionshipSub("reglement");
@@ -201,33 +200,19 @@ function setupNavigation(isAdmin = false) {
       loadEstacupEngages();
       renderVoteCircuit();
     }
-    else if (key === "paddock" && lastUserData) {
-      setupPaddockSubnav();
-      showPaddockSub("contenu");
-      renderLiverySection(); 
-    }
-    else if (key === "results" && currentUid) {
-      setupResultsSubnav();
-      showResultsSub("courses");
-      loadResults(currentUid);
-    }
-    else if (key === "reclamations") {
-      if(typeof loadReclamHistory === "function") loadReclamHistory();
-    }
-    else if (key === "infos" && currentUid) {
-      if(typeof loadMRating === "function") loadMRating(currentUid);
-      if(typeof loadMSafety === "function") loadMSafety(currentUid);
-    }
   }
 
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.getAttribute("data-section"))));
   showSection("infos"); 
 }
 
-/* --- Sous-menus Le Championnat --- */
+/* --- Sous-menus Le Championnat (TOUT GROUPÉ ICI) --- */
 function setupChampionshipSubnav() {
   const subs = document.querySelectorAll("#championshipSubnav .champ-sub-btn");
   subs.forEach(btn => { btn.onclick = () => showChampionshipSub(btn.dataset.sub); });
+  
+  const chkP = $("jokerTogglePilots"); if (chkP) chkP.onchange = () => { if(typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings(); };
+  const chkT = $("jokerToggleTeams"); if (chkT) chkT.onchange = () => { if(typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings(); };
 }
 function showChampionshipSub(key) {
   document.querySelectorAll('.champ-subsection').forEach(b => b.classList.add("hidden"));
@@ -239,46 +224,15 @@ function showChampionshipSub(key) {
     else btn.classList.remove("active");
   });
 
-  if (key === "circuits") {
-    setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
-  }
-}
-
-/* --- Sous-menus Paddock --- */
-function setupPaddockSubnav() {
-  const subs = document.querySelectorAll("#paddockSubnav .pad-sub-btn");
-  subs.forEach(btn => { btn.onclick = () => showPaddockSub(btn.dataset.sub); });
-}
-function showPaddockSub(key) {
-  document.querySelectorAll('.pad-subsection').forEach(b => b.classList.add("hidden"));
-  const block = $("pad-sub-" + key);
-  if (block) block.classList.remove("hidden");
-
-  document.querySelectorAll("#paddockSubnav .pad-sub-btn").forEach(btn => {
-    if (btn.dataset.sub === key) btn.classList.add("active");
-    else btn.classList.remove("active");
-  });
-}
-
-/* --- Sous-menus Résultats --- */
-function setupResultsSubnav() {
-  const subs = document.querySelectorAll("#resultsSubnav .res-sub-btn");
-  subs.forEach(btn => { btn.onclick = () => showResultsSub(btn.dataset.sub); });
-  const chkP = $("jokerTogglePilots"); if (chkP) chkP.onchange = () => { if(typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings(); };
-  const chkT = $("jokerToggleTeams"); if (chkT) chkT.onchange = () => { if(typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings(); };
-}
-function showResultsSub(key) {
-  document.querySelectorAll('.res-subsection').forEach(b => b.classList.add("hidden"));
-  const block = $("res-sub-" + key); if (block) block.classList.remove("hidden");
-
-  document.querySelectorAll("#resultsSubnav .res-sub-btn").forEach(btn => {
-    if (btn.dataset.sub === key) btn.classList.add("active");
-    else btn.classList.remove("active");
-  });
-
+  // Aiguillage des chargements selon le bouton
+  if (key === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
+  if (key === "livree") renderLiverySection();
+  if (key === "courses") loadResults(currentUid);
+  if (key === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
   if (key === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
   if (key === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
 }
+
 
 /* ======================== AUTHENTIFICATION ======================== */
 onAuthStateChanged(auth, async (user) => {
@@ -629,7 +583,6 @@ async function loadEstacupForm(userData) {
 
     let liveryText = data.liveryChoice === "personnelle" ? "Livrée personnelle (via OneDrive)" : (data.liveryChoice === "neutre" ? "Livrée neutre ESTACUP" : "Non renseigné");
 
-    // STYLE UNIFORME ET PROPRE AVEC PADDING (Plus de texte collé aux bordures)
     const infoItemStyle = "padding: 10px 15px; margin: 8px 0; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;";
 
     if (isValidated) {
