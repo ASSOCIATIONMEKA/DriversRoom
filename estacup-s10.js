@@ -2,7 +2,7 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc
+  getFirestore, doc, getDoc, collection, getDocs, query, where, updateDoc, addDoc, setDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ======================== Firebase ======================== */
@@ -195,7 +195,7 @@ function setupNavigation(isAdmin = false) {
 
     if (key === "championship" && lastUserData) {
       setupChampCategories();
-      showChampCategory("admin"); // Par défaut : onglet Administratif
+      showChampCategory("admin");
       setupMekaQuestionnaire(lastUserData);
       loadEstacupEngages();
       renderVoteCircuit();
@@ -222,26 +222,21 @@ function setupChampCategories() {
     btn.onclick = () => showChampionshipSub(btn.dataset.sub);
   });
 
-  // Toggles pour les classements joker
   const chkP = $("jokerTogglePilots"); if (chkP) chkP.onchange = () => { if(typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings(); };
   const chkT = $("jokerToggleTeams"); if (chkT) chkT.onchange = () => { if(typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings(); };
 }
 
 function showChampCategory(catKey) {
-  // 1. Activer le bouton catégorie NIVEAU 1
   document.querySelectorAll("#champCategoryNav button[data-cat]").forEach(btn => {
     if (btn.dataset.cat === catKey) btn.classList.add("active");
     else btn.classList.remove("active");
   });
 
-  // 2. Afficher le container de boutons NIVEAU 2 correspondant
   document.querySelectorAll(".champ-cat-container").forEach(c => c.classList.add("hidden"));
   const activeNav = document.getElementById("cat-" + catKey);
   
   if (activeNav) {
     activeNav.classList.remove("hidden");
-    
-    // 3. Cliquer automatiquement sur le premier sous-bouton pour afficher un contenu par défaut
     const firstSubBtn = activeNav.querySelector(".champ-sub-btn");
     if (firstSubBtn) {
       showChampionshipSub(firstSubBtn.dataset.sub);
@@ -250,18 +245,15 @@ function showChampCategory(catKey) {
 }
 
 function showChampionshipSub(subKey) {
-  // 1. Cacher tous les contenus
   document.querySelectorAll('.champ-subsection').forEach(b => b.classList.add("hidden"));
   const block = $("champ-sub-" + subKey);
   if (block) block.classList.remove("hidden");
 
-  // 2. Mettre en surbrillance le sous-bouton NIVEAU 2
   document.querySelectorAll(".champ-sub-btn").forEach(btn => {
     if (btn.dataset.sub === subKey) btn.classList.add("active");
     else btn.classList.remove("active");
   });
 
-  // 3. Lancer les scripts spécifiques selon l'onglet
   if (subKey === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
   if (subKey === "livree") renderLiverySection();
   if (subKey === "courses") loadResults(currentUid);
@@ -1036,3 +1028,52 @@ function init3DGlobe() {
     `;
   }
 }
+
+/* ======================== LIVE SERVER STATUS ======================== */
+function listenServerStatus() {
+  const box = $("srvBox");
+  const title = $("srvTitle");
+  const sess = $("srvSession");
+  const track = $("srvTrack");
+  const pwd = $("srvPwd");
+  const btn = $("btnJoinServer");
+  
+  if (!box || !title) return;
+
+  onSnapshot(doc(db, "config", "server_s10"), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      
+      sess.textContent = data.session || "—";
+      track.textContent = data.track || "—";
+      
+      if (data.isOpen) {
+        box.style.borderColor = "#34d399";
+        box.style.background = "rgba(16, 185, 129, 0.05)";
+        title.innerHTML = `Statut du Serveur : <span style="color: #34d399;">🟢 OUVERT</span>`;
+        pwd.textContent = data.password || "Aucun";
+        pwd.style.color = "#34d399";
+        
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+        btn.textContent = "🚀 Rejoindre via Content Manager";
+        btn.onclick = () => window.location.href = "steam://run/244210";
+      } else {
+        box.style.borderColor = "#f59e0b";
+        box.style.background = "rgba(245, 158, 11, 0.05)";
+        title.innerHTML = `Statut du Serveur : <span style="color: #f59e0b;">🔴 FERMÉ</span>`;
+        pwd.textContent = "***";
+        pwd.style.color = "#f87171";
+        
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+        btn.textContent = "🚀 Serveur fermé";
+        btn.onclick = null;
+      }
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", listenServerStatus);
