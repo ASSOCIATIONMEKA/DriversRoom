@@ -619,7 +619,7 @@
         </div>
       </div>
 
-      <!-- LES CIRCUITS - CARTE LEAFLET CORRIGÉE + LISTE DES CIRCUITS -->
+      <!-- LES CIRCUITS - CARTE LEAFLET CORRIGÉE AVEC DÉLAI DE CHARGEMENT GARANTI -->
       <div id="champ-sub-circuits" class="champ-subsection hidden">
         <h3>Le Calendrier de la Saison 10</h3>
         <div class="course-box" style="padding: 2rem;">
@@ -629,7 +629,7 @@
           <!-- CONTENEUR CARTE LEAFLET 2D -->
           <div id="leafletWorldMap"></div>
 
-          <!-- Script d'initialisation et de redimensionnement de la carte -->
+          <!-- Script d'initialisation robuste -->
           <script>
             let estacupMapInstance = null;
 
@@ -645,8 +645,9 @@
                   maxZoom: 6
                 });
 
+                // Utilisation d'un fond de tuiles CartoDB standard sans paramètres superflus
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                  attribution: '&copy; CARTO',
+                  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                   subdomains: 'abcd',
                   maxZoom: 19
                 }).addTo(estacupMapInstance);
@@ -663,33 +664,36 @@
 
                 circuits.forEach(c => {
                   const marker = L.circleMarker(c.coords, {
-                    radius: 8,
+                    radius: 9,
                     fillColor: c.name.includes("Vote") ? "#f59e0b" : "#38bdf8",
                     color: "#fff",
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.9
+                    fillOpacity: 0.95
                   }).addTo(estacupMapInstance);
 
                   marker.bindPopup(`<strong>${c.name}</strong><br>📅 ${c.date}<br>📍 ${c.country}`);
                 });
               }
 
-              // Forcer le rafraîchissement des tuiles graphiques
+              // Double invalidation avec délai pour forcer l'affichage des tuiles sur les écrans de toutes tailles
               setTimeout(() => {
                 estacupMapInstance.invalidateSize();
-              }, 200);
+              }, 150);
+              setTimeout(() => {
+                estacupMapInstance.invalidateSize();
+              }, 500);
             }
 
             document.addEventListener("DOMContentLoaded", () => {
-              // Écouter le clic sur le bouton "Les circuits" pour charger/rafraîchir la carte
+              // Déclencheur sur le sous-menu "Les circuits"
               document.querySelectorAll('[data-sub="circuits"]').forEach(btn => {
                 btn.addEventListener("click", () => {
-                  setTimeout(initEstacupMap, 100);
+                  setTimeout(initEstacupMap, 200);
                 });
               });
 
-              // Si la section est déjà visible au chargement
+              // Si l'onglet est déjà ouvert au chargement
               const section = document.getElementById("champ-sub-circuits");
               if (section && !section.classList.contains("hidden")) {
                 initEstacupMap();
