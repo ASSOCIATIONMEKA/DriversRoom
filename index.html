@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css"> 
   
   <style>
-    /* 1. SECTION PRINCIPALE (Le fond global, la navbar et le dropdown sont centralisés dans style.css !) */
+    /* 1. SECTION PRINCIPALE */
     .hero-section {
       text-align: center;
       padding: 6rem 2rem;
@@ -20,7 +20,7 @@
 
     .hero-btn {
       display: inline-block;
-      background: #5865F2; /* Couleur officielle Discord */
+      background: #5865F2;
       color: white;
       padding: 1rem 2rem;
       border-radius: 0.75rem;
@@ -41,12 +41,12 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 2rem;
-      padding-bottom: 6rem; /* Espace pour le bandeau fixe */
+      padding-bottom: 6rem;
       position: relative;
       z-index: 10;
       display: flex;
       flex-direction: column;
-      gap: 2rem; /* Espace entre les boites */
+      gap: 2rem;
     }
     
     .course-box {
@@ -71,7 +71,7 @@
       color: #CBD5E1;
     }
 
-    /* --- NOUVEAUX STYLES POUR LES STATISTIQUES --- */
+    /* --- STYLES DES CARTES DE STATISTIQUES --- */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -89,7 +89,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 140px; /* Force la même hauteur pour toutes les cartes */
+      min-height: 140px;
       transition: transform 0.2s, border-color 0.2s;
     }
 
@@ -107,19 +107,100 @@
       line-height: 1.2;
     }
 
-    .stat-countdown {
-      font-size: 0.85rem;
-      color: #fde68a;
-      font-family: monospace;
-      font-weight: 600;
-      margin-top: 0.5rem;
-    }
-
     .stat-label {
       font-size: 0.9rem;
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 1px;
+    }
+
+    /* --- NOUVEAU DESIGN COMPTE A REBOURS --- */
+    .countdown-banner {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 37, 48, 0.9));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 1rem;
+      padding: 2rem;
+      text-align: center;
+      margin-top: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(245, 158, 11, 0.05);
+    }
+
+    .countdown-header {
+      color: #f8fafc;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background-color: #f59e0b;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #f59e0b;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    .countdown-timer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .time-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(2, 6, 23, 0.6);
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      min-width: 100px;
+    }
+
+    .time-val {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #fde68a;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    }
+
+    .time-label {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 0.5rem;
+    }
+
+    .time-sep {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.2);
+      margin-top: -1.5rem;
+    }
+
+    @media (max-width: 650px) {
+      .countdown-timer { gap: 0.5rem; }
+      .time-box { min-width: 70px; padding: 0.75rem 1rem; }
+      .time-val { font-size: 2rem; }
+      .time-sep { font-size: 1.5rem; }
     }
 
     .portal-info {
@@ -158,18 +239,43 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-number" id="home-pilots-count">--</div>
-          <div class="stat-label">Pilotes Inscrits</div>
+          <div class="stat-label">Pilotes Inscrits S10</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number" id="home-races-count">--</div>
+          <div class="stat-number" id="home-users-count" style="color: #10b981;">--</div>
+          <div class="stat-label">Comptes Créés</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="home-races-count" style="color: #a855f7;">--</div>
           <div class="stat-label">Courses Disputées</div>
         </div>
-        <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
-          <div class="stat-number" style="color: #f59e0b; font-size: 1.6rem;">
-            Silverstone
-            <div class="stat-countdown" id="silverstone-countdown">Chargement...</div>
+      </div>
+
+      <!-- BANNIÈRE COMPTE À REBOURS -->
+      <div class="countdown-banner">
+        <div class="countdown-header">
+          <span class="pulse-dot"></span> Prochaine Manche : Prologue (Silverstone)
+        </div>
+        <div class="countdown-timer" id="silverstone-countdown-container">
+          <div class="time-box">
+            <span class="time-val" id="cd-days">--</span>
+            <span class="time-label">Jours</span>
           </div>
-          <div class="stat-label">Prologue (Prochaine Manche)</div>
+          <span class="time-sep">:</span>
+          <div class="time-box">
+            <span class="time-val" id="cd-hours">--</span>
+            <span class="time-label">Heures</span>
+          </div>
+          <span class="time-sep">:</span>
+          <div class="time-box">
+            <span class="time-val" id="cd-mins">--</span>
+            <span class="time-label">Minutes</span>
+          </div>
+          <span class="time-sep">:</span>
+          <div class="time-box">
+            <span class="time-val" id="cd-secs">--</span>
+            <span class="time-label">Secondes</span>
+          </div>
         </div>
       </div>
 
@@ -187,7 +293,6 @@
   <!-- BANDEAU DÉFILANT FIXE EN BAS -->
   <div class="scrolling-banner">
     <div class="scrolling-banner-track" id="bannerTrack">
-      <!-- BLOC UNIQUE À MODIFIER (Le JavaScript le clonera automatiquement) -->
       <div class="banner-items">
         <span><img src="logos/insta-logo.png" alt="Instagram"> Team MEKA</span>
         <span><img src="logos/tiktok-logo.png" alt="Tiktok"> Team MEKA</span>
@@ -200,7 +305,6 @@
     </div>
   </div>
 
-  <!-- Script pour dupliquer le bloc de logos (Boucle) -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const track = document.getElementById("bannerTrack");
@@ -216,7 +320,7 @@
   <!-- Script pour dynamiser les statistiques de l'accueil -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
@@ -232,6 +336,7 @@
 
     async function loadHomeStats() {
       try {
+        // Pilotes inscrits S10
         const signupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
         let pilotCount = 0;
         signupsSnap.forEach(doc => { 
@@ -239,12 +344,18 @@
         });
         document.getElementById("home-pilots-count").textContent = pilotCount > 0 ? pilotCount : "40+";
 
+        // Nombre de comptes créés
+        const usersSnap = await getDocs(collection(db, "users"));
+        document.getElementById("home-users-count").textContent = usersSnap.size > 0 ? usersSnap.size : "50+";
+
+        // Nombre de courses
         const coursesSnap = await getDocs(collection(db, "courses"));
         document.getElementById("home-races-count").textContent = coursesSnap.size > 0 ? coursesSnap.size : "16+";
         
       } catch (err) {
         console.error("Erreur de chargement des stats de l'accueil :", err);
-        document.getElementById("home-pilots-count").textContent = "45+";
+        document.getElementById("home-pilots-count").textContent = "40+";
+        document.getElementById("home-users-count").textContent = "50+";
         document.getElementById("home-races-count").textContent = "16+";
       }
     }
@@ -257,15 +368,21 @@
     function startCountdown() {
       // Date du prologue : 15 Septembre 2026 à 21h00
       const targetDate = new Date("2026-09-15T21:00:00").getTime();
-      const el = document.getElementById("silverstone-countdown");
-      if (!el) return;
+      
+      const elDays = document.getElementById("cd-days");
+      const elHours = document.getElementById("cd-hours");
+      const elMins = document.getElementById("cd-mins");
+      const elSecs = document.getElementById("cd-secs");
+      
+      if (!elDays) return;
 
       function update() {
         const now = new Date().getTime();
         const diff = targetDate - now;
 
         if (diff <= 0) {
-          el.textContent = "Session en cours";
+          document.getElementById("silverstone-countdown-container").innerHTML = 
+            "<h3 style='color:#10b981; margin:0; font-size:1.8rem; text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);'>Session en cours !</h3>";
           return;
         }
 
@@ -274,7 +391,10 @@
         const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
-        el.textContent = `J-${days} ${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
+        elDays.textContent = days;
+        elHours.textContent = String(hours).padStart(2, "0");
+        elMins.textContent = String(mins).padStart(2, "0");
+        elSecs.textContent = String(secs).padStart(2, "0");
       }
 
       update();
