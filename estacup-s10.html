@@ -34,11 +34,15 @@
     .impact-bad { color:#f87171; font-weight:600; }
     .impact-good { color:#34d399; font-weight:600; }
 
-    /* Tableaux classements */
-    .table-standings{width:100%;border-collapse:collapse;background:rgba(15,23,42,.6);border:1px solid #334155;border-radius:12px;overflow:hidden}
-    .table-standings th,.table-standings td{padding:.75rem .9rem;border-bottom:1px solid #233047; text-align: left;}
-    .table-standings thead th{background:rgba(51,65,85,.5);}
+    /* Tableaux classements et règlement */
+    .table-standings, .reglement-table {width:100%;border-collapse:collapse;background:rgba(15,23,42,.6);border:1px solid #334155;border-radius:8px;overflow:hidden;margin:1rem 0}
+    .table-standings th,.table-standings td, .reglement-table th, .reglement-table td{padding:.75rem .9rem;border-bottom:1px solid #233047; text-align: left; font-size: 0.9rem;}
+    .table-standings thead th, .reglement-table thead th{background:rgba(51,65,85,.5); color: #fde68a;}
     .rank-badge{display:inline-block;min-width:2rem;text-align:center;background:#0b1220;border:1px solid #334155;border-radius:999px;padding:.2rem .5rem}
+
+    /* Liens interactifs internes au règlement */
+    .reglement-link { color: #38bdf8; text-decoration: underline; cursor: pointer; font-weight: 600; }
+    .reglement-link:hover { color: #818cf8; }
 
     /* Loader animé (spinner) */
     .loading-inline{display:flex;align-items:center;gap:.6rem;color:#cbd5e1}
@@ -289,12 +293,12 @@
           <h5>2.1 SIMULATION ET APPLICATIONS IN-GAME</h5>
           <p>Pour participer, les pilotes devront avoir Assetto Corsa Ultimate Edition sur PC. Les applications suivantes seront demandées :</p>
           <ul>
-            <li>Real Penalty (voir article 2.7).</li>
+            <li>Real Penalty (voir <a class="reglement-link" onclick="showChampCategory('paddock'); showChampionshipSub('mods'); return false;">article 2.7</a>).</li>
             <li>Track Map et/ou Realtime (ou équivalent).</li>
           </ul>
 
           <h5>2.2 LISTE DES VOITURES</h5>
-          <p>Ligier JS P325 (LMP3)</p>
+          <p>Ligier JS P320 (LMP3)</p>
 
           <h5>2.3 PNEUMATIQUES, CARBURANTS ET DÉGÂTS</h5>
           <p>Un seul type de pneumatique est mis à disposition des pilotes pour la totalité du championnat.</p>
@@ -315,7 +319,7 @@
           <p>Le CO se réserve le droit de refuser une livrée pour des raisons non-citées ci-dessus, avec justification auprès du pilote.</p>
 
           <h5>2.5.1 Dépôt de votre livrée</h5>
-          <p>Le dépôt de votre livrée se fait dans le dossier OneDrive officiel de l'association.</p>
+          <p>Le dépôt de votre livrée se fait via l'espace dédié : <a class="reglement-link" onclick="showChampCategory('paddock'); showChampionshipSub('livree'); return false;">Déposer ma livrée (OneDrive)</a>.</p>
           <p>Votre livrée ne doit pas contenir de plaque de numéro de course, le CO vous l’attribuant et vous l’appliquant après la réception de votre fichier.</p>
           <p>Vous serez averti lorsque votre livrée a bien été validée.</p>
 
@@ -331,16 +335,34 @@
           <p>Silverstone, Portimão, Dubaï Autodrome, Indianapolis, Virginia, Brno, Barcelone, Dijon-Prenois, Fuji Speedway.</p>
 
           <h5>2.7 TÉLÉCHARGEMENTS</h5>
-          <p>Retrouvez les liens de téléchargement (Real Penalty, Voitures, Pare-soleil, Circuits) directement sur le portail ou via les canaux dédiés sur Discord.</p>
+          <p>Retrouvez les liens de téléchargement nécessaires :</p>
+          <ul>
+            <li>Real Penalty & Mods : <a class="reglement-link" onclick="showChampCategory('paddock'); showChampionshipSub('mods'); return false;">Espace Mods obligatoires</a></li>
+            <li>Voitures & Circuits : <a class="reglement-link" onclick="showChampCategory('paddock'); showChampionshipSub('contenu'); return false;">Télécharger le pack S10</a></li>
+          </ul>
 
           <h4>3. CALENDRIER</h4>
           <p>Un total de 9 circuits a été choisi pour le championnat, où les pilotes auront à choisir sur deux manches (manche 3 et 5) leurs circuits préférés. Le championnat se déroulera sur 7 courses dont 6 comptabilisées (le prologue ne compte pas dans les classements).</p>
           <p>Pour les manches 3 et 5, le circuit choisi sera défini par le résultat des votes fait pendant l’inscription de l’ensemble des pilotes.</p>
-          <p>Ces dates peuvent être modifiées jusqu’à 15 jours avant la course, en cas d’impératif.</p>
+          
+          <table class="reglement-table">
+            <thead>
+              <tr><th>Épreuve</th><th>Circuit</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Prologue</td><td>Silverstone</td><td>15/09/2026</td></tr>
+              <tr><td>Manche 1</td><td>Portimão</td><td>29/09/2026</td></tr>
+              <tr><td>Manche 2</td><td>Dubaï Autodrome</td><td>20/10/2026</td></tr>
+              <tr><td>Manche 3</td><td>Indianapolis ou Virginia (Vote)</td><td>24/11/2026</td></tr>
+              <tr><td>Manche 4</td><td>Brno</td><td>08/12/2026</td></tr>
+              <tr><td>Manche 5</td><td>Barcelone ou Dijon-Prenois (Vote)</td><td>19/01/2027</td></tr>
+              <tr><td>Manche 6</td><td>Fuji Speedway</td><td>09/02/2027</td></tr>
+            </tbody>
+          </table>
 
           <h4>4. DRIVER’S ROOM</h4>
           <h5>4.1 Inscription</h5>
-          <p>Une fois votre compte créé, accédez à l’onglet « ESTACUP » pour retrouver le formulaire d’inscription.</p>
+          <p>Une fois votre compte créé, accédez à l’onglet « ESTACUP » puis « Inscription » pour retrouver le formulaire.</p>
           <p>Gratuit pour les membres MEKA, participation de 5€ pour les non-membres (financement de la diffusion Twitch et mods).</p>
           <p>Changement de voiture illimité jusqu'au prologue, puis un seul changement autorisé pour le reste de la saison.</p>
           <p>Équipes de 3 pilotes maximum. Sur un meeting, les 2 pilotes ayant fait le meilleur résultat marquent des points.</p>
@@ -364,10 +386,24 @@
           <p>Grille définie par les qualifications, inversée pour les 10 premiers. Aucun arrêt obligatoire.</p>
 
           <h5>5.5 Course 2</h5>
-          <p>Grille définie par les qualifications. Arrêt obligatoire entre la 15e et la 25e minute avec changement de pneus obligatoire.</p>
+          <p>Grille définie par les qualifications. Arrêt obligatoire entre la 15e et la 25e minute avec changement de pneus obligatoire. <em>Note : L'arrêt est validé dès lors que l'entrée dans la voie des stands se fait avant la 25e minute.</em></p>
 
           <h5>5.6 Conditions de piste</h5>
           <p>Grip à 100% pour les qualifications, 98% de départ pour les courses (augmentation de 1% tous les 50 tours).</p>
+
+          <h5>5.7 Horaires et durée des sessions</h5>
+          <table class="reglement-table">
+            <thead>
+              <tr><th>Session (1 Split)</th><th>Durée / Horaire</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Essais libres (Practice)</td><td>Permanent (24/24h)</td></tr>
+              <tr><td>Briefing Discord</td><td>20h45</td></tr>
+              <tr><td>Qualifications</td><td>15 minutes (21h00)</td></tr>
+              <tr><td>Course 1 (Sprint)</td><td>20 minutes + 1 tour</td></tr>
+              <tr><td>Course 2 (Principale)</td><td>45 minutes + 1 tour</td></tr>
+            </tbody>
+          </table>
 
           <h5>5.8 Déroulement du départ</h5>
           <p>Tour de formation en double file, vitesse max 140 km/h. Dans le dernier tiers, passage à 80 km/h (limiteur de stand obligatoire pour le leader dans les 5 secondes). Drapeau vert donné après le signal sonore pour libérer la meute.</p>
@@ -385,7 +421,21 @@
           <p>Les pénalités infligées par le CO ne peuvent être contestées sauf erreur flagrante. Retrouvez l'ensemble des barèmes détaillés pour les cuts, les excès de vitesse dans la pitlane, les mauvais comportements sur piste et les contrôles administratifs (conformité des pseudos, numéros et bandeaux) directement sur notre canal Discord.</p>
 
           <h4>8. POINTS ATTRIBUÉS & CLASSEMENTS</h4>
-          <p>Le pire résultat (ou absence) de la saison est retiré pour chaque pilote afin d'assurer l'équité. Les points sont attribués selon les grilles officielles pour 1 ou 2 splits.</p>
+          <p>Le pire résultat (ou absence) de la saison est retiré pour chaque pilote afin d'assurer l'équité. Les points sont attribués selon les grilles officielles :</p>
+          
+          <table class="reglement-table">
+            <thead>
+              <tr><th>Position</th><th>Course 1 (Sprint - Split 1)</th><th>Course 2 (Principale - Split 1)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1er</td><td>25 pts</td><td>50 pts</td></tr>
+              <tr><td>2ème</td><td>22 pts</td><td>46 pts</td></tr>
+              <tr><td>3ème</td><td>20 pts</td><td>42 pts</td></tr>
+              <tr><td>4ème</td><td>18 pts</td><td>38 pts</td></tr>
+              <tr><td>5ème</td><td>16 pts</td><td>34 pts</td></tr>
+              <tr><td>...</td><td>...</td><td>...</td></tr>
+            </tbody>
+          </table>
 
           <h4>9. COMMUNICATION</h4>
           <p>Communications officielles sur le serveur Discord MEKA SimRacing et retransmission en direct assurée par notre partenaire <strong>WARLOCK Production</strong> sur la chaîne Twitch officielle de l'association.</p>
