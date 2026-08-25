@@ -1047,7 +1047,7 @@
 
   </div>
 
-  <!-- SCRIPTS : PRÉSENCES, TEXTE DISCORD, 7 JOURS ET TABLEAUX PRÉQUALIFS (4 JOURS) -->
+  <!-- SCRIPTS : PRÉSENCES (TEST FORCÉ SANS CONDITION DE 7 JOURS) -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1084,13 +1084,6 @@
     const navVoteBtn = document.getElementById("navVoteBtn");
     const navPaddockCat = document.getElementById("navPaddockCat");
 
-    function hideRestrictedFeatures() {
-      if (navPresenceBtn) navPresenceBtn.style.display = "none";
-      if (navReclamBtn) navReclamBtn.style.display = "none";
-      if (navVoteBtn) navVoteBtn.style.display = "none";
-      if (navPaddockCat) navPaddockCat.style.display = "none";
-    }
-
     function showRestrictedFeatures() {
       if (navPresenceBtn) navPresenceBtn.style.display = "";
       if (navReclamBtn) navReclamBtn.style.display = "";
@@ -1100,10 +1093,7 @@
 
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
-      if (!user) {
-        hideRestrictedFeatures();
-        return;
-      }
+      if (!user) return;
 
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -1117,24 +1107,8 @@
         currentUserName = user.email;
       }
 
-      let isRegistered = false;
-      try {
-        const regDoc = await getDoc(doc(db, "estacup_s10_signups", user.uid));
-        if (regDoc.exists()) {
-          isRegistered = true;
-        }
-      } catch(err) {
-        console.error("Erreur vérification inscription :", err);
-      }
-
-      isRegistered = true; // Forcé à true pour les tests
-
-      if (isRegistered) {
-        showRestrictedFeatures();
-        loadNextRacePresence();
-      } else {
-        hideRestrictedFeatures();
-      }
+      showRestrictedFeatures();
+      loadNextRacePresence();
     });
 
     function loadNextRacePresence() {
@@ -1142,27 +1116,7 @@
       if (!container) return;
 
       const now = new Date();
-      let nextRace = racesList.find(r => r.dateObj >= now);
-      
-      if (!nextRace) {
-        container.innerHTML = `<p class="muted-note">Le championnat est terminé. Merci à tous !</p>`;
-        document.getElementById("prequalStatsContainer").style.display = "none";
-        return;
-      }
-
-      const diffTime = nextRace.dateObj - now;
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-
-      if (diffDays > 7) {
-        container.innerHTML = `
-          <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
-            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">⏳ Aucun formulaire de présence ouvert pour le moment.</p>
-            <p style="font-size: 0.9rem;">Le formulaire pour la <strong>${nextRace.title}</strong> s'ouvrira automatiquement <strong>7 jours avant l'épreuve</strong> (le ${new Date(nextRace.dateObj.getTime() - 7*24*60*60*1000).toLocaleDateString("fr-FR")}).</p>
-          </div>
-        `;
-        document.getElementById("prequalStatsContainer").style.display = "none";
-        return;
-      }
+      let nextRace = racesList.find(r => r.dateObj >= now) || racesList[0];
 
       document.getElementById("prequalStatsContainer").style.display = "block";
 
@@ -1170,6 +1124,7 @@
       const mancheNom = parts[0] || "Manche";
       const circuitNom = parts[1] || "";
 
+      // AFFICHAGE FORCÉ POUR LES TESTS (SANS CONDITION DE 7 JOURS)
       container.innerHTML = `
         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
           <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.8rem;">Présence ${mancheNom} S10 — ${circuitNom.toUpperCase()} — ${nextRace.dateStr} ${nextRace.time}</h4>
@@ -1204,7 +1159,6 @@
         </div>
       `;
 
-      // Synchronisation temps réel des présences et des préqualifications (fusionnées avec les présents sans temps)
       onSnapshot(collection(db, `attendances_${nextRace.id}`), (attendanceSnap) => {
         onSnapshot(collection(db, `prequals_${nextRace.id}`), (prequalSnap) => {
           const presentPilots = new Set();
@@ -1228,7 +1182,6 @@
             }
           });
 
-          // Mise à jour interface présence
           document.getElementById(`count-present-${nextRace.id}`).textContent = `${presentListNames.length}/32`;
           document.getElementById(`count-absent-${nextRace.id}`).textContent = absentListNames.length;
           document.getElementById(`count-tentative-${nextRace.id}`).textContent = tentativeListNames.length;
@@ -1249,7 +1202,6 @@
             });
           }
 
-          // Traitement des Préqualifications et fusion avec les présents
           const pqaData = [];
           const thursdayData = [];
           const fridayData = [];
@@ -1275,21 +1227,18 @@
             if (day.includes("dim") || day.includes("sunday")) sundayData.push(entry);
           });
 
-          // Ajouter les pilotes marqués "Présents" n'ayant pas encore de temps enregistré
           presentPilots.forEach(name => {
             if (!recordedNames.has(name)) {
               pqaData.push({ name, avgTime: "En attente (Pas de temps)", attempts: 0 });
             }
           });
 
-          // Tri du grand tableau général par temps (les "X" ou "En attente" à la fin)
           pqaData.sort((a, b) => {
             if (a.avgTime.includes("En attente") || a.avgTime === "X") return 1;
             if (b.avgTime.includes("En attente") || b.avgTime === "X") return -1;
             return a.avgTime.localeCompare(b.avgTime);
           });
 
-          // Remplissage du Grand Tableau Général
           const generalTbody = document.getElementById("pqaGeneralTableBody");
           if (pqaData.length === 0) {
             generalTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Aucun pilote enregistré</td></tr>`;
@@ -1304,7 +1253,6 @@
             `).join('');
           }
 
-          // Remplissage Tableaux Journaliers (Jeudi, Vendredi, Samedi, Dimanche)
           const fillDayTable = (tbodyId, list) => {
             const tb = document.getElementById(tbodyId);
             if (!list.length) {
