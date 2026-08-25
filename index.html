@@ -210,6 +210,139 @@
       margin-top: 1rem;
       display: block;
     }
+
+    /* --- STYLES SECTION RÉSEAUX SOCIAUX --- */
+    .social-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .social-header h2 {
+      color: #fff;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    .social-header p {
+      color: #94a3b8;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    .social-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .social-card {
+      display: flex;
+      align-items: center;
+      padding: 1.2rem;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 1rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+    
+    .social-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s ease;
+    }
+
+    .social-card:hover {
+      transform: translateY(-5px);
+    }
+    .social-card:hover::before { opacity: 1; }
+
+    /* Couleurs spécifiques par réseau au survol */
+    .sc-discord:hover { border-color: #5865F2; box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3); }
+    .sc-discord::before { background: radial-gradient(circle at right bottom, rgba(88, 101, 242, 0.2), transparent 70%); }
+    
+    .sc-twitch:hover { border-color: #9146FF; box-shadow: 0 8px 20px rgba(145, 70, 255, 0.3); }
+    .sc-twitch::before { background: radial-gradient(circle at right bottom, rgba(145, 70, 255, 0.2), transparent 70%); }
+
+    .sc-youtube:hover { border-color: #FF0000; box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3); }
+    .sc-youtube::before { background: radial-gradient(circle at right bottom, rgba(255, 0, 0, 0.2), transparent 70%); }
+
+    .sc-insta:hover { border-color: #E1306C; box-shadow: 0 8px 20px rgba(225, 48, 108, 0.3); }
+    .sc-insta::before { background: radial-gradient(circle at right bottom, rgba(225, 48, 108, 0.2), transparent 70%); }
+
+    .sc-tiktok:hover { border-color: #00F2FE; box-shadow: 0 8px 20px rgba(0, 242, 254, 0.3); }
+    .sc-tiktok::before { background: radial-gradient(circle at right bottom, rgba(0, 242, 254, 0.15), rgba(254, 44, 85, 0.15)); }
+
+    .sc-icon {
+      width: 45px;
+      height: 45px;
+      margin-right: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .sc-icon img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .sc-text h3 {
+      margin: 0 0 0.2rem 0;
+      color: #f8fafc;
+      font-size: 1.1rem;
+    }
+    .sc-text p {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      line-height: 1.3;
+    }
+
+    /* Zone des posts embarqués (Embeds) */
+    .embed-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .embed-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .embed-card h4 {
+      color: #e2e8f0;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.1rem;
+      border: none;
+    }
+    .embed-wrapper {
+      flex-grow: 1;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      position: relative;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      border: 1px dashed rgba(255,255,255,0.2);
+    }
   </style>
 </head>
 <body>
@@ -292,6 +425,66 @@
       </div>
     </div>
 
+    <!-- NOUVELLE SECTION RÉSEAUX SOCIAUX -->
+    <div class="course-box" id="social-networks">
+      <div class="social-header">
+        <h2 style="border:none;">Rejoignez la Communauté</h2>
+        <p>Vivez la course de l'intérieur, suivez nos lives et ne manquez aucune actualité sur nos réseaux.</p>
+      </div>
+
+      <!-- Grille des boutons stylisés -->
+      <div class="social-grid">
+        <a href="https://discord.gg/jB6yDhQFyw" target="_blank" class="social-card sc-discord">
+          <div class="sc-icon"><img src="logos/discord-logo.png" alt="Discord"></div>
+          <div class="sc-text"><h3>Discord</h3><p>Le paddock et la communauté</p></div>
+        </a>
+        <a href="https://twitch.tv/asso_meka" target="_blank" class="social-card sc-twitch">
+          <div class="sc-icon"><img src="logos/twitch-logo.png" alt="Twitch"></div>
+          <div class="sc-text"><h3>Twitch</h3><p>Diffusions des courses en direct</p></div>
+        </a>
+        <a href="https://www.youtube.com/@asso_meka" target="_blank" class="social-card sc-youtube">
+          <div class="sc-icon"><img src="logos/youtube-logo.png" alt="YouTube"></div>
+          <div class="sc-text"><h3>YouTube</h3><p>Rediffusions et Best-of</p></div>
+        </a>
+        <a href="https://www.instagram.com/team_meka" target="_blank" class="social-card sc-insta">
+          <div class="sc-icon"><img src="logos/insta-logo.png" alt="Instagram"></div>
+          <div class="sc-text"><h3>Instagram</h3><p>Photos et actus de l'asso</p></div>
+        </a>
+        <a href="https://www.tiktok.com/@team_meka" target="_blank" class="social-card sc-tiktok">
+          <div class="sc-icon"><img src="logos/tiktok-logo.png" alt="TikTok"></div>
+          <div class="sc-text"><h3>TikTok</h3><p>Clips, moments forts et fun</p></div>
+        </a>
+      </div>
+
+      <!-- Grille d'affichage dynamique (Embeds) -->
+      <div class="embed-grid">
+        <!-- TIKTOK DYNAMIQUE -->
+        <div class="embed-card">
+          <h4><span style="color:#00F2FE;">🎵</span> Notre profil TikTok</h4>
+          <div class="embed-wrapper" style="background: transparent; border: none;">
+            <!-- Widget TikTok Creator (Affiche automatiquement les dernières vidéos) -->
+            <!-- Assure-toi que data-unique-id et l'URL correspondent bien à ton @ exact sur TikTok -->
+            <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@asso_meka" data-unique-id="asso_meka" data-embed-type="creator" style="max-width: 100%; min-width: 288px; margin: 0 auto;"> 
+              <section><a target="_blank" href="https://www.tiktok.com/@asso_meka">@asso_meka</a></section> 
+            </blockquote> 
+            <script async src="https://www.tiktok.com/embed.js"></script>
+          </div>
+        </div>
+
+        <!-- INSTAGRAM (PLACEHOLDER ELFSIGHT) -->
+        <div class="embed-card">
+          <h4><span style="color:#E1306C;">📸</span> Dernier Post Instagram</h4>
+          <div class="embed-wrapper">
+             <div style="padding: 2rem; text-align: center; color: #94a3b8; font-size: 0.9rem;">
+               <p>🛠️ <strong>Intégration Dynamique</strong></p>
+               <p>Instagram bloque l'affichage automatique des derniers posts via du code simple.</p>
+               <p>Pour afficher un magnifique flux photo ici, crée un widget gratuit sur <strong>elfsight.com</strong> (Instagram Feed) et remplace ce bloc de texte par le code d'intégration fourni par Elfsight !</p>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- BANDEAU DÉFILANT FIXE EN BAS -->
@@ -321,7 +514,7 @@
     });
   </script>
 
-<!-- Script pour dynamiser les statistiques de l'accueil -->
+  <!-- Script pour dynamiser les statistiques de l'accueil -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -340,7 +533,6 @@
 
     async function loadHomeStats() {
       try {
-        // Calcul pour Pilotes inscrits S10 et Équipes Engagées
         const signupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
         let pilotCount = 0;
         const teams = new Set();
@@ -349,8 +541,6 @@
           const data = doc.data();
           if (data.isValidated) {
             pilotCount++;
-            
-            // Extraction des équipes (on ignore les cas sans équipe ou "indépendant")
             const teamName = data.teamName ? data.teamName.trim() : "";
             if (teamName && teamName.toLowerCase() !== "indépendant" && teamName.toLowerCase() !== "sans équipe") {
               teams.add(teamName);
@@ -358,17 +548,14 @@
           }
         });
         
-        // Affichage des vraies valeurs exactes
         document.getElementById("home-pilots-count").textContent = pilotCount;
         document.getElementById("home-teams-count").textContent = teams.size;
 
-        // Nombre réel de comptes créés
         const usersSnap = await getDocs(collection(db, "users"));
         document.getElementById("home-users-count").textContent = usersSnap.size;
         
       } catch (err) {
         console.error("Erreur de chargement des stats de l'accueil :", err);
-        // Fallback visuel avec des tirets uniquement en cas de coupure de base de données
         document.getElementById("home-pilots-count").textContent = "--";
         document.getElementById("home-teams-count").textContent = "--";
         document.getElementById("home-users-count").textContent = "--";
@@ -381,7 +568,6 @@
   <!-- Script pour le compte à rebours de Silverstone -->
   <script>
     function startCountdown() {
-      // Date du prologue : 15 Septembre 2026 à 21h00
       const targetDate = new Date("2026-09-15T21:00:00").getTime();
       
       const elDays = document.getElementById("cd-days");
