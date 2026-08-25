@@ -47,6 +47,8 @@ function injectNavbar() {
           
           <!-- 🟢 NOUVEL ONGLET : NOS PARTENAIRES -->
           <a href="partenaires.html">NOS PARTENAIRES</a>
+
+          <a href="contact.html">NOUS CONTACTER</a>
           
           <!-- 🔴 RÉSEAUX SOCIAUX EN LOGOS -->
           <div style="display: flex; gap: 1.2rem; align-items: center; margin-left: 0.5rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1.5rem;">
