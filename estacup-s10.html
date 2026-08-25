@@ -1114,7 +1114,7 @@
 
   </div>
 
-  <!-- SCRIPTS -->
+  <!-- SCRIPTS : RESTAURATION DE LA CONDITION DE 7 JOURS -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1205,7 +1205,28 @@
       if (!container) return;
 
       const now = new Date();
-      let nextRace = racesList.find(r => r.dateObj >= now) || racesList[0];
+      let nextRace = racesList.find(r => r.dateObj >= now);
+      
+      if (!nextRace) {
+        container.innerHTML = `<p class="muted-note">Le championnat est terminé. Merci à tous !</p>`;
+        document.getElementById("prequalStatsContainer").style.display = "none";
+        return;
+      }
+
+      const diffTime = nextRace.dateObj - now;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+      // RESTAURATION DE LA CONDITION DES 7 JOURS
+      if (diffDays > 7) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">⏳ Aucun formulaire de présence ouvert pour le moment.</p>
+            <p style="font-size: 0.9rem;">Le formulaire pour la <strong>${nextRace.title}</strong> s'ouvrira automatiquement <strong>7 jours avant l'épreuve</strong> (le ${new Date(nextRace.dateObj.getTime() - 7*24*60*60*1000).toLocaleDateString("fr-FR")}).</p>
+          </div>
+        `;
+        document.getElementById("prequalStatsContainer").style.display = "none";
+        return;
+      }
 
       document.getElementById("prequalStatsContainer").style.display = "block";
 
@@ -1273,7 +1294,7 @@
           const pilotSelect = document.getElementById("adminPqPilot");
           if (pilotSelect) {
             const currentSelected = pilotSelect.value;
-            pilotSelect.innerHTML = `<option value="">-- Choisir un pilote présent --</option>`;
+            pilotSelect.innerHTML = `<option value="">-- Choisir un pilote --</option>`;
             presentPilotsMap.forEach((uid, name) => {
               pilotSelect.innerHTML += `<option value="${uid}_${name}">${name}</option>`;
             });
