@@ -594,11 +594,8 @@
       <div id="champ-sub-presence" class="champ-subsection hidden">
         <h3>Formulaire de Présence</h3>
         <div class="course-box">
-          <p class="muted-note" style="margin-bottom: 1.5rem;">
-            Indiquez votre statut pour la prochaine manche. Cliquez une nouvelle fois sur votre choix pour l'annuler si besoin.
-          </p>
           <div id="presenceRacesContainer">
-            <div class="loading-inline"><div class="spinner"></div> Chargement de la prochaine épreuve...</div>
+            <div class="loading-inline"><div class="spinner"></div> Chargement des présences...</div>
           </div>
         </div>
       </div>
@@ -970,7 +967,7 @@
 
   </div>
 
-  <!-- SCRIPTS : VÉRIFICATION D'INSCRIPTION S10 ET PRÉSENCES -->
+  <!-- SCRIPT : VÉRIFICATION D'INSCRIPTION S10 ET PRÉSENCES AUTOMATIQUES (7 JOURS) -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -990,13 +987,13 @@
     const auth = getAuth(app);
 
     const racesList = [
-      { id: "prologue", title: "Prologue - Silverstone", dateStr: "15/09/2026", time: "à 21h05", dateObj: new Date("2026-09-15T21:05:00") },
-      { id: "manche1", title: "Manche 1 - Portimão", dateStr: "29/09/2026", time: "à 21h05", dateObj: new Date("2026-09-29T21:05:00") },
-      { id: "manche2", title: "Manche 2 - Dubaï Autodrome", dateStr: "20/10/2026", time: "à 21h05", dateObj: new Date("2026-10-20T21:05:00") },
-      { id: "manche3", title: "Manche 3 - Indianapolis / Virginia", dateStr: "24/11/2026", time: "à 21h05", dateObj: new Date("2026-11-24T21:05:00") },
-      { id: "manche4", title: "Manche 4 - Brno", dateStr: "08/12/2026", time: "à 21h05", dateObj: new Date("2026-12-08T21:05:00") },
-      { id: "manche5", title: "Manche 5 - Barcelone / Dijon", dateStr: "19/01/2027", time: "à 21h05", dateObj: new Date("2027-01-19T21:05:00") },
-      { id: "manche6", title: "Manche 6 - Fuji Speedway", dateStr: "09/02/2027", time: "à 21h05", dateObj: new Date("2027-02-09T21:05:00") }
+      { id: "prologue", title: "Prologue - Silverstone", dateStr: "15/09/2026", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2026-09-15T20:15:00") },
+      { id: "manche1", title: "Manche 1 - Portimão", dateStr: "29/09/2026", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2026-09-29T20:15:00") },
+      { id: "manche2", title: "Manche 2 - Dubaï Autodrome", dateStr: "20/10/2026", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2026-10-20T20:15:00") },
+      { id: "manche3", title: "Manche 3 - Indianapolis / Virginia", dateStr: "24/11/2026", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2026-11-24T20:15:00") },
+      { id: "manche4", title: "Manche 4 - Brno", dateStr: "08/12/2026", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2026-12-08T20:15:00") },
+      { id: "manche5", title: "Manche 5 - Barcelone / Dijon", dateStr: "19/01/2027", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2027-01-19T20:15:00") },
+      { id: "manche6", title: "Manche 6 - Fuji Speedway", dateStr: "09/02/2027", time: "20h15 (19h45 si 2 splits)", dateObj: new Date("2027-02-09T20:15:00") }
     ];
 
     let currentUser = null;
@@ -1040,7 +1037,6 @@
         currentUserName = user.email;
       }
 
-      // Vérification inscription S10 (dans estacup_s10_signups)
       let isRegistered = false;
       try {
         const regDoc = await getDoc(doc(db, "estacup_s10_signups", user.uid));
@@ -1051,9 +1047,8 @@
         console.error("Erreur vérification inscription :", err);
       }
 
-      // ⚠️ MODE TEST : Si tu es inscrit sur le formulaire mais que le script bloque, 
-      // décommente la ligne ci-dessous ou laisse 'isRegistered || true' pour forcer l'affichage pendant tes tests :
-      isRegistered = true; // Forcé à true pour l'instant pour que tu puisses voir et tester toutes les pages sans attendre !
+      // Si tu souhaites tester l'affichage sans être bloqué par la base de données, la ligne ci-dessous force l'accès :
+      isRegistered = true; 
 
       if (isRegistered) {
         showRestrictedFeatures();
@@ -1068,20 +1063,50 @@
       if (!container) return;
 
       const now = new Date();
+      
+      // Recherche de la prochaine course à venir
       let nextRace = racesList.find(r => r.dateObj >= now);
+      
       if (!nextRace) {
-        nextRace = racesList[racesList.length - 1];
+        container.innerHTML = `<p class="muted-note">Le championnat est terminé. Merci à tous !</p>`;
+        return;
       }
 
+      // Calcul de la différence en jours entre maintenant et la date de la course
+      const diffTime = nextRace.dateObj - now;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+      // Si on est à plus de 7 jours de la course (et que la course n'a pas déjà commencé), on n'affiche rien
+      if (diffDays > 7) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">⏳ Aucun formulaire de présence ouvert pour le moment.</p>
+            <p style="font-size: 0.9rem;">Le formulaire pour la <strong>${nextRace.title}</strong> s'ouvrira automatiquement <strong>7 jours avant l'épreuve</strong> (le ${new Date(nextRace.dateObj.getTime() - 7*24*60*60*1000).toLocaleDateString("fr-FR")}).</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sinon, on affiche le formulaire de présence avec le texte personnalisé type Discord
+      const parts = nextRace.title.split(" - ");
+      const mancheNom = parts[0] || "Manche";
+      const circuitNom = parts[1] || "";
+
       container.innerHTML = `
-        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
-          <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.3rem;">${nextRace.title}</h4>
-          <p class="muted-note" style="margin-bottom: 1rem;">📅 ${nextRace.dateStr} ${nextRace.time}</p>
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
+          <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.8rem;">Présence ${mancheNom} S10 — ${circuitNom.toUpperCase()} — ${nextRace.dateStr} ${nextRace.time}</h4>
           
+          <p style="color: #cbd5e1; line-height: 1.6; margin-bottom: 1rem; font-size: 0.95rem;">
+            Bonjour à tous, nous vous invitons à participer à la <strong>${mancheNom.toLowerCase()}</strong> de cette <strong>ESTACUP Saison 10</strong> à <strong>${circuitNom.toUpperCase()}</strong> ce mardi ${nextRace.dateStr} à <strong>${nextRace.time}</strong> (début du briefing).<br>
+            Veuillez noter que seuls les pilotes inscrits seront pris en compte.<br>
+            Réagissez avec <strong>✅</strong> pour valider votre présence, <strong>❌</strong> si vous êtes absent et <strong>❓</strong> si votre présence est incertaine.<br>
+            Il y a un total de <strong>32 places disponibles</strong> pour cette course en split 1, après cela vous serez placé dans la waitlist et un split 2 pourra être mis en place afin que vous puissiez rouler. (voir le règlement pour les modalités).
+          </p>
+
           <div class="presence-actions" data-race="${nextRace.id}">
-            <button class="btn-presence" data-status="present" onclick="window.togglePresence('${nextRace.id}', 'present')">✅ Présent</button>
-            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ Absent</button>
-            <button class="btn-presence" data-status="tentative" onclick="window.togglePresence('${nextRace.id}', 'tentative')">❓ Incertain</button>
+            <button class="btn-presence" data-status="present" onclick="window.togglePresence('${nextRace.id}', 'present')">✅ PRÉSENT</button>
+            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ ABSENT</button>
+            <button class="btn-presence" data-status="tentative" onclick="window.togglePresence('${nextRace.id}', 'tentative')">❓ INCertain</button>
           </div>
 
           <div class="presence-lists-grid">
