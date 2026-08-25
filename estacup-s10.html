@@ -598,7 +598,7 @@
             <div class="loading-inline"><div class="spinner"></div> Chargement des présences...</div>
           </div>
 
-          <!-- PANEL ADMIN POUR SAISIE DES TEMPS DE PRÉQUALIF -->
+          <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS -->
           <div id="adminPrequalPanel" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
             <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 1rem;">🛠️ Panel Admin : Enregistrer / Modifier un temps</h5>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
@@ -656,10 +656,10 @@
                 <h5 style="color: #38bdf8; margin-bottom: 0.5rem;">Session Jeudi</h5>
                 <table class="reglement-table">
                   <thead>
-                    <tr><th>Nom</th><th>Moyenne</th></tr>
+                    <tr><th>Nom</th><th>Moyenne</th><th id="thDelJeu" style="display:none; width: 30px;"></th></tr>
                   </thead>
                   <tbody id="pqaThursdayBody">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -669,10 +669,10 @@
                 <h5 style="color: #38bdf8; margin-bottom: 0.5rem;">Session Vendredi</h5>
                 <table class="reglement-table">
                   <thead>
-                    <tr><th>Nom</th><th>Moyenne</th></tr>
+                    <tr><th>Nom</th><th>Moyenne</th><th id="thDelVen" style="display:none; width: 30px;"></th></tr>
                   </thead>
                   <tbody id="pqaFridayBody">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -682,10 +682,10 @@
                 <h5 style="color: #38bdf8; margin-bottom: 0.5rem;">Session Samedi</h5>
                 <table class="reglement-table">
                   <thead>
-                    <tr><th>Nom</th><th>Moyenne</th></tr>
+                    <tr><th>Nom</th><th>Moyenne</th><th id="thDelSam" style="display:none; width: 30px;"></th></tr>
                   </thead>
                   <tbody id="pqaSaturdayBody">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -695,10 +695,10 @@
                 <h5 style="color: #38bdf8; margin-bottom: 0.5rem;">Session Dimanche</h5>
                 <table class="reglement-table">
                   <thead>
-                    <tr><th>Nom</th><th>Moyenne</th></tr>
+                    <tr><th>Nom</th><th>Moyenne</th><th id="thDelDim" style="display:none; width: 30px;"></th></tr>
                   </thead>
                   <tbody id="pqaSundayBody">
-                    <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -1076,7 +1076,7 @@
 
   </div>
 
-  <!-- SCRIPTS : PRÉSENCES, PANEL ADMIN INTÉGRÉ, RÈGLES DE CALCUL DES PRÉQUALIFS -->
+  <!-- SCRIPTS : PRÉSENCES, PANEL ADMIN INTÉGRÉ (MODIFICATION / SUPPRESSION ET GESTION DES RÈGLES DE TEMPS) -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1108,6 +1108,7 @@
     let currentUser = null;
     let currentUserName = "Pilote";
     let isAdmin = false;
+    let activeRaceId = null;
 
     const navPresenceBtn = document.getElementById("navPresenceBtn");
     const navReclamBtn = document.getElementById("navReclamBtn");
@@ -1143,7 +1144,6 @@
 
       showRestrictedFeatures();
       
-      // Affichage du panel admin si l'utilisateur est admin
       if (isAdmin && adminPrequalPanel) {
         adminPrequalPanel.style.display = "block";
       }
@@ -1151,7 +1151,6 @@
       loadNextRacePresence();
     });
 
-    // Conversion d'une chaîne de temps en millisecondes pour le tri et comparaison
     function timeToMs(tStr) {
       if (!tStr || tStr === "X" || tStr.includes("En attente")) return Infinity;
       const parts = tStr.split(":");
@@ -1170,6 +1169,7 @@
 
       const now = new Date();
       let nextRace = racesList.find(r => r.dateObj >= now) || racesList[0];
+      activeRaceId = nextRace.id;
 
       document.getElementById("prequalStatsContainer").style.display = "block";
 
@@ -1211,10 +1211,9 @@
         </div>
       `;
 
-      // Synchronisation temps réel des présences et des préqualifications
       onSnapshot(collection(db, `attendances_${nextRace.id}`), (attendanceSnap) => {
         onSnapshot(collection(db, `prequals_${nextRace.id}`), (prequalSnap) => {
-          const presentPilotsMap = new Map(); // nom -> uid
+          const presentPilotsMap = new Map();
           const presentListNames = [];
           const absentListNames = [];
           const tentativeListNames = [];
@@ -1235,7 +1234,6 @@
             }
           });
 
-          // Remplir le menu déroulant Admin avec les pilotes présents
           const pilotSelect = document.getElementById("adminPqPilot");
           if (pilotSelect) {
             const currentSelected = pilotSelect.value;
@@ -1246,7 +1244,6 @@
             pilotSelect.value = currentSelected;
           }
 
-          // Mise à jour interface présence
           document.getElementById(`count-present-${nextRace.id}`).textContent = `${presentListNames.length}/32`;
           document.getElementById(`count-absent-${nextRace.id}`).textContent = absentListNames.length;
           document.getElementById(`count-tentative-${nextRace.id}`).textContent = tentativeListNames.length;
@@ -1267,18 +1264,23 @@
             });
           }
 
-          // Groupement des préqualifications par nom de pilote
+          // Organiser les préqualifications par pilote
           const prequalsByName = {};
+          const prequalsDocsMeta = {}; // pour stocker l'ID du document Firestore par session
+
           prequalSnap.forEach(docSnap => {
             const d = docSnap.data();
             const name = d.name;
             if (!name) return;
             if (!prequalsByName[name]) prequalsByName[name] = [];
-            prequalsByName[name].push({
+            
+            const sessionObj = {
+              docId: docSnap.id,
               day: d.day,
               avgTime: d.avgTime || "X",
               timestamp: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : new Date(0)
-            });
+            };
+            prequalsByName[name].push(sessionObj);
           });
 
           // Tableaux journaliers
@@ -1292,7 +1294,8 @@
             const name = d.name;
             const avgTime = d.avgTime || "X";
             const day = (d.day || "").toLowerCase();
-            const item = { name, avgTime };
+            const docId = docSnap.id;
+            const item = { docId, name, avgTime };
 
             if (day.includes("jeu")) thursdayData.push(item);
             else if (day.includes("ven")) fridayData.push(item);
@@ -1300,9 +1303,7 @@
             else if (day.includes("dim")) sundayData.push(item);
           });
 
-          // Calcul du classement général avec application des règles :
-          // 1. Si 3 sessions ou plus -> ignorer la dernière session en date
-          // 2. Prendre la meilleure (plus petite) des moyennes possibles
+          // Calcul classement général avec les règles (ignorer la dernière session si 3 ou plus, prendre la meilleure)
           const pqaData = [];
           presentPilotsMap.forEach((uid, pilotName) => {
             const sessions = prequalsByName[pilotName] || [];
@@ -1316,13 +1317,12 @@
                 attempts: 0
               });
             } else {
-              // Tri chronologique
+              // Tri chronologique croissant
               sessions.sort((a, b) => a.timestamp - b.timestamp);
 
-              // Si 3 sessions ou plus, on ignore la dernière en date (on prend les 2 premières)
+              // Si 3 sessions ou plus, on ignore la dernière en date (on garde les 2 premières)
               const validSessions = sessions.length >= 3 ? sessions.slice(0, 2) : sessions;
 
-              // Trouver la meilleure (plus petite) moyenne parmi les sessions valides
               let bestTime = "X";
               let bestMs = Infinity;
 
@@ -1343,10 +1343,9 @@
             }
           });
 
-          // Tri du grand tableau général par performance
           pqaData.sort((a, b) => a.sortVal - b.sortVal);
 
-          // Remplissage du Grand Tableau Général
+          // Remplissage Grand Tableau Général
           const generalTbody = document.getElementById("pqaGeneralTableBody");
           if (pqaData.length === 0) {
             generalTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Aucun pilote présent</td></tr>`;
@@ -1361,30 +1360,37 @@
             `).join('');
           }
 
-          // Remplissage des Tableaux Journaliers
-          const fillDayTable = (tbodyId, list) => {
+          // Remplissage Tableaux Journaliers avec option de suppression pour l'admin
+          const fillDayTable = (tbodyId, thDelId, list) => {
             const tb = document.getElementById(tbodyId);
+            const thDel = document.getElementById(thDelId);
+
+            if (isAdmin) {
+              if (thDel) thDel.style.display = "";
+            }
+
             if (!list.length) {
-              tb.innerHTML = `<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
+              tb.innerHTML = `<tr><td colspan="${isAdmin ? 3 : 2}" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
             } else {
               list.sort((a, b) => timeToMs(a.avgTime) - timeToMs(b.avgTime));
               tb.innerHTML = list.map(item => `
                 <tr>
                   <td>${item.name}</td>
                   <td><span style="color: ${item.avgTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${item.avgTime}</span></td>
+                  ${isAdmin ? `<td style="text-align: center;"><button onclick="window.deletePrequalSession('${nextRace.id}', '${item.docId}')" title="Supprimer ce temps" style="background: transparent; border: none; cursor: pointer; color: #f87171; font-size: 1rem;">❌</button></td>` : ''}
                 </tr>
               `).join('');
             }
           };
 
-          fillDayTable("pqaThursdayBody", thursdayData);
-          fillDayTable("pqaFridayBody", fridayData);
-          fillDayTable("pqaSaturdayBody", saturdayData);
-          fillDayTable("pqaSundayBody", sundayData);
+          fillDayTable("pqaThursdayBody", "thDelJeu", thursdayData);
+          fillDayTable("pqaFridayBody", "thDelVen", fridayData);
+          fillDayTable("pqaSaturdayBody", "thDelSam", saturdayData);
+          fillDayTable("pqaSundayBody", "thDelDim", sundayData);
         });
       });
 
-      // Action du bouton d'enregistrement Admin
+      // Action Bouton Enregistrement Admin (Empêche les doublons pour la même session)
       const submitBtn = document.getElementById("adminPqSubmitBtn");
       if (submitBtn) {
         submitBtn.onclick = async () => {
@@ -1403,7 +1409,7 @@
             submitBtn.disabled = true;
             submitBtn.textContent = "...";
 
-            // ID unique par pilote et par jour pour éviter les doublons et permettre la mise à jour
+            // ID unique par pilote et par session (ex: uid_Jeudi) pour écraser/mettre à jour s'il existe déjà
             const docId = `${pilotUid}_${daySelect}`;
             await setDoc(doc(db, `prequals_${nextRace.id}`, docId), {
               userId: pilotUid,
@@ -1411,7 +1417,7 @@
               day: daySelect,
               avgTime: timeInput,
               timestamp: new Date()
-            });
+            }, { merge: true });
 
             alert(`✅ Temps de ${pilotName} (${daySelect}) enregistré avec succès !`);
             document.getElementById("adminPqTime").value = "";
@@ -1425,6 +1431,19 @@
         };
       }
     }
+
+    // Fonction globale pour supprimer un temps enregistré par erreur
+    window.deletePrequalSession = async function(raceId, docId) {
+      if (!isAdmin) return;
+      if (confirm("Voulez-vous vraiment supprimer ce temps de préqualification ?")) {
+        try {
+          await deleteDoc(doc(db, `prequals_${raceId}`, docId));
+        } catch (err) {
+          console.error("Erreur suppression préqualif:", err);
+          alert("Erreur lors de la suppression.");
+        }
+      }
+    };
 
     window.togglePresence = async function(raceId, status) {
       if (!currentUser) {
