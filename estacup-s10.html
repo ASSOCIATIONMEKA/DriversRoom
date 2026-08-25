@@ -251,6 +251,54 @@
       align-items: center;
       gap: 6px;
     }
+
+    /* --- STYLES DU FORMULAIRE DE PRÉSENCE --- */
+    .presence-race-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .presence-actions {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .btn-presence {
+      flex: 1;
+      min-width: 120px;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(30, 41, 59, 0.7);
+      color: #e2e8f0;
+      transition: all 0.2s;
+    }
+    .btn-presence:hover { transform: translateY(-2px); }
+    .btn-presence.active-present { background: #10b981; border-color: #059669; color: white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+    .btn-presence.active-absent { background: #ef4444; border-color: #dc2626; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+    .btn-presence.active-tentative { background: #f59e0b; border-color: #d97706; color: white; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+    
+    .presence-lists-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    .presence-list-box {
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .presence-list-box h5 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1rem; display: flex; justify-content: space-between; }
+    .presence-list-box ul { padding-left: 1.2rem; margin: 0; color: #94a3b8; }
+    .presence-list-box li { list-style-type: disc; margin-bottom: 0.2rem; }
   </style>
 </head>
 <body>
@@ -338,6 +386,7 @@
         
         <nav id="cat-admin" class="subcat-pills champ-cat-container hidden">
           <button data-sub="reglement" class="champ-sub-btn">Règlement Officiel</button>
+          <button data-sub="presence" class="champ-sub-btn">Présences Courses</button>
           <button data-sub="inscription" class="champ-sub-btn">Inscription</button>
           <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
           <button data-sub="reclamations" class="champ-sub-btn">Réclamations</button>
@@ -541,6 +590,168 @@
         </div>
       </div>
 
+      <!-- NOUVELLE SECTION : PRÉSENCES COURSES -->
+      <div id="champ-sub-presence" class="champ-subsection hidden">
+        <h3>Formulaire de Présence - ESTACUP S10</h3>
+        <p class="muted-note" style="margin-bottom: 1.5rem;">
+          Veuillez indiquer votre présence pour chaque manche du championnat. Seuls les pilotes inscrits et présents seront pris en compte pour la constitution des grilles et des splits.
+        </p>
+        <div id="presenceRacesContainer">
+          <div class="loading-inline"><div class="spinner"></div> Chargement des épreuves...</div>
+        </div>
+      </div>
+
+      <!-- SCRIPT POUR GÉRER LES PRÉSENCES EN TEMPS RÉEL (FIREBASE) -->
+      <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, getDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
+          authDomain: "estacupbymeka.firebaseapp.com",
+          projectId: "estacupbymeka",
+          storageBucket: "estacupbymeka.appspot.com", 
+          messagingSenderId: "1065406380441",
+          appId: "1:1065406380441:web:55005f7d29290040c13b08"
+        };
+
+        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const racesList = [
+          { id: "prologue", title: "Prologue - Silverstone", date: "15/09/2026 à 21h05" },
+          { id: "manche1", title: "Manche 1 - Portimão", date: "29/09/2026 à 21h05" },
+          { id: "manche2", title: "Manche 2 - Dubaï Autodrome", date: "20/10/2026 à 21h05" },
+          { id: "manche3", title: "Manche 3 - Indianapolis / Virginia", date: "24/11/2026 à 21h05" },
+          { id: "manche4", title: "Manche 4 - Brno", date: "08/12/2026 à 21h05" },
+          { id: "manche5", title: "Manche 5 - Barcelone / Dijon", date: "19/01/2027 à 21h05" },
+          { id: "manche6", title: "Manche 6 - Fuji Speedway", date: "09/02/2027 à 21h05" }
+        ];
+
+        let currentUser = null;
+        let currentUserName = "Pilote";
+
+        auth.onAuthStateChanged(async (user) => {
+          currentUser = user;
+          if (user) {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              currentUserName = data.name || data.pseudo || data.email || "Pilote";
+            } else {
+              currentUserName = user.email || "Pilote";
+            }
+          }
+          loadPresenceModule();
+        });
+
+        function loadPresenceModule() {
+          const container = document.getElementById("presenceRacesContainer");
+          if (!container) return;
+
+          container.innerHTML = "";
+
+          racesList.forEach(race => {
+            const card = document.createElement("div");
+            card.className = "presence-race-card";
+            card.innerHTML = `
+              <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.3rem;">${race.title}</h4>
+              <p class="muted-note" style="margin-bottom: 1rem;">📅 ${race.date}</p>
+              
+              <div class="presence-actions" data-race="${race.id}">
+                <button class="btn-presence" data-status="present" onclick="window.setPresence('${race.id}', 'present')">✅ Présent</button>
+                <button class="btn-presence" data-status="absent" onclick="window.setPresence('${race.id}', 'absent')">❌ Absent</button>
+                <button class="btn-presence" data-status="tentative" onclick="window.setPresence('${race.id}', 'tentative')">❓ Incertain</button>
+              </div>
+
+              <div class="presence-lists-grid">
+                <div class="presence-list-box">
+                  <h5><span>✅ Acceptés</span> <span id="count-present-${race.id}">0/32</span></h5>
+                  <ul id="list-present-${race.id}"><li>Aucun</li></ul>
+                </div>
+                <div class="presence-list-box">
+                  <h5><span>❌ Refusés</span> <span id="count-absent-${race.id}">0</span></h5>
+                  <ul id="list-absent-${race.id}"><li>Aucun</li></ul>
+                </div>
+                <div class="presence-list-box">
+                  <h5><span>❓ Incertains</span> <span id="count-tentative-${race.id}">0</span></h5>
+                  <ul id="list-tentative-${race.id}"><li>Aucun</li></ul>
+                </div>
+              </div>
+            `;
+            container.appendChild(card);
+
+            // Écoute en temps réel de la collection des présences pour cette course
+            onSnapshot(collection(db, `attendances_${race.id}`), (snapshot) => {
+              const presentList = [];
+              const absentList = [];
+              const tentativeList = [];
+
+              let userStatus = null;
+
+              snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (currentUser && docSnap.id === currentUser.uid) {
+                  userStatus = data.status;
+                }
+
+                if (data.status === "present") presentList.push(data.userName);
+                else if (data.status === "absent") absentList.push(data.userName);
+                else if (data.status === "tentative") tentativeList.push(data.userName);
+              });
+
+              // Mise à jour des compteurs
+              document.getElementById(`count-present-${race.id}`).textContent = `${presentList.length}/32`;
+              document.getElementById(`count-absent-${race.id}`).textContent = absentList.length;
+              document.getElementById(`count-tentative-${race.id}`).textContent = tentativeList.length;
+
+              // Mise à jour des listes de noms
+              document.getElementById(`list-present-${race.id}`).innerHTML = presentList.length ? presentList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+              document.getElementById(`list-absent-${race.id}`).innerHTML = absentList.length ? absentList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+              document.getElementById(`list-tentative-${race.id}`).innerHTML = tentativeList.length ? tentativeList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+
+              // Mise à jour visuelle des boutons actifs pour l'utilisateur
+              const actionBox = container.querySelector(`.presence-actions[data-race="${race.id}"]`);
+              if (actionBox) {
+                actionBox.querySelectorAll('.btn-presence').forEach(btn => {
+                  btn.className = "btn-presence";
+                  if (userStatus && btn.getAttribute('data-status') === userStatus) {
+                    if (userStatus === 'present') btn.classList.add('active-present');
+                    if (userStatus === 'absent') btn.classList.add('active-absent');
+                    if (userStatus === 'tentative') btn.classList.add('active-tentative');
+                  }
+                });
+              }
+            });
+          });
+        }
+
+        // Fonction globale pour enregistrer le choix de présence
+        window.setPresence = async function(raceId, status) {
+          if (!currentUser) {
+            alert("Vous devez être connecté pour indiquer votre présence.");
+            window.location.href = "login.html";
+            return;
+          }
+
+          try {
+            const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
+            await setDoc(docRef, {
+              userId: currentUser.uid,
+              userName: currentUserName,
+              status: status,
+              timestamp: new Date()
+            });
+          } catch (err) {
+            console.error("Erreur lors de l'enregistrement de la présence :", err);
+            alert("Une erreur est survenue. Veuillez réessayer.");
+          }
+        };
+      </script>
+      </div>
+
       <!-- INSCRIPTION -->
       <div id="champ-sub-inscription" class="champ-subsection hidden">
         <h3>Inscription ESTACUP</h3>
@@ -645,7 +856,6 @@
                   maxZoom: 6
                 });
 
-                // Utilisation d'un fond de tuiles CartoDB standard sans paramètres superflus
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                   attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                   subdomains: 'abcd',
@@ -676,7 +886,6 @@
                 });
               }
 
-              // Double invalidation avec délai pour forcer l'affichage des tuiles sur les écrans de toutes tailles
               setTimeout(() => {
                 estacupMapInstance.invalidateSize();
               }, 150);
@@ -686,14 +895,12 @@
             }
 
             document.addEventListener("DOMContentLoaded", () => {
-              // Déclencheur sur le sous-menu "Les circuits"
               document.querySelectorAll('[data-sub="circuits"]').forEach(btn => {
                 btn.addEventListener("click", () => {
                   setTimeout(initEstacupMap, 200);
                 });
               });
 
-              // Si l'onglet est déjà ouvert au chargement
               const section = document.getElementById("champ-sub-circuits");
               if (section && !section.classList.contains("hidden")) {
                 initEstacupMap();
