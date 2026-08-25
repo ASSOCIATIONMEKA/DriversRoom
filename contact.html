@@ -108,49 +108,15 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
     }
-
-    /* MESSAGES ALERTE (Succès / Erreur) */
-    .msg-box {
-      padding: 1rem 1.5rem;
-      border-radius: 0.5rem;
-      margin-bottom: 1.5rem;
-      font-weight: 600;
-      text-align: center;
-      display: none;
-    }
-    .msg-success {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid #10b981;
-      color: #34d399;
-    }
-    .msg-error {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid #ef4444;
-      color: #f87171;
-    }
-
-    /* ANIMATION BOUTON FORMULAIRE */
-    .btn-submit {
+    
+    /* CONTENEUR DE LA CARTE */
+    .map-container {
       width: 100%;
-      background: linear-gradient(135deg, #6366F1, #8B5CF6);
-      color: white;
-      padding: 1rem;
-      font-size: 1.1rem;
-      font-weight: bold;
-      border: none;
+      height: 400px;
       border-radius: 0.75rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .btn-submit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-    }
-    .btn-submit:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #000;
     }
   </style>
 </head>
@@ -162,7 +128,7 @@
 
   <header class="hero-section">
     <h1>Nous Contacter</h1>
-    <p>Une proposition de partenariat, une question sur l'ESTACUP ou un problème technique ? Écrivez-nous directement.</p>
+    <p>Une proposition de partenariat, une question sur l'ESTACUP ou envie de nous rencontrer ? Voici comment nous joindre.</p>
   </header>
 
   <main class="portal-content">
@@ -172,7 +138,7 @@
       <!-- COLONNE GAUCHE : INFORMATIONS -->
       <div class="course-box">
         <h2>Nos Informations</h2>
-        <p style="margin-bottom: 2rem;">L'association MEKA SimRacing est gérée par des étudiants passionnés. Nous nous efforçons de vous répondre dans les plus brefs délais.</p>
+        <p style="margin-bottom: 2rem;">L'association MEKA SimRacing est gérée par des étudiants passionnés. Nous sommes disponibles sur ces différents canaux.</p>
 
         <div class="info-item">
           <div class="info-icon">📧</div>
@@ -195,43 +161,28 @@
           <div class="info-icon">📍</div>
           <div class="info-text">
             <h3>Localisation</h3>
-            <p>École ESTACA<br>Campus Laval 53000</p>
+            <p>École ESTACA<br>12 Bd Henri Becquerel<br>53000 Laval</p>
           </div>
         </div>
       </div>
 
-      <!-- COLONNE DROITE : FORMULAIRE -->
+      <!-- COLONNE DROITE : GOOGLE MAPS -->
       <div class="course-box">
-        <h2>Envoyer un message</h2>
+        <h2>Nous trouver</h2>
+        <p style="margin-bottom: 1.5rem;">Notre simulateur et nos locaux se trouvent directement sur le campus ESTACA de Laval.</p>
         
-        <div id="contactMsg" class="msg-box"></div>
-
-        <form id="contactForm">
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 200px;">
-              <label for="contactName">Nom / Pseudo</label>
-              <input type="text" id="contactName" placeholder="Votre nom" required>
-            </div>
-            <div style="flex: 1; min-width: 200px;">
-              <label for="contactEmail">Adresse Email</label>
-              <input type="email" id="contactEmail" placeholder="votre@email.com" required>
-            </div>
-          </div>
-
-          <label for="contactSubject">Sujet de votre demande</label>
-          <select id="contactSubject" required>
-            <option value="" disabled selected>-- Sélectionnez un sujet --</option>
-            <option value="Partenariat / Sponsoring">🤝 Partenariat / Sponsoring</option>
-            <option value="Question ESTACUP">🏎️ Question sur l'ESTACUP</option>
-            <option value="Problème Technique / Site">💻 Problème technique sur le site</option>
-            <option value="Autre demande">❓ Autre demande</option>
-          </select>
-
-          <label for="contactMessage">Votre Message</label>
-          <textarea id="contactMessage" placeholder="Écrivez votre message ici..." rows="6" required></textarea>
-
-          <button type="submit" id="btnSubmitContact" class="btn-submit">📨 Envoyer le message</button>
-        </form>
+        <div class="map-container">
+          <iframe 
+            src="https://maps.google.com/maps?q=12%20Bd%20Henri%20Becquerel,%2053000%20Laval&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+            width="100%" 
+            height="100%" 
+            frameborder="0" 
+            style="border:0;" 
+            allowfullscreen="" 
+            aria-hidden="false" 
+            tabindex="0">
+          </iframe>
+        </div>
       </div>
 
     </div>
@@ -261,66 +212,6 @@
       for (let i = 0; i < 3; i++) {
         const clone = blockToClone.cloneNode(true);
         track.appendChild(clone);
-      }
-    });
-  </script>
-
-  <!-- SCRIPT FIREBASE POUR L'ENVOI DU FORMULAIRE -->
-  <script type="module">
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
-      authDomain: "estacupbymeka.firebaseapp.com",
-      projectId: "estacupbymeka",
-      storageBucket: "estacupbymeka.appspot.com", 
-      messagingSenderId: "1065406380441",
-      appId: "1:1065406380441:web:55005f7d29290040c13b08"
-    };
-
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    const db = getFirestore(app);
-
-    const form = document.getElementById("contactForm");
-    const msgBox = document.getElementById("contactMsg");
-    const btnSubmit = document.getElementById("btnSubmitContact");
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      btnSubmit.disabled = true;
-      btnSubmit.textContent = "⏳ Envoi en cours...";
-      msgBox.style.display = "none";
-
-      const name = document.getElementById("contactName").value.trim();
-      const email = document.getElementById("contactEmail").value.trim();
-      const subject = document.getElementById("contactSubject").value;
-      const message = document.getElementById("contactMessage").value.trim();
-
-      try {
-        await addDoc(collection(db, "contact_messages"), {
-          name: name,
-          email: email,
-          subject: subject,
-          message: message,
-          timestamp: new Date(),
-          status: "Nouveau"
-        });
-
-        msgBox.textContent = "✅ Votre message a été envoyé avec succès ! Nous vous répondrons très vite.";
-        msgBox.className = "msg-box msg-success";
-        msgBox.style.display = "block";
-        form.reset(); 
-
-      } catch (error) {
-        console.error("Erreur lors de l'envoi du message :", error);
-        msgBox.textContent = "❌ Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous contacter via Discord.";
-        msgBox.className = "msg-box msg-error";
-        msgBox.style.display = "block";
-      } finally {
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = "📨 Envoyer le message";
       }
     });
   </script>
