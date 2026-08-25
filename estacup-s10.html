@@ -377,7 +377,7 @@
       <nav class="category-tabs" id="champCategoryNav">
         <button data-cat="admin">📋 Administratif</button>
         <button data-cat="piste">🏎️ La Piste</button>
-        <button data-cat="paddock">💾 Paddock & Mods</button>
+        <button data-cat="paddock" id="navPaddockCat">💾 Paddock & Mods</button>
         <button data-cat="resultats">📊 Résultats</button>
       </nav>
 
@@ -386,16 +386,16 @@
         
         <nav id="cat-admin" class="subcat-pills champ-cat-container hidden">
           <button data-sub="reglement" class="champ-sub-btn">Règlement Officiel</button>
-          <button data-sub="presence" class="champ-sub-btn">Présences Courses</button>
+          <button data-sub="presence" class="champ-sub-btn" id="navPresenceBtn">Présences Courses</button>
           <button data-sub="inscription" class="champ-sub-btn">Inscription</button>
           <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
-          <button data-sub="reclamations" class="champ-sub-btn">Réclamations</button>
+          <button data-sub="reclamations" class="champ-sub-btn" id="navReclamBtn">Réclamations</button>
         </nav>
 
         <nav id="cat-piste" class="subcat-pills champ-cat-container hidden">
           <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
           <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
-          <button data-sub="votecircuit" class="champ-sub-btn">Votes des circuits</button>
+          <button data-sub="votecircuit" class="champ-sub-btn" id="navVoteBtn">Votes des circuits</button>
         </nav>
 
         <nav id="cat-paddock" class="subcat-pills champ-cat-container hidden">
@@ -590,7 +590,7 @@
         </div>
       </div>
 
-      <!-- PRÉSENCES COURSES (DANS UN COURSE-BOX POUR GARANTIR LE FOND) -->
+      <!-- PRÉSENCES COURSES -->
       <div id="champ-sub-presence" class="champ-subsection hidden">
         <h3>Formulaire de Présence</h3>
         <div class="course-box">
@@ -635,10 +635,10 @@
       <!-- RÉCLAMATIONS -->
       <div id="champ-sub-reclamations" class="champ-subsection hidden">
         <h3>Dépôt de Réclamation</h3>
-        <p class="muted-note" style="margin-bottom:10px;">
-          Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
-        </p>
         <div class="course-box">
+          <p class="muted-note" style="margin-bottom:10px;">
+            Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
+          </p>
           <label for="reclamDate">Date de la course :</label>
           <input id="reclamDate" type="date" />
           <label for="reclamSplit">Split :</label>
@@ -656,7 +656,7 @@
         <div id="reclamHistory" style="margin-top:20px;"></div>
       </div>
 
-      <!-- LE VÉHICULE (TAILLE DE LA VOITURE CORRIGÉE) -->
+      <!-- LE VÉHICULE (TAILLE CORRIGÉE) -->
       <div id="champ-sub-vehicule" class="champ-subsection hidden">
         <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
         <div class="course-box" style="text-align: center;">
@@ -960,7 +960,7 @@
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
           <button id="btnJoinServer" style="width: auto; opacity: 0.5; cursor: not-allowed;" disabled>🚀 Serveur fermé</button>
           
-          <!-- BOUTON LIVE TIMING HARMONISÉ -->
+          <!-- BOUTON LIVE TIMING -->
           <a id="btnLiveTiming" href="#" target="_blank" style="display: none; text-decoration: none;">
             <button style="width: auto; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md); padding: 1rem 2rem; border-radius: var(--radius-lg); cursor: pointer; font-weight: 600; text-transform: uppercase;">📊 Voir le Live Timing</button>
           </a>
@@ -970,11 +970,11 @@
 
   </div>
 
-  <!-- SCRIPT POUR GÉRER LES PRÉSENCES (AVEC PRÉNOM NOM ET TOGGLE) -->
+  <!-- SCRIPTS : VÉRIFICATION D'INSCRIPTION S10 ET PRÉSENCES -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
@@ -1002,9 +1002,35 @@
     let currentUser = null;
     let currentUserName = "Pilote";
 
+    // Éléments à restreindre si non inscrit
+    const navPresenceBtn = document.getElementById("navPresenceBtn");
+    const navReclamBtn = document.getElementById("navReclamBtn");
+    const navVoteBtn = document.getElementById("navVoteBtn");
+    const navPaddockCat = document.getElementById("navPaddockCat");
+
+    function hideRestrictedFeatures() {
+      if (navPresenceBtn) navPresenceBtn.style.display = "none";
+      if (navReclamBtn) navReclamBtn.style.display = "none";
+      if (navVoteBtn) navVoteBtn.style.display = "none";
+      if (navPaddockCat) navPaddockCat.style.display = "none";
+    }
+
+    function showRestrictedFeatures() {
+      if (navPresenceBtn) navPresenceBtn.style.display = "";
+      if (navReclamBtn) navReclamBtn.style.display = "";
+      if (navVoteBtn) navVoteBtn.style.display = "";
+      if (navPaddockCat) navPaddockCat.style.display = "";
+    }
+
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
-      if (user) {
+      if (!user) {
+        hideRestrictedFeatures();
+        return;
+      }
+
+      // 1. Récupérer le Prénom NOM du pilote
+      try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
@@ -1012,8 +1038,34 @@
         } else {
           currentUserName = user.email;
         }
+      } catch(e) {
+        currentUserName = user.email;
       }
-      loadNextRacePresence();
+
+      // 2. Vérifier si le pilote est inscrit à la Saison 10
+      // On vérifie dans la collection des inscriptions (ex: 'estacup_registrations' ou en interrogeant les documents)
+      let isRegistered = false;
+      try {
+        // Vérification directe par ID utilisateur
+        const regDoc = await getDoc(doc(db, "estacup_registrations", user.uid));
+        if (regDoc.exists()) {
+          isRegistered = true;
+        } else {
+          // Vérification par requête sur le champ userId
+          const q = query(collection(db, "estacup_registrations"), where("userId", "==", user.uid));
+          const snap = await getDocs(q);
+          if (!snap.empty) isRegistered = true;
+        }
+      } catch(err) {
+        console.error("Erreur vérification inscription :", err);
+      }
+
+      if (isRegistered) {
+        showRestrictedFeatures();
+        loadNextRacePresence();
+      } else {
+        hideRestrictedFeatures();
+      }
     });
 
     function loadNextRacePresence() {
@@ -1027,7 +1079,7 @@
       }
 
       container.innerHTML = `
-        <div class="presence-race-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
           <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.3rem;">${nextRace.title}</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">📅 ${nextRace.dateStr} ${nextRace.time}</p>
           
