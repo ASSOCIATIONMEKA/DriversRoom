@@ -149,29 +149,91 @@
     .reglement-content ul { padding-left: 1.5rem; margin-bottom: 1rem; color: #CBD5E1; list-style-type: disc; }
     .reglement-content li { margin-bottom: 0.3rem; background: none; border: none; padding: 0; }
 
-    /* --- NOUVEAU DESIGN MODERNE : WORLD TOUR MAP & CARDS --- */
+    /* --- CARTE DU MONDE STYLISÉE (TACTICAL WORLD MAP) --- */
+    .tactical-map-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-bottom: 2rem;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .world-map-svg {
+      width: 90%;
+      height: 85%;
+      opacity: 0.25;
+      fill: #38bdf8;
+    }
+    /* Points épinglés sur la carte aux emplacements approximatifs des circuits */
+    .map-pin {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .map-pin:hover {
+      transform: scale(1.2);
+      z-index: 10;
+    }
+    .pin-dot {
+      width: 12px;
+      height: 12px;
+      background-color: #38bdf8;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8;
+      animation: pulse-pin 2s infinite;
+    }
+    .pin-dot.vote-pin {
+      background-color: #f59e0b;
+      box-shadow: 0 0 10px #f59e0b, 0 0 20px #f59e0b;
+    }
+    .pin-label {
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      font-weight: 600;
+    }
+    @keyframes pulse-pin {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    /* Grille des cartes de circuits en dessous */
     .world-tour-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-top: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
     }
     .circuit-badge-card {
       background: rgba(15, 23, 42, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
-      padding: 1.25rem;
+      padding: 1.2rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      position: relative;
-      overflow: hidden;
+      gap: 0.4rem;
       transition: all 0.3s ease;
     }
     .circuit-badge-card:hover {
-      transform: translateY(-4px);
+      transform: translateY(-3px);
       border-color: var(--accent-primary);
-      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
     }
     .circuit-badge-card.vote-card-item {
       border-color: rgba(245, 158, 11, 0.4);
@@ -181,7 +243,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #94a3b8;
       font-weight: 600;
       text-transform: uppercase;
@@ -189,14 +251,14 @@
     .circuit-name-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 1.2rem;
+      gap: 8px;
+      font-size: 1.1rem;
       font-weight: 800;
       color: #fff;
-      margin: 0.25rem 0;
+      margin: 0.2rem 0;
     }
     .circuit-country {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #cbd5e1;
     }
   </style>
@@ -567,13 +629,64 @@
         </div>
       </div>
 
-      <!-- LES CIRCUITS - REMPLACÉ PAR UN DESIGN MODERNE DE ROADMAP MONDIALE -->
+      <!-- LES CIRCUITS - CARTE GÉOGRAPHIQUE TACTICAL DESIGN + CARTES -->
       <div id="champ-sub-circuits" class="champ-subsection hidden">
         <h3>Le Calendrier de la Saison 10</h3>
         <div class="course-box" style="padding: 2rem;">
           <p style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem; text-align: center;">Un tour du monde sur les tracés les plus exigeants de la planète.</p>
-          <p class="muted-note" style="margin-bottom: 2rem; text-align: center;">Découvrez les étapes officielles de cette dixième édition de l'ESTACUP.</p>
+          <p class="muted-note" style="margin-bottom: 1.5rem; text-align: center;">Visualisez l'implantation géographique des manches de la saison.</p>
           
+          <!-- Carte du monde tactique stylisée avec pins géographiques -->
+          <div class="tactical-map-container">
+            <!-- SVG épuré représentant les continents du monde en arrière-plan sombre -->
+            <svg class="world-map-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+              <path d="M150,120 Q180,100 220,130 T280,160 Q260,200 210,190 Z" /> <!-- Amérique du Nord -->
+              <path d="M280,260 Q320,280 300,350 T250,420 Q230,350 260,280 Z" /> <!-- Amérique du Sud -->
+              <path d="M480,90 Q540,80 580,120 T520,200 Q460,180 480,90 Z" /> <!-- Europe -->
+              <path d="M470,220 Q550,210 570,300 T500,420 Q440,380 470,220 Z" /> <!-- Afrique -->
+              <path d="M590,90 Q750,70 850,130 T900,250 Q750,280 620,200 Z" /> <!-- Asie / Moyen-Orient -->
+              <path d="M780,330 Q880,320 890,400 T800,430 Z" /> <!-- Océanie / Japon -->
+            </svg>
+
+            <!-- Épingles clignotantes positionnées approximativement -->
+            <!-- Silverstone (UK) -->
+            <div class="map-pin" style="top: 32%; left: 49%;">
+              <div class="pin-dot"></div>
+              <div class="pin-label">Silverstone</div>
+            </div>
+            <!-- Portimão (Portugal) -->
+            <div class="map-pin" style="top: 44%; left: 46%;">
+              <div class="pin-dot"></div>
+              <div class="pin-label">Portimão</div>
+            </div>
+            <!-- Dubaï Autodrome (UAE) -->
+            <div class="map-pin" style="top: 48%; left: 63%;">
+              <div class="pin-dot"></div>
+              <div class="pin-label">Dubaï</div>
+            </div>
+            <!-- Indianapolis / Virginia (USA) -->
+            <div class="map-pin" style="top: 38%; left: 22%;">
+              <div class="pin-dot vote-pin"></div>
+              <div class="pin-label">USA (Vote)</div>
+            </div>
+            <!-- Brno (République Tchèque) -->
+            <div class="map-pin" style="top: 35%; left: 54%;">
+              <div class="pin-dot"></div>
+              <div class="pin-label">Brno</div>
+            </div>
+            <!-- Barcelone / Dijon (Espagne/France) -->
+            <div class="map-pin" style="top: 41%; left: 50%;">
+              <div class="pin-dot vote-pin"></div>
+              <div class="pin-label">EU West (Vote)</div>
+            </div>
+            <!-- Fuji Speedway (Japon) -->
+            <div class="map-pin" style="top: 40%; left: 83%;">
+              <div class="pin-dot"></div>
+              <div class="pin-label">Fuji</div>
+            </div>
+          </div>
+
+          <!-- Grille des cartes détaillées sous la carte -->
           <div class="world-tour-grid">
             <div class="circuit-badge-card">
               <div class="circuit-top-row"><span>PROLOGUE</span> <span>15/09/2026</span></div>
