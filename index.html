@@ -321,7 +321,7 @@
     });
   </script>
 
-  <!-- Script pour dynamiser les statistiques de l'accueil -->
+<!-- Script pour dynamiser les statistiques de l'accueil -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -358,18 +358,20 @@
           }
         });
         
-        document.getElementById("home-pilots-count").textContent = pilotCount > 0 ? pilotCount : "40+";
-        document.getElementById("home-teams-count").textContent = teams.size > 0 ? teams.size : "15+";
+        // Affichage des vraies valeurs exactes
+        document.getElementById("home-pilots-count").textContent = pilotCount;
+        document.getElementById("home-teams-count").textContent = teams.size;
 
-        // Nombre de comptes créés
+        // Nombre réel de comptes créés
         const usersSnap = await getDocs(collection(db, "users"));
-        document.getElementById("home-users-count").textContent = usersSnap.size > 0 ? usersSnap.size : "50+";
+        document.getElementById("home-users-count").textContent = usersSnap.size;
         
       } catch (err) {
         console.error("Erreur de chargement des stats de l'accueil :", err);
-        document.getElementById("home-pilots-count").textContent = "40+";
-        document.getElementById("home-teams-count").textContent = "15+";
-        document.getElementById("home-users-count").textContent = "50+";
+        // Fallback visuel avec des tirets uniquement en cas de coupure de base de données
+        document.getElementById("home-pilots-count").textContent = "--";
+        document.getElementById("home-teams-count").textContent = "--";
+        document.getElementById("home-users-count").textContent = "--";
       }
     }
 
