@@ -1,264 +1,242 @@
 <!DOCTYPE html>
-
 <html lang="fr">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-
   <title>Portail - MEKA SimRacing</title>
-
   <link rel="stylesheet" href="style.css"> 
-
   
-
   <style>
-
     /* 1. SECTION PRINCIPALE (Le fond global, la navbar et le dropdown sont centralisés dans style.css !) */
-
     .hero-section {
-
       text-align: center;
-
       padding: 6rem 2rem;
-
       position: relative;
-
       z-index: 10;
-
     }
-
-
 
     .hero-section h1 { font-size: 4.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
-
     .hero-section p { font-size: 1.5rem; color: #CBD5E1; margin-bottom: 2rem; }
 
-
-
     .hero-btn {
-
       display: inline-block;
-
       background: #5865F2; /* Couleur officielle Discord */
-
       color: white;
-
       padding: 1rem 2rem;
-
       border-radius: 0.75rem;
-
       text-decoration: none;
-
       font-weight: bold;
-
       font-size: 1.2rem;
-
       box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
-
       transition: transform 0.2s, box-shadow 0.2s;
-
     }
-
     
-
     .hero-btn:hover { 
-
       transform: translateY(-2px); 
-
       box-shadow: 0 6px 20px rgba(88, 101, 242, 0.5); 
-
     }
-
-
 
     /* 2. CONTENU DU PORTAIL */
-
     .portal-content {
-
       max-width: 1200px;
-
       margin: 0 auto;
-
       padding: 2rem;
-
       padding-bottom: 6rem; /* Espace pour le bandeau fixe */
-
       position: relative;
-
       z-index: 10;
-
       display: flex;
-
       flex-direction: column;
-
       gap: 2rem; /* Espace entre les boites */
-
     }
-
     
-
     .course-box {
-
       background: rgba(30, 37, 48, 0.8);
-
       backdrop-filter: blur(15px);
-
       padding: 2.5rem;
-
       border-radius: 1rem;
-
       border: 1px solid rgba(255, 255, 255, 0.1);
-
       color: #F8FAFC;
-
     }
-
     
-
     .course-box h2 { 
-
       text-align: left; 
-
       font-size: 2rem;
-
       margin-bottom: 1.5rem;
-
       color: #6366F1;
-
     }
-
     
-
     .course-box p {
-
       font-size: 1.1rem;
-
       line-height: 1.6;
-
       color: #CBD5E1;
-
     }
 
+    /* --- NOUVEAUX STYLES POUR LES STATISTIQUES --- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      border-color: #6366F1;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .portal-info {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      font-style: italic;
+      margin-top: 1rem;
+      display: block;
+    }
   </style>
-
 </head>
-
 <body>
 
-
-
+  <!-- Injection dynamique de la navbar -->
+  <div id="global-navbar"></div>
   <script type="module" src="nav.js" defer></script>
 
-
-
   <header class="hero-section">
-
     <h1>MEKA SimRacing</h1>
-
     <p>La communauté de passionnés, des courses engagées et du fair-play !</p>
-
     <a href="https://discord.gg/jB6yDhQFyw" target="_blank" class="hero-btn">Rejoindre le Discord</a>
-
   </header>
 
-
-
   <main class="portal-content">
-
     
-
     <div class="course-box" id="presentation">
-
       <h2>Qui sommes-nous ?</h2>
-
       <p>Bienvenue sur le portail officiel de <strong>MEKA SimRacing</strong>. Née de la passion du sport automobile et de la mécanique du karting, notre association a pour but de rassembler les pilotes virtuels autour d'événements compétitifs et conviviaux.</p>
-
     </div>
-
-
 
     <div class="course-box" id="competitions">
+      <h2>L'ESTACUP - Notre Championnat Phare</h2>
+      <p>Que vous soyez un pilote Rookie, Challenger ou Pro, vous avez votre place sur la grille de départ de l'ESTACUP. Rejoignez une grille compétitive et fair-play !</p>
 
-      <h2>Nos Compétitions</h2>
+      <!-- APERÇU DYNAMIQUE & CHIFFRES CLÉS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="home-pilots-count">--</div>
+          <div class="stat-label">Pilotes Inscrits</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="home-races-count">--</div>
+          <div class="stat-label">Courses Disputées</div>
+        </div>
+        <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.3);">
+          <div class="stat-number" style="color: #f59e0b; font-size: 1.6rem; line-height: 2.5rem;">Portimão</div>
+          <div class="stat-label">Prochaine Manche</div>
+        </div>
+      </div>
 
-      <p>Notre championnat phare actuel est l'<strong>ESTACUP</strong>. Que vous soyez un pilote Rookie, Challenger ou Pro, vous avez votre place sur la grille de départ. Consultez les classements, signalez vos incidents et gérez votre équipe depuis le portail pilote dédié.</p>
+      <hr style="border: 1px solid rgba(255,255,255,0.05); margin: 2rem 0;">
 
-      <br>
-
-      <a href="login.html" class="nav-btn-login" style="display: inline-block;">Accéder au portail ESTACUP</a>
-
+      <!-- ACCÈS DIRECT AU PORTAIL PRÉCISÉ -->
+      <div style="text-align: center;">
+        <a href="login.html" class="hero-btn" style="padding: 1rem 2rem; font-size: 1.1rem; background: linear-gradient(135deg, #6366F1, #8B5CF6);">Accéder au portail Pilote</a>
+        <span class="portal-info">🔒 <em>Connexion requise : Classements, inscriptions aux courses, gestion d'équipe et réclamations...</em></span>
+      </div>
     </div>
-
-
 
   </main>
 
-
-
   <!-- BANDEAU DÉFILANT FIXE EN BAS -->
-
   <div class="scrolling-banner">
-
     <div class="scrolling-banner-track" id="bannerTrack">
-
       <!-- BLOC UNIQUE À MODIFIER (Le JavaScript le clonera automatiquement) -->
-
       <div class="banner-items">
-
         <span><img src="logos/insta-logo.png" alt="Instagram"> Team MEKA</span>
-
         <span><img src="logos/tiktok-logo.png" alt="Tiktok"> Team MEKA</span>
-
         <span><img src="logos/twitch-logo.png" alt="Twitch"> @asso_meka</span>
-
         <span><img src="logos/youtube-logo.png" alt="Youtube"> Association MEKA</span>
-
         <span><img src="logos/iraceplan-logo.png" alt="iRacePlan"> iRacePlan.com</span>
-
         <span><img src="logos/garage61-logo.png" alt="Garage 61"> Garage 61</span>
-
         <span><img src="logos/estaca-logo.png" alt="Ecole ESTACA"> Ecole ESTACA</span>
-
       </div>
-
     </div>
-
   </div>
 
-
-
   <!-- Script pour dupliquer le bloc de logos (Boucle) -->
-
   <script>
-
     document.addEventListener("DOMContentLoaded", () => {
-
       const track = document.getElementById("bannerTrack");
-
       const blockToClone = track.querySelector(".banner-items");
-
       
-
       // On clone le bloc 3 fois supplémentaires pour avoir 4 blocs au total
-
       for (let i = 0; i < 3; i++) {
-
         const clone = blockToClone.cloneNode(true);
-
         track.appendChild(clone);
-
       }
-
     });
-
   </script>
 
+  <!-- Script pour dynamiser les statistiques de l'accueil -->
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
+      authDomain: "estacupbymeka.firebaseapp.com",
+      projectId: "estacupbymeka",
+      storageBucket: "estacupbymeka.appspot.com", /* Correction du bucket par rapport au script S10 original */
+      messagingSenderId: "1065406380441",
+      appId: "1:1065406380441:web:55005f7d29290040c13b08"
+    };
+
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    const db = getFirestore(app);
+
+    async function loadHomeStats() {
+      try {
+        // 1. Récupérer le nombre de pilotes validés pour la S10
+        const signupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
+        let pilotCount = 0;
+        signupsSnap.forEach(doc => { 
+          if(doc.data().isValidated) pilotCount++; 
+        });
+        document.getElementById("home-pilots-count").textContent = pilotCount > 0 ? pilotCount : "40+";
+
+        // 2. Récupérer le nombre de courses 
+        const coursesSnap = await getDocs(collection(db, "courses"));
+        document.getElementById("home-races-count").textContent = coursesSnap.size > 0 ? coursesSnap.size : "16+";
+        
+      } catch (err) {
+        console.error("Erreur de chargement des stats de l'accueil :", err);
+        document.getElementById("home-pilots-count").textContent = "45+";
+        document.getElementById("home-races-count").textContent = "16+";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadHomeStats);
+  </script>
 
 </body>
-
-</html> 
-
+</html>
