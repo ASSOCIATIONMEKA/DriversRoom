@@ -636,7 +636,7 @@
             <div class="loading-inline"><div class="spinner"></div> Chargement des présences...</div>
           </div>
 
-          <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS -->
+          <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS (MASQUÉ PAR DÉFAUT) -->
           <div id="adminPrequalPanel" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
             <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 1rem;">🛠️ Panel Admin : Enregistrer / Modifier un temps</h5>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
@@ -666,7 +666,7 @@
           </div>
 
           <!-- TABLEAUX DE PRÉQUALIFICATIONS -->
-          <div id="prequalStatsContainer" style="margin-top: 2rem; border-top: 1px solid var(--border-primary); padding-top: 1.5rem;">
+          <div id="prequalStatsContainer" style="margin-top: 2rem; border-top: 1px solid var(--border-primary); padding-top: 1.5rem; display: none;">
             <h4 style="color: var(--accent-primary); margin-bottom: 1rem;">Résultats des Préqualifications</h4>
             
             <!-- Grand Tableau Récapitulatif Général -->
@@ -1114,7 +1114,7 @@
 
   </div>
 
-  <!-- SCRIPTS : RESTAURATION DE LA CONDITION DE 7 JOURS -->
+  <!-- SCRIPTS : GESTION DES 7 JOURS ET AFFICHAGE CONDITIONNEL DU PANEL ADMIN -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1180,11 +1180,6 @@
       }
 
       showRestrictedFeatures();
-      
-      if (isAdmin && adminPrequalPanel) {
-        adminPrequalPanel.style.display = "block";
-      }
-
       loadNextRacePresence();
     });
 
@@ -1210,13 +1205,14 @@
       if (!nextRace) {
         container.innerHTML = `<p class="muted-note">Le championnat est terminé. Merci à tous !</p>`;
         document.getElementById("prequalStatsContainer").style.display = "none";
+        if (adminPrequalPanel) adminPrequalPanel.style.display = "none";
         return;
       }
 
       const diffTime = nextRace.dateObj - now;
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-      // RESTAURATION DE LA CONDITION DES 7 JOURS
+      // Si plus de 7 jours avant la course, on masque le formulaire et le panel admin
       if (diffDays > 7) {
         container.innerHTML = `
           <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
@@ -1225,10 +1221,15 @@
           </div>
         `;
         document.getElementById("prequalStatsContainer").style.display = "none";
+        if (adminPrequalPanel) adminPrequalPanel.style.display = "none";
         return;
       }
 
+      // Si dans les 7 jours, on affiche les tableaux et le panel admin si l'utilisateur est admin
       document.getElementById("prequalStatsContainer").style.display = "block";
+      if (isAdmin && adminPrequalPanel) {
+        adminPrequalPanel.style.display = "block";
+      }
 
       const parts = nextRace.title.split(" - ");
       const mancheNom = parts[0] || "Manche";
