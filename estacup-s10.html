@@ -8,9 +8,15 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
 
+  <!-- LEAFLET CSS (POUR LA CARTE 2D INTERACTIVE) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
   <!-- SCRIPTS GLOBAUX -->
   <script type="module" src="nav.js" defer></script>
   <script type="module" src="estacup-s10.js" defer></script>
+
+  <!-- LEAFLET JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
     /* Styles inline pour l’affichage déroulant des classements de course */
@@ -148,6 +154,29 @@
     .reglement-content p { color: #CBD5E1; line-height: 1.6; margin-bottom: 0.75rem; }
     .reglement-content ul { padding-left: 1.5rem; margin-bottom: 1rem; color: #CBD5E1; list-style-type: disc; }
     .reglement-content li { margin-bottom: 0.3rem; background: none; border: none; padding: 0; }
+
+    /* --- CARTE LEAFLET INTERACTIVE 2D STYLISÉE DARK MODE --- */
+    #leafletWorldMap {
+      width: 100%;
+      height: 420px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 1;
+    }
+    /* Personnalisation des tooltips Leaflet en mode sombre */
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: #0f172a !important;
+      color: #fff !important;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+    }
+    .leaflet-popup-content {
+      font-family: inherit;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
 
     /* --- ROADMAP / CALENDRIER ESPORT PRO --- */
     .season-roadmap {
@@ -591,13 +620,76 @@
         </div>
       </div>
 
-      <!-- LES CIRCUITS - ROADMAP SAISON 10 PRO -->
+      <!-- LES CIRCUITS - CARTE LEAFLET 2D DARK MODE + LISTE DES CIRCUITS -->
       <div id="champ-sub-circuits" class="champ-subsection hidden">
         <h3>Le Calendrier de la Saison 10</h3>
-        <div class="course-box" style="padding: 2.5rem;">
+        <div class="course-box" style="padding: 2rem;">
           <p style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem; text-align: center;">Un tour du monde sur les tracés les plus exigeants de la planète.</p>
-          <p class="muted-note" style="margin-bottom: 2.5rem; text-align: center;">Découvrez les étapes officielles de cette dixième édition de l'ESTACUP.</p>
+          <p class="muted-note" style="margin-bottom: 1.5rem; text-align: center;">Cliquez sur les repères de la carte interactive ou parcourez les étapes officielles ci-dessous.</p>
           
+          <!-- CONTENEUR CARTE LEAFLET 2D -->
+          <div id="leafletWorldMap"></div>
+
+          <!-- Script d'initialisation de la carte 2D Leaflet -->
+          <script>
+            document.addEventListener("DOMContentLoaded", () => {
+              // On attend que l'onglet circuits soit affiché pour initialiser la carte correctement
+              const observer = new MutationObserver((mutations) => {
+                const section = document.getElementById("champ-sub-circuits");
+                if (section && !section.classList.contains("hidden") && !window.leafletMapInitialized) {
+                  window.leafletMapInitialized = true;
+                  setTimeout(() => {
+                    const map = L.map('leafletWorldMap', {
+                      center: [25, 10],
+                      zoom: 2,
+                      minZoom: 2,
+                      maxZoom: 6
+                    });
+
+                    // Fond de carte sombre ultra propre (CartoDB Dark Matter)
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{z}.png', {
+                      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                      subdomains: 'abcd',
+                      maxZoom: 19
+                    }).addTo(map);
+
+                    // Données des circuits avec coordonnées géographiques
+                    const circuits = [
+                      { name: "Prologue : Silverstone", coords: [52.0786, -1.0169], date: "15/09/2026", country: "Royaume-Uni" },
+                      { name: "Manche 1 : Portimão", coords: [37.2270, -8.6267], date: "29/09/2026", country: "Portugal" },
+                      { name: "Manche 2 : Dubaï Autodrome", coords: [24.5539, 55.2383], date: "20/10/2026", country: "Émirats Arabes Unis" },
+                      { name: "Manche 3 (Vote) : Indianapolis / Virginia", coords: [39.7910, -86.2350], date: "24/11/2026", country: "États-Unis" },
+                      { name: "Manche 4 : Brno", coords: [49.2019, 16.5456], date: "08/12/2026", country: "République Tchèque" },
+                      { name: "Manche 5 (Vote) : Barcelone / Dijon", coords: [41.5700, 2.2611], date: "19/01/2027", country: "Espagne / France" },
+                      { name: "Manche 6 : Fuji Speedway", coords: [35.3717, 138.9261], date: "09/02/2027", country: "Japon" }
+                    ];
+
+                    circuits.forEach(c => {
+                      const marker = L.circleMarker(c.coords, {
+                        radius: 8,
+                        fillColor: c.name.includes("Vote") ? "#f59e0b" : "#38bdf8",
+                        color: "#fff",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                      }).addTo(map);
+
+                      marker.bindPopup(`<strong>${c.name}</strong><br>📅 ${c.date}<br>📍 ${c.country}`);
+                    });
+
+                    map.invalidateSize();
+                  }, 250);
+                }
+              });
+
+              const target = document.getElementById("champ-sub-circuits");
+              if (target) {
+                observer.observe(target, { attributes: true, attributeFilter: ['class'] });
+              }
+            });
+          </script>
+
+          <!-- GRILLE DES CARTES DE CIRCUITS (EN + DE LA CARTE) -->
           <div class="season-roadmap">
             <div class="roadmap-card">
               <div class="roadmap-header">
@@ -679,7 +771,7 @@
 
             <div class="roadmap-card">
               <div class="roadmap-header">
-                <span>MANCHE 5 (ou 6)</span>
+                <span>MANCHE 6</span>
                 <span class="roadmap-date">09/02/2027</span>
               </div>
               <div class="roadmap-title">
