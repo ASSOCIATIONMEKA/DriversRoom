@@ -242,12 +242,16 @@
           <div class="stat-label">Pilotes Inscrits S10</div>
         </div>
         <div class="stat-card">
+          <div class="stat-number" id="home-teams-count" style="color: #f472b6;">--</div>
+          <div class="stat-label">Équipes Engagées</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-number" id="home-users-count" style="color: #10b981;">--</div>
           <div class="stat-label">Comptes Créés</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number" id="home-races-count" style="color: #a855f7;">--</div>
-          <div class="stat-label">Courses Disputées</div>
+          <div class="stat-number" style="color: #a855f7;">9</div>
+          <div class="stat-label">Saisons Disputées</div>
         </div>
       </div>
 
@@ -336,27 +340,36 @@
 
     async function loadHomeStats() {
       try {
-        // Pilotes inscrits S10
+        // Calcul pour Pilotes inscrits S10 et Équipes Engagées
         const signupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
         let pilotCount = 0;
+        const teams = new Set();
+        
         signupsSnap.forEach(doc => { 
-          if(doc.data().isValidated) pilotCount++; 
+          const data = doc.data();
+          if (data.isValidated) {
+            pilotCount++;
+            
+            // Extraction des équipes (on ignore les cas sans équipe ou "indépendant")
+            const teamName = data.teamName ? data.teamName.trim() : "";
+            if (teamName && teamName.toLowerCase() !== "indépendant" && teamName.toLowerCase() !== "sans équipe") {
+              teams.add(teamName);
+            }
+          }
         });
+        
         document.getElementById("home-pilots-count").textContent = pilotCount > 0 ? pilotCount : "40+";
+        document.getElementById("home-teams-count").textContent = teams.size > 0 ? teams.size : "15+";
 
         // Nombre de comptes créés
         const usersSnap = await getDocs(collection(db, "users"));
         document.getElementById("home-users-count").textContent = usersSnap.size > 0 ? usersSnap.size : "50+";
-
-        // Nombre de courses
-        const coursesSnap = await getDocs(collection(db, "courses"));
-        document.getElementById("home-races-count").textContent = coursesSnap.size > 0 ? coursesSnap.size : "16+";
         
       } catch (err) {
         console.error("Erreur de chargement des stats de l'accueil :", err);
         document.getElementById("home-pilots-count").textContent = "40+";
+        document.getElementById("home-teams-count").textContent = "15+";
         document.getElementById("home-users-count").textContent = "50+";
-        document.getElementById("home-races-count").textContent = "16+";
       }
     }
 
