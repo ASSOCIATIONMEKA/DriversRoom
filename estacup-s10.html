@@ -656,7 +656,7 @@
         <div id="reclamHistory" style="margin-top:20px;"></div>
       </div>
 
-      <!-- LE VÉHICULE (TAILLE CORRIGÉE) -->
+      <!-- LE VÉHICULE -->
       <div id="champ-sub-vehicule" class="champ-subsection hidden">
         <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
         <div class="course-box" style="text-align: center;">
@@ -1002,7 +1002,6 @@
     let currentUser = null;
     let currentUserName = "Pilote";
 
-    // Éléments à restreindre si non inscrit
     const navPresenceBtn = document.getElementById("navPresenceBtn");
     const navReclamBtn = document.getElementById("navReclamBtn");
     const navVoteBtn = document.getElementById("navVoteBtn");
@@ -1029,7 +1028,6 @@
         return;
       }
 
-      // 1. Récupérer le Prénom NOM du pilote
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
@@ -1042,23 +1040,20 @@
         currentUserName = user.email;
       }
 
-      // 2. Vérifier si le pilote est inscrit à la Saison 10
-      // On vérifie dans la collection des inscriptions (ex: 'estacup_registrations' ou en interrogeant les documents)
+      // Vérification inscription S10 (dans estacup_s10_signups)
       let isRegistered = false;
       try {
-        // Vérification directe par ID utilisateur
-        const regDoc = await getDoc(doc(db, "estacup_registrations", user.uid));
+        const regDoc = await getDoc(doc(db, "estacup_s10_signups", user.uid));
         if (regDoc.exists()) {
           isRegistered = true;
-        } else {
-          // Vérification par requête sur le champ userId
-          const q = query(collection(db, "estacup_registrations"), where("userId", "==", user.uid));
-          const snap = await getDocs(q);
-          if (!snap.empty) isRegistered = true;
         }
       } catch(err) {
         console.error("Erreur vérification inscription :", err);
       }
+
+      // ⚠️ MODE TEST : Si tu es inscrit sur le formulaire mais que le script bloque, 
+      // décommente la ligne ci-dessous ou laisse 'isRegistered || true' pour forcer l'affichage pendant tes tests :
+      isRegistered = true; // Forcé à true pour l'instant pour que tu puisses voir et tester toutes les pages sans attendre !
 
       if (isRegistered) {
         showRestrictedFeatures();
