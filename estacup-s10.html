@@ -590,191 +590,46 @@
         </div>
       </div>
 
-      <!-- NOUVELLE SECTION : PRÉSENCES COURSES -->
+      <!-- PRÉSENCES COURSES (DANS UN COURSE-BOX POUR GARANTIR LE FOND) -->
       <div id="champ-sub-presence" class="champ-subsection hidden">
-        <h3>Formulaire de Présence - ESTACUP S10</h3>
-        <p class="muted-note" style="margin-bottom: 1.5rem;">
-          Veuillez indiquer votre présence pour chaque manche du championnat. Seuls les pilotes inscrits et présents seront pris en compte pour la constitution des grilles et des splits.
-        </p>
-        <div id="presenceRacesContainer">
-          <div class="loading-inline"><div class="spinner"></div> Chargement des épreuves...</div>
+        <h3>Formulaire de Présence</h3>
+        <div class="course-box">
+          <p class="muted-note" style="margin-bottom: 1.5rem;">
+            Indiquez votre statut pour la prochaine manche. Cliquez une nouvelle fois sur votre choix pour l'annuler si besoin.
+          </p>
+          <div id="presenceRacesContainer">
+            <div class="loading-inline"><div class="spinner"></div> Chargement de la prochaine épreuve...</div>
+          </div>
         </div>
-      </div>
-
-      <!-- SCRIPT POUR GÉRER LES PRÉSENCES EN TEMPS RÉEL (FIREBASE) -->
-      <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, getDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
-          authDomain: "estacupbymeka.firebaseapp.com",
-          projectId: "estacupbymeka",
-          storageBucket: "estacupbymeka.appspot.com", 
-          messagingSenderId: "1065406380441",
-          appId: "1:1065406380441:web:55005f7d29290040c13b08"
-        };
-
-        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        const racesList = [
-          { id: "prologue", title: "Prologue - Silverstone", date: "15/09/2026 à 21h05" },
-          { id: "manche1", title: "Manche 1 - Portimão", date: "29/09/2026 à 21h05" },
-          { id: "manche2", title: "Manche 2 - Dubaï Autodrome", date: "20/10/2026 à 21h05" },
-          { id: "manche3", title: "Manche 3 - Indianapolis / Virginia", date: "24/11/2026 à 21h05" },
-          { id: "manche4", title: "Manche 4 - Brno", date: "08/12/2026 à 21h05" },
-          { id: "manche5", title: "Manche 5 - Barcelone / Dijon", date: "19/01/2027 à 21h05" },
-          { id: "manche6", title: "Manche 6 - Fuji Speedway", date: "09/02/2027 à 21h05" }
-        ];
-
-        let currentUser = null;
-        let currentUserName = "Pilote";
-
-        auth.onAuthStateChanged(async (user) => {
-          currentUser = user;
-          if (user) {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              currentUserName = data.name || data.pseudo || data.email || "Pilote";
-            } else {
-              currentUserName = user.email || "Pilote";
-            }
-          }
-          loadPresenceModule();
-        });
-
-        function loadPresenceModule() {
-          const container = document.getElementById("presenceRacesContainer");
-          if (!container) return;
-
-          container.innerHTML = "";
-
-          racesList.forEach(race => {
-            const card = document.createElement("div");
-            card.className = "presence-race-card";
-            card.innerHTML = `
-              <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.3rem;">${race.title}</h4>
-              <p class="muted-note" style="margin-bottom: 1rem;">📅 ${race.date}</p>
-              
-              <div class="presence-actions" data-race="${race.id}">
-                <button class="btn-presence" data-status="present" onclick="window.setPresence('${race.id}', 'present')">✅ Présent</button>
-                <button class="btn-presence" data-status="absent" onclick="window.setPresence('${race.id}', 'absent')">❌ Absent</button>
-                <button class="btn-presence" data-status="tentative" onclick="window.setPresence('${race.id}', 'tentative')">❓ Incertain</button>
-              </div>
-
-              <div class="presence-lists-grid">
-                <div class="presence-list-box">
-                  <h5><span>✅ Acceptés</span> <span id="count-present-${race.id}">0/32</span></h5>
-                  <ul id="list-present-${race.id}"><li>Aucun</li></ul>
-                </div>
-                <div class="presence-list-box">
-                  <h5><span>❌ Refusés</span> <span id="count-absent-${race.id}">0</span></h5>
-                  <ul id="list-absent-${race.id}"><li>Aucun</li></ul>
-                </div>
-                <div class="presence-list-box">
-                  <h5><span>❓ Incertains</span> <span id="count-tentative-${race.id}">0</span></h5>
-                  <ul id="list-tentative-${race.id}"><li>Aucun</li></ul>
-                </div>
-              </div>
-            `;
-            container.appendChild(card);
-
-            // Écoute en temps réel de la collection des présences pour cette course
-            onSnapshot(collection(db, `attendances_${race.id}`), (snapshot) => {
-              const presentList = [];
-              const absentList = [];
-              const tentativeList = [];
-
-              let userStatus = null;
-
-              snapshot.forEach(docSnap => {
-                const data = docSnap.data();
-                if (currentUser && docSnap.id === currentUser.uid) {
-                  userStatus = data.status;
-                }
-
-                if (data.status === "present") presentList.push(data.userName);
-                else if (data.status === "absent") absentList.push(data.userName);
-                else if (data.status === "tentative") tentativeList.push(data.userName);
-              });
-
-              // Mise à jour des compteurs
-              document.getElementById(`count-present-${race.id}`).textContent = `${presentList.length}/32`;
-              document.getElementById(`count-absent-${race.id}`).textContent = absentList.length;
-              document.getElementById(`count-tentative-${race.id}`).textContent = tentativeList.length;
-
-              // Mise à jour des listes de noms
-              document.getElementById(`list-present-${race.id}`).innerHTML = presentList.length ? presentList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-              document.getElementById(`list-absent-${race.id}`).innerHTML = absentList.length ? absentList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-              document.getElementById(`list-tentative-${race.id}`).innerHTML = tentativeList.length ? tentativeList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-
-              // Mise à jour visuelle des boutons actifs pour l'utilisateur
-              const actionBox = container.querySelector(`.presence-actions[data-race="${race.id}"]`);
-              if (actionBox) {
-                actionBox.querySelectorAll('.btn-presence').forEach(btn => {
-                  btn.className = "btn-presence";
-                  if (userStatus && btn.getAttribute('data-status') === userStatus) {
-                    if (userStatus === 'present') btn.classList.add('active-present');
-                    if (userStatus === 'absent') btn.classList.add('active-absent');
-                    if (userStatus === 'tentative') btn.classList.add('active-tentative');
-                  }
-                });
-              }
-            });
-          });
-        }
-
-        // Fonction globale pour enregistrer le choix de présence
-        window.setPresence = async function(raceId, status) {
-          if (!currentUser) {
-            alert("Vous devez être connecté pour indiquer votre présence.");
-            window.location.href = "login.html";
-            return;
-          }
-
-          try {
-            const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
-            await setDoc(docRef, {
-              userId: currentUser.uid,
-              userName: currentUserName,
-              status: status,
-              timestamp: new Date()
-            });
-          } catch (err) {
-            console.error("Erreur lors de l'enregistrement de la présence :", err);
-            alert("Une erreur est survenue. Veuillez réessayer.");
-          }
-        };
-      </script>
       </div>
 
       <!-- INSCRIPTION -->
       <div id="champ-sub-inscription" class="champ-subsection hidden">
         <h3>Inscription ESTACUP</h3>
-        <div id="mekaQuestionnaire">
-          <p style="margin-bottom:10px;">
-            ℹ️ L’inscription est <strong>gratuite</strong> pour les membres MEKA.<br>
-            Pour les non-membres, une participation de <strong>5 €</strong> est demandée.
-          </p>
-          <label for="mekaPaid">Êtes-vous membre MEKA ou avez-vous déjà payé les 5 € d’inscription ?</label>
-          <select id="mekaPaid">
-            <option value="">-- Choisir --</option>
-            <option value="yes">Oui</option>
-            <option value="no">Non</option>
-          </select>
-          <div id="mekaNextStep" style="margin-top:15px;"></div>
+        <div class="course-box">
+          <div id="mekaQuestionnaire">
+            <p style="margin-bottom:10px;">
+              ℹ️ L’inscription est <strong>gratuite</strong> pour les membres MEKA.<br>
+              Pour les non-membres, une participation de <strong>5 €</strong> est demandée.
+            </p>
+            <label for="mekaPaid">Êtes-vous membre MEKA ou avez-vous déjà payé les 5 € d’inscription ?</label>
+            <select id="mekaPaid">
+              <option value="">-- Choisir --</option>
+              <option value="yes">Oui</option>
+              <option value="no">Non</option>
+            </select>
+            <div id="mekaNextStep" style="margin-top:15px;"></div>
+          </div>
+          <div id="estacupFormContainer" class="hidden"></div>
         </div>
-        <div id="estacupFormContainer" class="hidden"></div>
       </div>
 
       <!-- ENGAGÉS -->
       <div id="champ-sub-engages" class="champ-subsection hidden">
         <h3>Liste des engagés</h3>
-        <div id="estacupEngages"></div>
+        <div class="course-box">
+          <div id="estacupEngages"></div>
+        </div>
       </div>
 
       <!-- RÉCLAMATIONS -->
@@ -801,12 +656,12 @@
         <div id="reclamHistory" style="margin-top:20px;"></div>
       </div>
 
-      <!-- LE VÉHICULE -->
+      <!-- LE VÉHICULE (TAILLE DE LA VOITURE CORRIGÉE) -->
       <div id="champ-sub-vehicule" class="champ-subsection hidden">
         <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
         <div class="course-box" style="text-align: center;">
-          <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); box-shadow: var(--shadow-lg);">
-            <iframe title="Ligier JSP325 LMP3" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" src="https://sketchfab.com/models/f3f799b94c764601a4b773a93ebb97c0/embed?autostart=0&ui_theme=dark&dnt=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+          <div style="position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); box-shadow: var(--shadow-lg);">
+            <iframe title="Ligier JSP325 LMP3" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" src="https://sketchfab.com/models/f3f799b94c764601a4b773a93ebb97c0/embed?autostart=0&ui_theme=dark&dnt=1" style="width: 100%; height: 100%; border:none;"></iframe>
           </div>
           <p class="muted-note" style="margin-top: -10px; margin-bottom: 15px;">🖱️ <em>Cliquez sur le bouton Play pour charger le modèle, puis faites glisser pour tourner autour de la voiture</em></p>
           <p style="font-size: 1.15rem; margin-bottom: 2rem; color: var(--text-primary);">Pour cette 10ème saison de l'ESTACUP, nous passons à la vitesse supérieure avec un prototype taillé pour l'endurance et la performance pure : la <strong>Ligier JS P320</strong>.</p>
@@ -830,17 +685,15 @@
         </div>
       </div>
 
-      <!-- LES CIRCUITS - CARTE LEAFLET CORRIGÉE AVEC DÉLAI DE CHARGEMENT GARANTI -->
+      <!-- LES CIRCUITS -->
       <div id="champ-sub-circuits" class="champ-subsection hidden">
         <h3>Le Calendrier de la Saison 10</h3>
         <div class="course-box" style="padding: 2rem;">
           <p style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem; text-align: center;">Un tour du monde sur les tracés les plus exigeants de la planète.</p>
           <p class="muted-note" style="margin-bottom: 1.5rem; text-align: center;">Cliquez sur les repères de la carte interactive ou parcourez les étapes officielles ci-dessous.</p>
           
-          <!-- CONTENEUR CARTE LEAFLET 2D -->
           <div id="leafletWorldMap"></div>
 
-          <!-- Script d'initialisation robuste -->
           <script>
             let estacupMapInstance = null;
 
@@ -908,7 +761,6 @@
             });
           </script>
 
-          <!-- GRILLE DES CARTES DE CIRCUITS -->
           <div class="season-roadmap">
             <div class="roadmap-card">
               <div class="roadmap-header">
@@ -1007,7 +859,9 @@
       <!-- VOTES CIRCUITS -->
       <div id="champ-sub-votecircuit" class="champ-subsection hidden">
         <h3>Votes des circuits</h3>
-        <div id="voteCircuitHost"></div>
+        <div class="course-box">
+          <div id="voteCircuitHost"></div>
+        </div>
       </div>
 
       <!-- CONTENU (PACK) -->
@@ -1047,14 +901,18 @@
       <!-- LIVRÉE -->
       <div id="champ-sub-livree" class="champ-subsection hidden">
         <h3>Déposer ma livrée</h3>
-        <div id="liveryUploadHost"></div>
+        <div class="course-box">
+          <div id="liveryUploadHost"></div>
+        </div>
       </div>
 
       <!-- COURSES (RÉSULTATS) -->
       <div id="champ-sub-courses" class="champ-subsection hidden">
         <h3>Résultats des Manches</h3>
-        <p class="muted-note">Cliquez sur une course pour afficher le <strong>classement complet</strong>.</p>
-        <ul id="raceHistory"><li>Chargement…</li></ul>
+        <div class="course-box">
+          <p class="muted-note">Cliquez sur une course pour afficher le <strong>classement complet</strong>.</p>
+          <ul id="raceHistory" style="list-style: none; padding: 0;"><li>Chargement…</li></ul>
+        </div>
       </div>
 
       <!-- RANK PILOTES -->
@@ -1111,5 +969,156 @@
     </section>
 
   </div>
+
+  <!-- SCRIPT POUR GÉRER LES PRÉSENCES (AVEC PRÉNOM NOM ET TOGGLE) -->
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
+      authDomain: "estacupbymeka.firebaseapp.com",
+      projectId: "estacupbymeka",
+      storageBucket: "estacupbymeka.appspot.com", 
+      messagingSenderId: "1065406380441",
+      appId: "1:1065406380441:web:55005f7d29290040c13b08"
+    };
+
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const racesList = [
+      { id: "prologue", title: "Prologue - Silverstone", dateStr: "15/09/2026", time: "à 21h05", dateObj: new Date("2026-09-15T21:05:00") },
+      { id: "manche1", title: "Manche 1 - Portimão", dateStr: "29/09/2026", time: "à 21h05", dateObj: new Date("2026-09-29T21:05:00") },
+      { id: "manche2", title: "Manche 2 - Dubaï Autodrome", dateStr: "20/10/2026", time: "à 21h05", dateObj: new Date("2026-10-20T21:05:00") },
+      { id: "manche3", title: "Manche 3 - Indianapolis / Virginia", dateStr: "24/11/2026", time: "à 21h05", dateObj: new Date("2026-11-24T21:05:00") },
+      { id: "manche4", title: "Manche 4 - Brno", dateStr: "08/12/2026", time: "à 21h05", dateObj: new Date("2026-12-08T21:05:00") },
+      { id: "manche5", title: "Manche 5 - Barcelone / Dijon", dateStr: "19/01/2027", time: "à 21h05", dateObj: new Date("2027-01-19T21:05:00") },
+      { id: "manche6", title: "Manche 6 - Fuji Speedway", dateStr: "09/02/2027", time: "à 21h05", dateObj: new Date("2027-02-09T21:05:00") }
+    ];
+
+    let currentUser = null;
+    let currentUserName = "Pilote";
+
+    auth.onAuthStateChanged(async (user) => {
+      currentUser = user;
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          currentUserName = data.name || (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) || data.pseudo || user.email;
+        } else {
+          currentUserName = user.email;
+        }
+      }
+      loadNextRacePresence();
+    });
+
+    function loadNextRacePresence() {
+      const container = document.getElementById("presenceRacesContainer");
+      if (!container) return;
+
+      const now = new Date();
+      let nextRace = racesList.find(r => r.dateObj >= now);
+      if (!nextRace) {
+        nextRace = racesList[racesList.length - 1];
+      }
+
+      container.innerHTML = `
+        <div class="presence-race-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+          <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.3rem;">${nextRace.title}</h4>
+          <p class="muted-note" style="margin-bottom: 1rem;">📅 ${nextRace.dateStr} ${nextRace.time}</p>
+          
+          <div class="presence-actions" data-race="${nextRace.id}">
+            <button class="btn-presence" data-status="present" onclick="window.togglePresence('${nextRace.id}', 'present')">✅ Présent</button>
+            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ Absent</button>
+            <button class="btn-presence" data-status="tentative" onclick="window.togglePresence('${nextRace.id}', 'tentative')">❓ Incertain</button>
+          </div>
+
+          <div class="presence-lists-grid">
+            <div class="presence-list-box">
+              <h5><span>✅ Acceptés</span> <span id="count-present-${nextRace.id}">0/32</span></h5>
+              <ul id="list-present-${nextRace.id}"><li>Aucun</li></ul>
+            </div>
+            <div class="presence-list-box">
+              <h5><span>❌ Refusés</span> <span id="count-absent-${nextRace.id}">0</span></h5>
+              <ul id="list-absent-${nextRace.id}"><li>Aucun</li></ul>
+            </div>
+            <div class="presence-list-box">
+              <h5><span>❓ Incertains</span> <span id="count-tentative-${nextRace.id}">0</span></h5>
+              <ul id="list-tentative-${nextRace.id}"><li>Aucun</li></ul>
+            </div>
+          </div>
+        </div>
+      `;
+
+      onSnapshot(collection(db, `attendances_${nextRace.id}`), (snapshot) => {
+        const presentList = [];
+        const absentList = [];
+        const tentativeList = [];
+        let userStatus = null;
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (currentUser && docSnap.id === currentUser.uid) {
+            userStatus = data.status;
+          }
+
+          if (data.status === "present") presentList.push(data.userName);
+          else if (data.status === "absent") absentList.push(data.userName);
+          else if (data.status === "tentative") tentativeList.push(data.userName);
+        });
+
+        document.getElementById(`count-present-${nextRace.id}`).textContent = `${presentList.length}/32`;
+        document.getElementById(`count-absent-${nextRace.id}`).textContent = absentList.length;
+        document.getElementById(`count-tentative-${nextRace.id}`).textContent = tentativeList.length;
+
+        document.getElementById(`list-present-${nextRace.id}`).innerHTML = presentList.length ? presentList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        document.getElementById(`list-absent-${nextRace.id}`).innerHTML = absentList.length ? absentList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        document.getElementById(`list-tentative-${nextRace.id}`).innerHTML = tentativeList.length ? tentativeList.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+
+        const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
+        if (actionBox) {
+          actionBox.querySelectorAll('.btn-presence').forEach(btn => {
+            btn.className = "btn-presence";
+            if (userStatus && btn.getAttribute('data-status') === userStatus) {
+              if (userStatus === 'present') btn.classList.add('active-present');
+              if (userStatus === 'absent') btn.classList.add('active-absent');
+              if (userStatus === 'tentative') btn.classList.add('active-tentative');
+            }
+          });
+        }
+      });
+    }
+
+    window.togglePresence = async function(raceId, status) {
+      if (!currentUser) {
+        alert("Vous devez être connecté pour indiquer votre présence.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      try {
+        const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists() && docSnap.data().status === status) {
+          await deleteDoc(docRef);
+        } else {
+          await setDoc(docRef, {
+            userId: currentUser.uid,
+            userName: currentUserName,
+            status: status,
+            timestamp: new Date()
+          });
+        }
+      } catch (err) {
+        console.error("Erreur lors de la modification de la présence :", err);
+        alert("Une erreur est survenue. Veuillez réessayer.");
+      }
+    };
+  </script>
 </body>
 </html>
