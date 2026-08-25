@@ -85,6 +85,11 @@
       border-radius: 1rem;
       padding: 1.5rem;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 140px; /* Force la même hauteur pour toutes les cartes */
       transition: transform 0.2s, border-color 0.2s;
     }
 
@@ -99,6 +104,15 @@
       font-weight: 800;
       color: #38bdf8;
       margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    .stat-countdown {
+      font-size: 0.85rem;
+      color: #fde68a;
+      font-family: monospace;
+      font-weight: 600;
+      margin-top: 0.5rem;
     }
 
     .stat-label {
@@ -150,9 +164,12 @@
           <div class="stat-number" id="home-races-count">--</div>
           <div class="stat-label">Courses Disputées</div>
         </div>
-        <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.3);">
-          <div class="stat-number" style="color: #f59e0b; font-size: 1.6rem; line-height: 2.5rem;">Portimão</div>
-          <div class="stat-label">Prochaine Manche</div>
+        <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
+          <div class="stat-number" style="color: #f59e0b; font-size: 1.6rem;">
+            Silverstone
+            <div class="stat-countdown" id="silverstone-countdown">Chargement...</div>
+          </div>
+          <div class="stat-label">Prologue (Prochaine Manche)</div>
         </div>
       </div>
 
@@ -189,7 +206,6 @@
       const track = document.getElementById("bannerTrack");
       const blockToClone = track.querySelector(".banner-items");
       
-      // On clone le bloc 3 fois supplémentaires pour avoir 4 blocs au total
       for (let i = 0; i < 3; i++) {
         const clone = blockToClone.cloneNode(true);
         track.appendChild(clone);
@@ -206,7 +222,7 @@
       apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
       authDomain: "estacupbymeka.firebaseapp.com",
       projectId: "estacupbymeka",
-      storageBucket: "estacupbymeka.appspot.com", /* Correction du bucket par rapport au script S10 original */
+      storageBucket: "estacupbymeka.appspot.com", 
       messagingSenderId: "1065406380441",
       appId: "1:1065406380441:web:55005f7d29290040c13b08"
     };
@@ -216,7 +232,6 @@
 
     async function loadHomeStats() {
       try {
-        // 1. Récupérer le nombre de pilotes validés pour la S10
         const signupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
         let pilotCount = 0;
         signupsSnap.forEach(doc => { 
@@ -224,7 +239,6 @@
         });
         document.getElementById("home-pilots-count").textContent = pilotCount > 0 ? pilotCount : "40+";
 
-        // 2. Récupérer le nombre de courses 
         const coursesSnap = await getDocs(collection(db, "courses"));
         document.getElementById("home-races-count").textContent = coursesSnap.size > 0 ? coursesSnap.size : "16+";
         
@@ -236,6 +250,38 @@
     }
 
     document.addEventListener("DOMContentLoaded", loadHomeStats);
+  </script>
+
+  <!-- Script pour le compte à rebours de Silverstone -->
+  <script>
+    function startCountdown() {
+      // Date du prologue : 15 Septembre 2026 à 21h00
+      const targetDate = new Date("2026-09-15T21:00:00").getTime();
+      const el = document.getElementById("silverstone-countdown");
+      if (!el) return;
+
+      function update() {
+        const now = new Date().getTime();
+        const diff = targetDate - now;
+
+        if (diff <= 0) {
+          el.textContent = "Session en cours";
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        el.textContent = `J-${days} ${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
+      }
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    document.addEventListener("DOMContentLoaded", startCountdown);
   </script>
 
 </body>
