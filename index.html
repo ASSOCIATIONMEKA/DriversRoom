@@ -232,7 +232,8 @@
 
     .social-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      /* On réduit le minmax pour forcer les 5 éléments sur la même ligne */
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 1.2rem;
       margin-bottom: 2.5rem;
     }
@@ -240,7 +241,7 @@
     .social-card {
       display: flex;
       align-items: center;
-      padding: 1.2rem;
+      padding: 1.2rem 1rem; /* Padding ajusté pour les petits écrans */
       background: rgba(15, 23, 42, 0.6);
       border-radius: 1rem;
       border: 1px solid rgba(255,255,255,0.1);
@@ -282,9 +283,9 @@
     .sc-tiktok::before { background: radial-gradient(circle at right bottom, rgba(0, 242, 254, 0.15), rgba(254, 44, 85, 0.15)); }
 
     .sc-icon {
-      width: 45px;
-      height: 45px;
-      margin-right: 1rem;
+      width: 40px; /* Légèrement réduit pour faire de la place */
+      height: 40px;
+      margin-right: 0.8rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -298,12 +299,12 @@
     .sc-text h3 {
       margin: 0 0 0.2rem 0;
       color: #f8fafc;
-      font-size: 1.1rem;
+      font-size: 1rem; /* Ajusté */
     }
     .sc-text p {
       margin: 0;
       color: #94a3b8;
-      font-size: 0.8rem;
+      font-size: 0.75rem; /* Ajusté */
       line-height: 1.3;
     }
 
@@ -340,8 +341,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #000;
-      border: 1px dashed rgba(255,255,255,0.2);
     }
   </style>
 </head>
@@ -432,38 +431,47 @@
         <p>Vivez la course de l'intérieur, suivez nos lives et ne manquez aucune actualité sur nos réseaux.</p>
       </div>
 
-      <!-- Grille des boutons stylisés -->
+      <!-- Grille des boutons stylisés (Réordonnée et sur 1 ligne) -->
       <div class="social-grid">
+        <a href="https://www.instagram.com/team_meka" target="_blank" class="social-card sc-insta">
+          <div class="sc-icon"><img src="logos/insta-logo.png" alt="Instagram"></div>
+          <div class="sc-text"><h3>Instagram</h3><p>Photos et actus de l'asso</p></div>
+        </a>
         <a href="https://discord.gg/jB6yDhQFyw" target="_blank" class="social-card sc-discord">
           <div class="sc-icon"><img src="logos/discord-logo.png" alt="Discord"></div>
           <div class="sc-text"><h3>Discord</h3><p>Le paddock et la communauté</p></div>
-        </a>
-        <a href="https://twitch.tv/asso_meka" target="_blank" class="social-card sc-twitch">
-          <div class="sc-icon"><img src="logos/twitch-logo.png" alt="Twitch"></div>
-          <div class="sc-text"><h3>Twitch</h3><p>Diffusions des courses en direct</p></div>
         </a>
         <a href="https://www.youtube.com/@asso_meka" target="_blank" class="social-card sc-youtube">
           <div class="sc-icon"><img src="logos/youtube-logo.png" alt="YouTube"></div>
           <div class="sc-text"><h3>YouTube</h3><p>Rediffusions et Best-of</p></div>
         </a>
-        <a href="https://www.instagram.com/team_meka" target="_blank" class="social-card sc-insta">
-          <div class="sc-icon"><img src="logos/insta-logo.png" alt="Instagram"></div>
-          <div class="sc-text"><h3>Instagram</h3><p>Photos et actus de l'asso</p></div>
+        <a href="https://twitch.tv/asso_meka" target="_blank" class="social-card sc-twitch">
+          <div class="sc-icon"><img src="logos/twitch-logo.png" alt="Twitch"></div>
+          <div class="sc-text"><h3>Twitch</h3><p>Diffusions en direct</p></div>
         </a>
         <a href="https://www.tiktok.com/@team_meka" target="_blank" class="social-card sc-tiktok">
           <div class="sc-icon"><img src="logos/tiktok-logo.png" alt="TikTok"></div>
-          <div class="sc-text"><h3>TikTok</h3><p>Clips, moments forts et fun</p></div>
+          <div class="sc-text"><h3>TikTok</h3><p>Clips et moments forts</p></div>
         </a>
       </div>
 
-      <!-- Grille d'affichage dynamique (Embeds) -->
+      <!-- Grille d'affichage dynamique (Embeds) (Instagram d'abord, TikTok ensuite) -->
       <div class="embed-grid">
+        
+        <!-- INSTAGRAM (ELFSIGHT) -->
+        <div class="embed-card">
+          <h4><span style="color:#E1306C;">📸</span> Dernier Post Instagram</h4>
+          <div class="embed-wrapper" style="background: transparent; border: none; min-height: auto; display: block;">
+            <!-- Elfsight Instagram Feed | Untitled Instagram Feed -->
+            <script src="https://elfsightcdn.com/platform.js" async></script>
+            <div class="elfsight-app-815b778b-34ed-4774-825e-771f52511c08" data-elfsight-app-lazy></div>
+          </div>
+        </div>
+
         <!-- TIKTOK DYNAMIQUE -->
         <div class="embed-card">
           <h4><span style="color:#00F2FE;">🎵</span> Notre profil TikTok</h4>
           <div class="embed-wrapper" style="background: transparent; border: none;">
-            <!-- Widget TikTok Creator (Affiche automatiquement les dernières vidéos) -->
-            <!-- Assure-toi que data-unique-id et l'URL correspondent bien à ton @ exact sur TikTok -->
             <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@asso_meka" data-unique-id="asso_meka" data-embed-type="creator" style="max-width: 100%; min-width: 288px; margin: 0 auto;"> 
               <section><a target="_blank" href="https://www.tiktok.com/@asso_meka">@asso_meka</a></section> 
             </blockquote> 
@@ -471,17 +479,6 @@
           </div>
         </div>
 
-        <!-- INSTAGRAM (PLACEHOLDER ELFSIGHT) -->
-        <div class="embed-card">
-          <h4><span style="color:#E1306C;">📸</span> Dernier Post Instagram</h4>
-          <div class="embed-wrapper">
-             <div style="padding: 2rem; text-align: center; color: #94a3b8; font-size: 0.9rem;">
-               <p>🛠️ <strong>Intégration Dynamique</strong></p>
-               <p>Instagram bloque l'affichage automatique des derniers posts via du code simple.</p>
-               <p>Pour afficher un magnifique flux photo ici, crée un widget gratuit sur <strong>elfsight.com</strong> (Instagram Feed) et remplace ce bloc de texte par le code d'intégration fourni par Elfsight !</p>
-             </div>
-          </div>
-        </div>
       </div>
     </div>
 
