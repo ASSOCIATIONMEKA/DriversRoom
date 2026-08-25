@@ -78,14 +78,36 @@
       margin: 0 0 0.25rem 0;
       color: white;
     }
-    .info-text p, .info-text a {
+    .info-text p {
       margin: 0;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+    .info-text a.text-link {
       color: #94a3b8;
       font-size: 0.95rem;
       text-decoration: none;
       transition: color 0.2s;
     }
-    .info-text a:hover { color: #38bdf8; }
+    .info-text a.text-link:hover { color: #38bdf8; }
+
+    /* BOUTON DISCORD SPÉCIFIQUE */
+    .discord-btn {
+      display: inline-block;
+      background: #5865F2;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .discord-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
 
     /* MESSAGES ALERTE (Succès / Erreur) */
     .msg-box {
@@ -107,7 +129,7 @@
       color: #f87171;
     }
 
-    /* ANIMATION BOUTON */
+    /* ANIMATION BOUTON FORMULAIRE */
     .btn-submit {
       width: 100%;
       background: linear-gradient(135deg, #6366F1, #8B5CF6);
@@ -155,9 +177,8 @@
         <div class="info-item">
           <div class="info-icon">📧</div>
           <div class="info-text">
-            <h3>Email Officiel</h3>
-            <!-- Remplace par la vraie adresse mail de l'asso -->
-            <a href="mailto:contact@meka-estaca.fr">contact@meka-estaca.fr</a>
+            <h3>Par mail</h3>
+            <a href="mailto:meka@estaca.eu" class="text-link">meka@estaca.eu</a>
           </div>
         </div>
 
@@ -165,7 +186,8 @@
           <div class="info-icon">💬</div>
           <div class="info-text">
             <h3>Serveur Discord</h3>
-            <a href="https://discord.gg/jB6yDhQFyw" target="_blank">Rejoindre la communauté</a>
+            <p style="margin-bottom: 0.2rem;">Le paddock virtuel de l'association.</p>
+            <a href="https://discord.gg/jB6yDhQFyw" target="_blank" class="discord-btn">Rejoindre le serveur</a>
           </div>
         </div>
 
@@ -173,7 +195,7 @@
           <div class="info-icon">📍</div>
           <div class="info-text">
             <h3>Localisation</h3>
-            <p>École ESTACA<br>Campus Paris-Saclay / Laval</p>
+            <p>École ESTACA<br>Campus Laval 53000</p>
           </div>
         </div>
       </div>
@@ -267,7 +289,6 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       
-      // Désactiver le bouton pendant l'envoi
       btnSubmit.disabled = true;
       btnSubmit.textContent = "⏳ Envoi en cours...";
       msgBox.style.display = "none";
@@ -278,30 +299,26 @@
       const message = document.getElementById("contactMessage").value.trim();
 
       try {
-        // Enregistrement dans la collection 'contact_messages'
         await addDoc(collection(db, "contact_messages"), {
           name: name,
           email: email,
           subject: subject,
           message: message,
           timestamp: new Date(),
-          status: "Nouveau" // Utile si tu veux gérer les messages côté admin plus tard[cite: 15, 16]
+          status: "Nouveau"
         });
 
-        // Succès
         msgBox.textContent = "✅ Votre message a été envoyé avec succès ! Nous vous répondrons très vite.";
         msgBox.className = "msg-box msg-success";
         msgBox.style.display = "block";
-        form.reset(); // On vide le formulaire
+        form.reset(); 
 
       } catch (error) {
         console.error("Erreur lors de l'envoi du message :", error);
-        // Erreur
         msgBox.textContent = "❌ Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous contacter via Discord.";
         msgBox.className = "msg-box msg-error";
         msgBox.style.display = "block";
       } finally {
-        // Réactiver le bouton
         btnSubmit.disabled = false;
         btnSubmit.textContent = "📨 Envoyer le message";
       }
