@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Nous Contacter - MEKA SimRacing</title>
+  <link rel="stylesheet" href="style.css"> 
+  
+  <style>
+    /* SECTION PRINCIPALE */
+    .hero-section {
+      text-align: center;
+      padding: 5rem 2rem 3rem 2rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .hero-section h1 { font-size: 3.5rem; color: white; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
+    .hero-section p { font-size: 1.25rem; color: #CBD5E1; max-width: 800px; margin: 0 auto; }
+
+    .portal-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      padding-bottom: 6rem;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .course-box {
+      background: rgba(30, 37, 48, 0.8);
+      backdrop-filter: blur(15px);
+      padding: 2.5rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #F8FAFC;
+    }
+
+    .course-box h2 { 
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      color: var(--accent-primary, #6366F1);
+      border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+      padding-bottom: 0.5rem;
+    }
+
+    /* GRILLE DE CONTACT */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 850px) {
+      .contact-grid { grid-template-columns: 1fr; }
+    }
+
+    /* INFORMATIONS (Colonne de gauche) */
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .info-icon {
+      font-size: 2rem;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 0.8rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .info-text h3 {
+      font-size: 1.1rem;
+      margin: 0 0 0.25rem 0;
+      color: white;
+    }
+    .info-text p, .info-text a {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .info-text a:hover { color: #38bdf8; }
+
+    /* MESSAGES ALERTE (Succès / Erreur) */
+    .msg-box {
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+      display: none;
+    }
+    .msg-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+    .msg-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+
+    /* ANIMATION BOUTON */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+      color: white;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injection dynamique de la navbar -->
+  <div id="global-navbar"></div>
+  <script type="module" src="nav.js" defer></script>
+
+  <header class="hero-section">
+    <h1>Nous Contacter</h1>
+    <p>Une proposition de partenariat, une question sur l'ESTACUP ou un problème technique ? Écrivez-nous directement.</p>
+  </header>
+
+  <main class="portal-content">
+    
+    <div class="contact-grid">
+      
+      <!-- COLONNE GAUCHE : INFORMATIONS -->
+      <div class="course-box">
+        <h2>Nos Informations</h2>
+        <p style="margin-bottom: 2rem;">L'association MEKA SimRacing est gérée par des étudiants passionnés. Nous nous efforçons de vous répondre dans les plus brefs délais.</p>
+
+        <div class="info-item">
+          <div class="info-icon">📧</div>
+          <div class="info-text">
+            <h3>Email Officiel</h3>
+            <!-- Remplace par la vraie adresse mail de l'asso -->
+            <a href="mailto:contact@meka-estaca.fr">contact@meka-estaca.fr</a>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-icon">💬</div>
+          <div class="info-text">
+            <h3>Serveur Discord</h3>
+            <a href="https://discord.gg/jB6yDhQFyw" target="_blank">Rejoindre la communauté</a>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-icon">📍</div>
+          <div class="info-text">
+            <h3>Localisation</h3>
+            <p>École ESTACA<br>Campus Paris-Saclay / Laval</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLONNE DROITE : FORMULAIRE -->
+      <div class="course-box">
+        <h2>Envoyer un message</h2>
+        
+        <div id="contactMsg" class="msg-box"></div>
+
+        <form id="contactForm">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <label for="contactName">Nom / Pseudo</label>
+              <input type="text" id="contactName" placeholder="Votre nom" required>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label for="contactEmail">Adresse Email</label>
+              <input type="email" id="contactEmail" placeholder="votre@email.com" required>
+            </div>
+          </div>
+
+          <label for="contactSubject">Sujet de votre demande</label>
+          <select id="contactSubject" required>
+            <option value="" disabled selected>-- Sélectionnez un sujet --</option>
+            <option value="Partenariat / Sponsoring">🤝 Partenariat / Sponsoring</option>
+            <option value="Question ESTACUP">🏎️ Question sur l'ESTACUP</option>
+            <option value="Problème Technique / Site">💻 Problème technique sur le site</option>
+            <option value="Autre demande">❓ Autre demande</option>
+          </select>
+
+          <label for="contactMessage">Votre Message</label>
+          <textarea id="contactMessage" placeholder="Écrivez votre message ici..." rows="6" required></textarea>
+
+          <button type="submit" id="btnSubmitContact" class="btn-submit">📨 Envoyer le message</button>
+        </form>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- BANDEAU DÉFILANT FIXE EN BAS -->
+  <div class="scrolling-banner">
+    <div class="scrolling-banner-track" id="bannerTrack">
+      <div class="banner-items">
+        <span><img src="logos/insta-logo.png" alt="Instagram"> Team MEKA</span>
+        <span><img src="logos/tiktok-logo.png" alt="Tiktok"> Team MEKA</span>
+        <span><img src="logos/twitch-logo.png" alt="Twitch"> @asso_meka</span>
+        <span><img src="logos/youtube-logo.png" alt="Youtube"> Association MEKA</span>
+        <span><img src="logos/iraceplan-logo.png" alt="iRacePlan"> iRacePlan.com</span>
+        <span><img src="logos/garage61-logo.png" alt="Garage 61"> Garage 61</span>
+        <span><img src="logos/estaca-logo.png" alt="Ecole ESTACA"> Ecole ESTACA</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const track = document.getElementById("bannerTrack");
+      const blockToClone = track.querySelector(".banner-items");
+      
+      for (let i = 0; i < 3; i++) {
+        const clone = blockToClone.cloneNode(true);
+        track.appendChild(clone);
+      }
+    });
+  </script>
+
+  <!-- SCRIPT FIREBASE POUR L'ENVOI DU FORMULAIRE -->
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
+      authDomain: "estacupbymeka.firebaseapp.com",
+      projectId: "estacupbymeka",
+      storageBucket: "estacupbymeka.appspot.com", 
+      messagingSenderId: "1065406380441",
+      appId: "1:1065406380441:web:55005f7d29290040c13b08"
+    };
+
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    const db = getFirestore(app);
+
+    const form = document.getElementById("contactForm");
+    const msgBox = document.getElementById("contactMsg");
+    const btnSubmit = document.getElementById("btnSubmitContact");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      // Désactiver le bouton pendant l'envoi
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = "⏳ Envoi en cours...";
+      msgBox.style.display = "none";
+
+      const name = document.getElementById("contactName").value.trim();
+      const email = document.getElementById("contactEmail").value.trim();
+      const subject = document.getElementById("contactSubject").value;
+      const message = document.getElementById("contactMessage").value.trim();
+
+      try {
+        // Enregistrement dans la collection 'contact_messages'
+        await addDoc(collection(db, "contact_messages"), {
+          name: name,
+          email: email,
+          subject: subject,
+          message: message,
+          timestamp: new Date(),
+          status: "Nouveau" // Utile si tu veux gérer les messages côté admin plus tard[cite: 15, 16]
+        });
+
+        // Succès
+        msgBox.textContent = "✅ Votre message a été envoyé avec succès ! Nous vous répondrons très vite.";
+        msgBox.className = "msg-box msg-success";
+        msgBox.style.display = "block";
+        form.reset(); // On vide le formulaire
+
+      } catch (error) {
+        console.error("Erreur lors de l'envoi du message :", error);
+        // Erreur
+        msgBox.textContent = "❌ Une erreur est survenue lors de l'envoi. Veuillez réessayer ou nous contacter via Discord.";
+        msgBox.className = "msg-box msg-error";
+        msgBox.style.display = "block";
+      } finally {
+        // Réactiver le bouton
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "📨 Envoyer le message";
+      }
+    });
+  </script>
+
+</body>
+</html>
