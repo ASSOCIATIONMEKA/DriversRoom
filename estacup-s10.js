@@ -237,9 +237,9 @@ function showChampCategory(catKey) {
   
   if (activeNav) {
     activeNav.classList.remove("hidden");
-    const firstSubBtn = activeNav.querySelector(".champ-sub-btn");
-    if (firstSubBtn) {
-      showChampionshipSub(firstSubBtn.dataset.sub);
+    const visibleBtns = Array.from(activeNav.querySelectorAll(".champ-sub-btn")).filter(b => b.style.display !== "none");
+    if (visibleBtns.length > 0) {
+      showChampionshipSub(visibleBtns[0].dataset.sub);
     }
   }
 }
@@ -440,6 +440,7 @@ async function loadMyTeamSection() {
 async function refreshTeamDashboard() {
   const container = $("myTeamContainer");
   
+  // 1. Récupérer l'inscription
   const mySignup = await getDoc(doc(db, "estacup_s10_signups", currentUid));
   if (!mySignup.exists() || !mySignup.data().teamName || mySignup.data().teamName.trim().toLowerCase() === "indépendant" || mySignup.data().teamName.trim().toLowerCase() === "sans équipe") {
     container.innerHTML = `
@@ -463,15 +464,18 @@ async function refreshTeamDashboard() {
   });
   const availableTeams = Array.from(allTeamsSet).sort();
 
+  // 2. Récupérer les équipes sœurs
   const configRef = doc(db, "estacup_s10_teams_config", myTeam);
   const configSnap = await getDoc(configRef);
   const sisterTeams = configSnap.exists() && configSnap.data().sisterTeams ? configSnap.data().sisterTeams : [];
 
+  // 3. Déterminer les équipes à charger
   let targetTeams = [myTeam];
   if (window.teamViewState.showGlobal && sisterTeams.length > 0) {
     targetTeams = targetTeams.concat(sisterTeams);
   }
 
+  // 4. Récupérer les équipiers
   const teamQuery = query(collection(db, "estacup_s10_signups"), where("teamName", "in", targetTeams));
   const teamSnap = await getDocs(teamQuery);
 
@@ -518,6 +522,7 @@ async function refreshTeamDashboard() {
 
   teammates.sort((a, b) => b.points - a.points);
 
+  // --- Construction HTML ---
   const hasSisters = sisterTeams.length > 0;
   const titleDisplay = window.teamViewState.showGlobal && hasSisters ? `Structure Globale (${myTeam} & co.)` : myTeam;
 
@@ -1325,6 +1330,7 @@ function listenServerStatus() {
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
         btn.textContent = "🚀 Rejoindre via Content Manager";
+        // Utilisation de window.open pour ouvrir dans un nouvel onglet sans quitter le site
         btn.onclick = () => window.open("https://acstuff.ru/s/q:race/online/join?httpPort=18078&ip=157.90.3.32", "_blank");
       } else {
         box.style.borderColor = "#f59e0b";
