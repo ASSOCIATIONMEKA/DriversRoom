@@ -1155,24 +1155,43 @@
     let currentUser = null;
     let currentUserName = "Pilote";
     let isAdmin = false;
+    let isUserValidated = false;
+    let userTeamName = "";
 
     const navPresenceBtn = document.getElementById("navPresenceBtn");
     const navReclamBtn = document.getElementById("navReclamBtn");
     const navVoteBtn = document.getElementById("navVoteBtn");
     const navPaddockCat = document.getElementById("navPaddockCat");
+    const navMyTeamBtn = document.querySelector('[data-sub="monequipe"]');
     const adminPrequalPanel = document.getElementById("adminPrequalPanel");
 
     function showRestrictedFeatures() {
-      if (navPresenceBtn) navPresenceBtn.style.display = "";
-      if (navReclamBtn) navReclamBtn.style.display = "";
-      if (navVoteBtn) navVoteBtn.style.display = "";
-      if (navPaddockCat) navPaddockCat.style.display = "";
+      // Masquer par défaut les onglets sensibles
+      if (navPresenceBtn) navPresenceBtn.style.display = "none";
+      if (navReclamBtn) navReclamBtn.style.display = "none";
+      if (navVoteBtn) navVoteBtn.style.display = "none";
+      if (navPaddockCat) navPaddockCat.style.display = "none";
+      if (navMyTeamBtn) navMyTeamBtn.style.display = "none";
+
+      // Afficher uniquement si l'utilisateur est Admin OU que son inscription est validée
+      if (isAdmin || isUserValidated) {
+        if (navPresenceBtn) navPresenceBtn.style.display = "";
+        if (navReclamBtn) navReclamBtn.style.display = "";
+        if (navVoteBtn) navVoteBtn.style.display = "";
+        if (navPaddockCat) navPaddockCat.style.display = "";
+        
+        // Afficher l'onglet "Mon équipe" uniquement s'il possède une équipe valide
+        if (isAdmin || (userTeamName && userTeamName !== "indépendant" && userTeamName !== "sans équipe")) {
+          if (navMyTeamBtn) navMyTeamBtn.style.display = "";
+        }
+      }
     }
 
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
       if (!user) return;
 
+      // 1. Récupération des infos utilisateur globales
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
@@ -1186,6 +1205,21 @@
       } catch(e) {
         currentUserName = user.email;
         isAdmin = false;
+      }
+
+      // 2. Récupération du statut d'inscription ESTACUP S10
+      try {
+        const signupDoc = await getDoc(doc(db, "estacup_s10_signups", user.uid));
+        if (signupDoc.exists()) {
+          const sData = signupDoc.data();
+          isUserValidated = sData.isValidated === true;
+          userTeamName = (sData.teamName || "").trim().toLowerCase();
+        } else {
+          isUserValidated = false;
+          userTeamName = "";
+        }
+      } catch(e) {
+        console.error("Erreur de vérification de l'inscription:", e);
       }
 
       showRestrictedFeatures();
