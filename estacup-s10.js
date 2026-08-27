@@ -453,7 +453,7 @@ async function refreshTeamDashboard() {
 
   const myTeam = mySignup.data().teamName.trim();
 
-  // --- NOUVEAU : Récupérer toutes les équipes uniques existantes ---
+  // --- Récupérer toutes les équipes uniques existantes ---
   const allSignupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
   const allTeamsSet = new Set();
   allSignupsSnap.forEach(d => {
@@ -463,7 +463,6 @@ async function refreshTeamDashboard() {
     }
   });
   const availableTeams = Array.from(allTeamsSet).sort();
-  // -----------------------------------------------------------------
 
   // 2. Récupérer les équipes sœurs
   const configRef = doc(db, "estacup_s10_teams_config", myTeam);
@@ -911,6 +910,8 @@ async function loadEstacupForm(userData) {
 }
 
 /* ======================== LISTE DES ENGAGÉS (PUBLIQUE) ======================== */
+let engagesDataCache = [];
+
 async function loadEstacupEngages() {
   const targetArea = document.getElementById("champ-sub-engages");
   if (!targetArea) return;
@@ -938,7 +939,7 @@ async function loadEstacupEngages() {
       return;
     }
 
-    const engages = [];
+    engagesDataCache = [];
     snap.forEach(docSnap => {
       const data = docSnap.data();
       const uid = data.uid || docSnap.id;
@@ -951,7 +952,7 @@ async function loadEstacupEngages() {
 
       const mRating = uData.eloRating ?? 1000;
 
-      engages.push({
+      engagesDataCache.push({
         rawFirstName: data.firstName || uData.firstName || "",
         rawLastName: data.lastName || uData.lastName || "",
         name: `${data.firstName || uData.firstName || ""} ${data.lastName || uData.lastName || ""}`.trim() || "Pilote",
@@ -965,79 +966,132 @@ async function loadEstacupEngages() {
       });
     });
 
-    // Tri par numéro de course croissant
-    engages.sort((a, b) => a.number - b.number);
-
-    let html = `
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
-        <h3 style="color: var(--accent-primary); margin: 0;">Liste des engagés (${engages.length})</h3>
-      </div>
-      <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); padding: 1rem;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; min-width: 900px;">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 70px;">N°</th>
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 180px; text-align: center;">Livrée</th>
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Licence</th>
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">M-Rating</th>
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Véhicule</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    engages.forEach(p => {
-      // Résolution intelligente du chemin de l'image
-      let liverySrc = "";
-      if (p.liveryChoice === "neutre") {
-        liverySrc = "Livrées/000 - Template MEKA.png";
-      } else {
-        const safeLastName = (p.rawLastName || "").trim().toUpperCase();
-        const safeFirstName = (p.rawFirstName || "").trim();
-        // Exemple : "96 - TOMCZYK_Marin.png"
-        liverySrc = `Livrées/${p.number} - ${safeLastName}_${safeFirstName}.png`;
-      }
-
-      html += `
-        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-          <td style="padding: 12px 15px; font-weight: 900; font-size: 1.3rem; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
-          
-          <td style="padding: 12px 15px; text-align: center;">
-            <img src="${escapeHtml(liverySrc)}" 
-                 onerror="this.onerror=null; this.src='Livrées/En attente.png';" 
-                 alt="Livrée" 
-                 style="width: 150px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-          </td>
-          
-          <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 700; font-size: 1.05rem;">${escapeHtml(p.name)}</td>
-          
-          <td style="padding: 12px 15px;">
-            <span style="font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
-              ${escapeHtml(p.licence)}
-            </span>
-          </td>
-          
-          <td style="padding: 12px 15px; font-weight: bold; color: #38bdf8;">${p.mRating}</td>
-          <td style="padding: 12px 15px; color: var(--text-secondary); font-weight: 500;">${escapeHtml(p.team)}</td>
-          <td style="padding: 12px 15px; color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(p.car)}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    targetArea.innerHTML = html;
+    renderEstacupEngagesUI();
 
   } catch (err) {
     console.error("Erreur chargement liste des engagés publique :", err);
     targetArea.innerHTML = "<p class='impact-bad'>Erreur lors du chargement de la liste des engagés.</p>";
   }
+}
+
+function renderEstacupEngagesUI() {
+  const targetArea = document.getElementById("champ-sub-engages");
+  if (!targetArea) return;
+
+  if (!document.getElementById("engagesTableContainer")) {
+    targetArea.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+        <h3 style="color: var(--accent-primary); margin: 0;">Liste des engagés (<span id="engagesCount">${engagesDataCache.length}</span>)</h3>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <input type="text" id="engagesSearch" placeholder="Rechercher (Nom, N°, Équipe...)" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
+        <select id="engagesSort" style="padding: 0.6rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
+          <option value="number_asc">Tri : N° (Croissant)</option>
+          <option value="name_asc">Tri : Prénom/Nom (A-Z)</option>
+          <option value="rating_desc">Tri : M-Rating (Décroissant)</option>
+          <option value="team_asc">Tri : Équipe (A-Z)</option>
+        </select>
+      </div>
+
+      <div id="engagesTableContainer" style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); padding: 1rem;">
+      </div>
+    `;
+
+    document.getElementById("engagesSearch").addEventListener("input", updateEngagesTable);
+    document.getElementById("engagesSort").addEventListener("change", updateEngagesTable);
+  }
+
+  updateEngagesTable();
+}
+
+function updateEngagesTable() {
+  const searchVal = (document.getElementById("engagesSearch").value || "").toLowerCase();
+  const sortVal = document.getElementById("engagesSort").value || "number_asc";
+  const container = document.getElementById("engagesTableContainer");
+  const countEl = document.getElementById("engagesCount");
+
+  // Filtre
+  let filtered = engagesDataCache.filter(p => {
+    const str = `${p.name} ${p.number} ${p.team} ${p.licence}`.toLowerCase();
+    return str.includes(searchVal);
+  });
+
+  // Tri
+  filtered.sort((a, b) => {
+    if (sortVal === "number_asc") return a.number - b.number;
+    if (sortVal === "name_asc") return a.name.localeCompare(b.name);
+    if (sortVal === "rating_desc") return b.mRating - a.mRating;
+    if (sortVal === "team_asc") return a.team.localeCompare(b.team);
+    return 0;
+  });
+
+  if (countEl) countEl.textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="muted-note" style="text-align: center; padding: 1rem;">Aucun pilote ne correspond à votre recherche.</p>`;
+    return;
+  }
+
+  let html = `
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; min-width: 900px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 70px;">N°</th>
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Licence</th>
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">M-Rating</th>
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 180px; text-align: center;">Livrée</th>
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
+          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Véhicule</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  filtered.forEach(p => {
+    let liverySrc = "";
+    if (p.liveryChoice === "neutre") {
+      liverySrc = "Livrées/000 - Template MEKA.png";
+    } else {
+      const safeLastName = (p.rawLastName || "").trim().toUpperCase();
+      const safeFirstName = (p.rawFirstName || "").trim();
+      liverySrc = `Livrées/${p.number} - ${safeLastName}_${safeFirstName}.png`;
+    }
+
+    html += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+        <td style="padding: 12px 15px; font-weight: 900; font-size: 1.3rem; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
+        
+        <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 700; font-size: 1.05rem;">${escapeHtml(p.name)}</td>
+        
+        <td style="padding: 12px 15px;">
+          <span style="font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
+            ${escapeHtml(p.licence)}
+          </span>
+        </td>
+        
+        <td style="padding: 12px 15px; font-weight: bold; color: #38bdf8;">${p.mRating}</td>
+        
+        <td style="padding: 12px 15px; text-align: center;">
+          <img src="${escapeHtml(liverySrc)}" 
+               onerror="this.onerror=null; this.src='Livrées/En attente.png';" 
+               alt="Livrée" 
+               style="width: 150px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+        </td>
+        
+        <td style="padding: 12px 15px; color: var(--text-secondary); font-weight: 500;">${escapeHtml(p.team)}</td>
+        <td style="padding: 12px 15px; color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(p.car)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+  `;
+
+  container.innerHTML = html;
 }
 
 /* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
