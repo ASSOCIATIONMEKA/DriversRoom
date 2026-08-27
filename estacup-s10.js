@@ -630,7 +630,7 @@ async function refreshTeamDashboard() {
   if (btnAdd) {
     btnAdd.addEventListener("click", async () => {
       const selectEl = $("inputSisterTeam");
-      const input = selectEl.value; // Récupère la valeur du select
+      const input = selectEl.value;
       
       if (!input) {
         alert("Veuillez sélectionner une équipe dans la liste.");
@@ -952,25 +952,32 @@ async function loadEstacupEngages() {
       const mRating = uData.eloRating ?? 1000;
 
       engages.push({
+        rawFirstName: data.firstName || uData.firstName || "",
+        rawLastName: data.lastName || uData.lastName || "",
         name: `${data.firstName || uData.firstName || ""} ${data.lastName || uData.lastName || ""}`.trim() || "Pilote",
         team: data.teamName || "Indépendant",
         number: Number(data.raceNumber) || 0,
         car: data.carChoice || "Ligier JS P320",
         licence: licence,
         licColor: licColor,
-        mRating: mRating
+        mRating: mRating,
+        liveryChoice: data.liveryChoice || "personnelle"
       });
     });
 
+    // Tri par numéro de course croissant
     engages.sort((a, b) => a.number - b.number);
 
     let html = `
-      <h3 style="color: var(--accent-primary); margin-bottom: 1.5rem;">Liste des engagés (${engages.length})</h3>
-      <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary);">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+        <h3 style="color: var(--accent-primary); margin: 0;">Liste des engagés (${engages.length})</h3>
+      </div>
+      <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); padding: 1rem;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; min-width: 900px;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
-              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">N°</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 70px;">N°</th>
+              <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 180px; text-align: center;">Livrée</th>
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Licence</th>
               <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">M-Rating</th>
@@ -982,18 +989,39 @@ async function loadEstacupEngages() {
     `;
 
     engages.forEach(p => {
+      // Résolution intelligente du chemin de l'image
+      let liverySrc = "";
+      if (p.liveryChoice === "neutre") {
+        liverySrc = "Livrées/000 - Template MEKA.png";
+      } else {
+        const safeLastName = (p.rawLastName || "").trim().toUpperCase();
+        const safeFirstName = (p.rawFirstName || "").trim();
+        // Exemple : "96 - TOMCZYK_Marin.png"
+        liverySrc = `Livrées/${p.number} - ${safeLastName}_${safeFirstName}.png`;
+      }
+
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-          <td style="padding: 12px 15px; font-weight: bold; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
-          <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 600;">${escapeHtml(p.name)}</td>
+          <td style="padding: 12px 15px; font-weight: 900; font-size: 1.3rem; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
+          
+          <td style="padding: 12px 15px; text-align: center;">
+            <img src="${escapeHtml(liverySrc)}" 
+                 onerror="this.onerror=null; this.src='Livrées/En attente.png';" 
+                 alt="Livrée" 
+                 style="width: 150px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+          </td>
+          
+          <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 700; font-size: 1.05rem;">${escapeHtml(p.name)}</td>
+          
           <td style="padding: 12px 15px;">
-            <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
+            <span style="font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
               ${escapeHtml(p.licence)}
             </span>
           </td>
+          
           <td style="padding: 12px 15px; font-weight: bold; color: #38bdf8;">${p.mRating}</td>
-          <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.team)}</td>
-          <td style="padding: 12px 15px; color: var(--text-secondary);">${escapeHtml(p.car)}</td>
+          <td style="padding: 12px 15px; color: var(--text-secondary); font-weight: 500;">${escapeHtml(p.team)}</td>
+          <td style="padding: 12px 15px; color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(p.car)}</td>
         </tr>
       `;
     });
