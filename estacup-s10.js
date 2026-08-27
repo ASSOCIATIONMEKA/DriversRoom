@@ -417,6 +417,8 @@ async function loadPilotStats(uid) {
 }
 
 /* ======================== MON ÉQUIPE ======================== */
+window.teamViewState = { showGlobal: false };
+
 async function loadMyTeamSection() {
   const container = $("myTeamContainer");
   if (!container) return;
@@ -428,121 +430,225 @@ async function loadMyTeamSection() {
   container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Analyse des données de l'équipe...</div>`;
 
   try {
-    // 1. Récupérer l'inscription de l'utilisateur
-    const mySignup = await getDoc(doc(db, "estacup_s10_signups", currentUid));
-    if (!mySignup.exists() || !mySignup.data().teamName || mySignup.data().teamName.trim().toLowerCase() === "indépendant" || mySignup.data().teamName.trim().toLowerCase() === "sans équipe") {
-      container.innerHTML = `
-        <div style="text-align: center; padding: 2rem;">
-          <h4 style="color: #94a3b8; font-size: 1.5rem; margin-bottom: 1rem;">🐺 Loup Solitaire</h4>
-          <p style="color: #cbd5e1;">Vous êtes inscrit en tant que pilote Indépendant pour cette saison. Rejoignez une structure pour débloquer le classement d'équipe !</p>
-        </div>`;
-      return;
-    }
-
-    const myTeam = mySignup.data().teamName.trim();
-
-    // 2. Récupérer tous les membres de cette équipe
-    const teamQuery = query(collection(db, "estacup_s10_signups"), where("teamName", "==", myTeam));
-    const teamSnap = await getDocs(teamQuery);
-
-    const teammates = [];
-    let totalTeamPoints = 0;
-
-    for (const d of teamSnap.docs) {
-      const data = d.data();
-      const uid = d.id;
-      
-      const userSnap = await getDoc(doc(db, "users", uid));
-      const userData = userSnap.exists() ? userSnap.data() : {};
-
-      const historySnap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
-      let pilotPoints = 0;
-      let pilotWins = 0;
-      let pilotPodiums = 0;
-
-      historySnap.forEach(h => {
-        const hData = h.data();
-        pilotPoints += (hData.points || 0);
-        const pos = Number(hData.position) || 999;
-        if (pos === 1) pilotWins++;
-        if (pos >= 1 && pos <= 3) pilotPodiums++;
-      });
-
-      totalTeamPoints += pilotPoints;
-
-      teammates.push({
-        uid,
-        name: `${data.firstName} ${data.lastName}`,
-        number: data.raceNumber,
-        elo: userData.eloRating || 1000,
-        safety: userData.licensePoints || 10,
-        license: userData.licenseClass || userData.licenceClass || "Rookie",
-        points: pilotPoints,
-        wins: pilotWins,
-        podiums: pilotPodiums,
-        isMe: uid === currentUid
-      });
-    }
-
-    // 3. Trier par points décroissants pour le classement interne
-    teammates.sort((a, b) => b.points - a.points);
-
-    // 4. Construction de l'interface
-    let html = `
-      <div style="text-align: center; margin-bottom: 2.5rem;">
-        <h4 style="font-size: 2.2rem; color: #fde68a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);">
-          🛡️ ${escapeHtml(myTeam)}
-        </h4>
-        <p style="color: #94a3b8; font-size: 1.1rem;">Total individuel cumulé : <strong style="color: #38bdf8; font-size: 1.3rem;">${totalTeamPoints} pts</strong></p>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-    `;
-
-    teammates.forEach((t, index) => {
-      const rankColor = index === 0 ? "#fde68a" : (index === 1 ? "#cbd5e1" : "#cd7f32");
-      const rankMedal = index === 0 ? "🥇" : (index === 1 ? "🥈" : "🥉");
-      
-      html += `
-        <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid ${t.isMe ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden; box-shadow: ${t.isMe ? '0 0 15px rgba(56, 189, 248, 0.2)' : 'none'};">
-          ${t.isMe ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: #38bdf8;"></div>' : ''}
-          
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-            <div>
-              <h5 style="margin: 0; font-size: 1.15rem; color: #fff;">${escapeHtml(t.name)} ${t.isMe ? '<span style="font-size:0.8rem; color:#38bdf8;">(Vous)</span>' : ''}</h5>
-              <span style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); color: #cbd5e1; margin-top: 8px; display: inline-block; text-transform: uppercase; font-weight: bold;">#${t.number} • ${t.license}</span>
-            </div>
-            <div style="font-size: 1.8rem; line-height: 1;" title="Classement interne">${rankMedal}</div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; text-align: center;">
-            <div style="background: rgba(255,255,255,0.03); padding: 12px 5px; border-radius: 8px;">
-              <div style="font-size: 1.6rem; font-weight: 900; color: ${rankColor};">${t.points}</div>
-              <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">Points</div>
-            </div>
-            <div style="background: rgba(255,255,255,0.03); padding: 12px 5px; border-radius: 8px;">
-              <div style="font-size: 1.6rem; font-weight: 900; color: #34d399;">${t.safety}</div>
-              <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">M-Safety</div>
-            </div>
-          </div>
-          
-          <div style="display: flex; justify-content: space-around; font-size: 0.95rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
-            <span title="Victoires">🏆 ${t.wins}</span>
-            <span title="Podiums">🍾 ${t.podiums}</span>
-            <span title="M-Rating">📈 ${t.elo}</span>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    container.innerHTML = html;
-
+    await refreshTeamDashboard();
   } catch (e) {
     console.error("Erreur loadMyTeamSection:", e);
     container.innerHTML = `<p class="impact-bad">Erreur de chargement des données de l'équipe.</p>`;
   }
 }
+
+async function refreshTeamDashboard() {
+  const container = $("myTeamContainer");
+  // 1. Récupérer l'inscription
+  const mySignup = await getDoc(doc(db, "estacup_s10_signups", currentUid));
+  if (!mySignup.exists() || !mySignup.data().teamName || mySignup.data().teamName.trim().toLowerCase() === "indépendant" || mySignup.data().teamName.trim().toLowerCase() === "sans équipe") {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 2rem;">
+        <h4 style="color: #94a3b8; font-size: 1.5rem; margin-bottom: 1rem;">🐺 Loup Solitaire</h4>
+        <p style="color: #cbd5e1;">Vous êtes inscrit en tant que pilote Indépendant pour cette saison. Rejoignez une structure pour débloquer le classement d'équipe !</p>
+      </div>`;
+    return;
+  }
+
+  const myTeam = mySignup.data().teamName.trim();
+
+  // 2. Récupérer les équipes sœurs
+  const configRef = doc(db, "estacup_s10_teams_config", myTeam);
+  const configSnap = await getDoc(configRef);
+  const sisterTeams = configSnap.exists() && configSnap.data().sisterTeams ? configSnap.data().sisterTeams : [];
+
+  // 3. Déterminer les équipes à charger
+  let targetTeams = [myTeam];
+  if (window.teamViewState.showGlobal && sisterTeams.length > 0) {
+    targetTeams = targetTeams.concat(sisterTeams);
+  }
+
+  // 4. Récupérer les équipiers
+  const teamQuery = query(collection(db, "estacup_s10_signups"), where("teamName", "in", targetTeams));
+  const teamSnap = await getDocs(teamQuery);
+
+  const teammates = [];
+  let totalTeamPoints = 0;
+
+  for (const d of teamSnap.docs) {
+    const data = d.data();
+    const uid = d.id;
+
+    const userSnap = await getDoc(doc(db, "users", uid));
+    const userData = userSnap.exists() ? userSnap.data() : {};
+
+    const historySnap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
+    let pilotPoints = 0;
+    let pilotWins = 0;
+    let pilotPodiums = 0;
+
+    historySnap.forEach(h => {
+      const hData = h.data();
+      pilotPoints += (hData.points || 0);
+      const pos = Number(hData.position) || 999;
+      if (pos === 1) pilotWins++;
+      if (pos >= 1 && pos <= 3) pilotPodiums++;
+    });
+
+    totalTeamPoints += pilotPoints;
+
+    teammates.push({
+      uid,
+      name: `${data.firstName} ${data.lastName}`,
+      number: data.raceNumber,
+      teamName: data.teamName.trim(), 
+      elo: userData.eloRating || 1000,
+      safety: userData.licensePoints || 10,
+      license: userData.licenseClass || userData.licenceClass || "Rookie",
+      points: pilotPoints,
+      wins: pilotWins,
+      podiums: pilotPodiums,
+      isMe: uid === currentUid,
+      isSister: data.teamName.trim() !== myTeam
+    });
+  }
+
+  teammates.sort((a, b) => b.points - a.points);
+
+  // --- Construction HTML ---
+  const hasSisters = sisterTeams.length > 0;
+  const titleDisplay = window.teamViewState.showGlobal && hasSisters ? `Structure Globale (${myTeam} & co.)` : myTeam;
+
+  let html = `
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem;">
+      
+      <div style="flex: 1; min-width: 300px;">
+        <h4 style="font-size: 2.2rem; color: #fde68a; text-transform: uppercase; letter-spacing: 2px; margin-top: 0; margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);">
+          🛡️ ${escapeHtml(titleDisplay)}
+        </h4>
+        <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 1rem;">Total cumulé : <strong style="color: #38bdf8; font-size: 1.3rem;">${totalTeamPoints} pts</strong></p>
+        
+        ${hasSisters ? `
+          <div class="joker-toggle" style="display: inline-flex; margin-bottom: 0;">
+            <label for="toggleGlobalStruct">
+              <input type="checkbox" id="toggleGlobalStruct" ${window.teamViewState.showGlobal ? 'checked' : ''}>
+              <span>Inclure les <strong>équipes sœurs</strong> dans l'affichage</span>
+            </label>
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.2rem; flex: 1; min-width: 300px;">
+        <h5 style="margin-top: 0; color: #38bdf8; margin-bottom: 0.8rem; font-size: 1rem;">🔗 Alliances & Équipes Sœurs</h5>
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">Liez votre équipe à d'autres structures (ex: SRT 1 avec SRT 2) pour comparer vos performances globales.</p>
+        
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+          <input type="text" id="inputSisterTeam" placeholder="Nom exact de l'équipe sœur" style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
+          <button id="btnAddSister" class="btn-validate" style="padding: 0.5rem 1rem; height: auto;">Lier</button>
+        </div>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          ${sisterTeams.map(st => `
+            <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fde68a; padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ${escapeHtml(st)} 
+              <button class="btn-remove-sister" data-team="${escapeHtml(st)}" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.9rem; padding: 0;">✖</button>
+            </span>
+          `).join('')}
+          ${sisterTeams.length === 0 ? '<span style="font-size: 0.85rem; color: #64748b; font-style: italic;">Aucune équipe sœur liée.</span>' : ''}
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+  `;
+
+  teammates.forEach((t, index) => {
+    const rankColor = index === 0 ? "#fde68a" : (index === 1 ? "#cbd5e1" : "#cd7f32");
+    const rankMedal = index === 0 ? "🥇" : (index === 1 ? "🥈" : "🥉");
+    const borderColor = t.isMe ? '#38bdf8' : (t.isSister ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255,255,255,0.1)');
+    
+    html += `
+      <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid ${borderColor}; border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden; box-shadow: ${t.isMe ? '0 0 15px rgba(56, 189, 248, 0.2)' : 'none'};">
+        ${t.isMe ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: #38bdf8;"></div>' : ''}
+        ${t.isSister ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: #f59e0b;"></div>' : ''}
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <div>
+            <h5 style="margin: 0; font-size: 1.15rem; color: #fff;">${escapeHtml(t.name)} ${t.isMe ? '<span style="font-size:0.8rem; color:#38bdf8;">(Vous)</span>' : ''}</h5>
+            <span style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); color: #cbd5e1; margin-top: 8px; display: inline-block; text-transform: uppercase; font-weight: bold;">#${t.number} • ${t.license}</span>
+            ${t.isSister ? `<div style="font-size: 0.75rem; color: #f59e0b; margin-top: 6px; font-weight: bold;">🤝 ${escapeHtml(t.teamName)}</div>` : ''}
+          </div>
+          <div style="font-size: 1.8rem; line-height: 1;" title="Classement interne">${rankMedal}</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; text-align: center;">
+          <div style="background: rgba(255,255,255,0.03); padding: 12px 5px; border-radius: 8px;">
+            <div style="font-size: 1.6rem; font-weight: 900; color: ${rankColor};">${t.points}</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">Points</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); padding: 12px 5px; border-radius: 8px;">
+            <div style="font-size: 1.6rem; font-weight: 900; color: #34d399;">${t.safety}</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">M-Safety</div>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-around; font-size: 0.95rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+          <span title="Victoires">🏆 ${t.wins}</span>
+          <span title="Podiums">🍾 ${t.podiums}</span>
+          <span title="M-Rating">📈 ${t.elo}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+
+  // --- EVENTS ---
+  const toggle = $("toggleGlobalStruct");
+  if (toggle) {
+    toggle.addEventListener("change", (e) => {
+      window.teamViewState.showGlobal = e.target.checked;
+      container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Actualisation...</div>`;
+      refreshTeamDashboard();
+    });
+  }
+
+  const btnAdd = $("btnAddSister");
+  if (btnAdd) {
+    btnAdd.addEventListener("click", async () => {
+      const input = $("inputSisterTeam").value.trim();
+      if (!input) return;
+      if (input.toLowerCase() === myTeam.toLowerCase()) {
+        alert("Vous ne pouvez pas lier votre propre équipe.");
+        return;
+      }
+      if (sisterTeams.map(s => s.toLowerCase()).includes(input.toLowerCase())) {
+        alert("Cette équipe est déjà liée.");
+        return;
+      }
+      
+      btnAdd.disabled = true;
+      const newSisterTeams = [...sisterTeams, input];
+      await setDoc(doc(db, "estacup_s10_teams_config", myTeam), { sisterTeams: newSisterTeams }, { merge: true });
+      
+      container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Actualisation...</div>`;
+      refreshTeamDashboard();
+    });
+  }
+
+  document.querySelectorAll(".btn-remove-sister").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      const teamToRemove = e.target.getAttribute("data-team");
+      if (!confirm(`Retirer l'équipe sœur "${teamToRemove}" ?`)) return;
+
+      const newSisterTeams = sisterTeams.filter(st => st !== teamToRemove);
+      await setDoc(doc(db, "estacup_s10_teams_config", myTeam), { sisterTeams: newSisterTeams }, { merge: true });
+      
+      container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Actualisation...</div>`;
+      refreshTeamDashboard();
+    });
+  });
+
+}
 window.loadMyTeamSection = loadMyTeamSection;
+window.refreshTeamDashboard = refreshTeamDashboard;
 
 /* ======================== FORMULAIRE D'INSCRIPTION ======================== */
 function setupMekaQuestionnaire(userData) {
