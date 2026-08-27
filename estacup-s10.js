@@ -139,7 +139,7 @@ function helmetSvgFor(hRaw) {
   if (h.style === "stripe") stripeMarkup = `<rect x="45" y="8" width="20" height="64" rx="10" fill="${h.stripeColor}"/>`;
   else if (h.style === "half") stripeMarkup = `<rect x="4" y="8" width="58" height="64" rx="26" fill="${h.stripeColor}"/>`;
   else if (h.style === "diag") stripeMarkup = `<polygon points="0,60 0,30 80,8 80,38" fill="${h.stripeColor}" opacity="0.95"/>`;
-  return `<svg viewBox="0 0 120 80" class="helmet-svg" aria-hidden="true" style="height: 1em; width: auto; vertical-align: middle; margin-right: 5px;"><defs><clipPath id="helmetClip"><path d="M12 30 Q30 5 70 5 Q105 5 112 38 Q115 50 110 63 Q107 72 98 75 L22 75 Q14 74 10 66 Q5 55 7 43 Z"/></clipPath></defs><ellipse cx="60" cy="72" rx="38" ry="6" fill="rgba(0,0,0,0.65)"/><g clip-path="url(#helmetClip)"><rect x="5" y="6" width="110" height="70" rx="32" fill="${h.baseColor}"/>${stripeMarkup}</g><path d="M62 32 H104 Q112 32 112 40 Q112 52 100 53 L62 53 Z" fill="${h.accentColor}"/><path d="M20 26 Q36 12 60 10" stroke="rgba(255,255,255,0.35)" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M14 54 Q60 64 106 54" stroke="#020617" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/></svg>`;
+  return `<svg viewBox="0 0 120 80" class="helmet-svg" aria-hidden="true" style="height: 1em; width: auto; vertical-align: middle; margin-right: 5px;"><defs><clipPath id="helmetClip"><path d="M12 30 Q30 5 70 5 105 5 112 38 Q115 50 110 63 Q107 72 98 75 L22 75 Q14 74 10 66 Q5 55 7 43 Z"/></clipPath></defs><ellipse cx="60" cy="72" rx="38" ry="6" fill="rgba(0,0,0,0.65)"/><g clip-path="url(#helmetClip)"><rect x="5" y="6" width="110" height="70" rx="32" fill="${h.baseColor}"/>${stripeMarkup}</g><path d="M62 32 H104 Q112 32 112 40 Q112 52 100 53 L62 53 Z" fill="${h.accentColor}"/><path d="M20 26 Q36 12 60 10" stroke="rgba(255,255,255,0.35)" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M14 54 Q60 64 106 54" stroke="#020617" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/></svg>`;
 }
 async function getHelmetForUid(uid) {
   if (!uid) return null; if (helmetCache.has(uid)) return helmetCache.get(uid);
@@ -440,7 +440,6 @@ async function loadMyTeamSection() {
 async function refreshTeamDashboard() {
   const container = $("myTeamContainer");
   
-  // 1. Récupérer l'inscription
   const mySignup = await getDoc(doc(db, "estacup_s10_signups", currentUid));
   if (!mySignup.exists() || !mySignup.data().teamName || mySignup.data().teamName.trim().toLowerCase() === "indépendant" || mySignup.data().teamName.trim().toLowerCase() === "sans équipe") {
     container.innerHTML = `
@@ -464,18 +463,15 @@ async function refreshTeamDashboard() {
   });
   const availableTeams = Array.from(allTeamsSet).sort();
 
-  // 2. Récupérer les équipes sœurs
   const configRef = doc(db, "estacup_s10_teams_config", myTeam);
   const configSnap = await getDoc(configRef);
   const sisterTeams = configSnap.exists() && configSnap.data().sisterTeams ? configSnap.data().sisterTeams : [];
 
-  // 3. Déterminer les équipes à charger
   let targetTeams = [myTeam];
   if (window.teamViewState.showGlobal && sisterTeams.length > 0) {
     targetTeams = targetTeams.concat(sisterTeams);
   }
 
-  // 4. Récupérer les équipiers
   const teamQuery = query(collection(db, "estacup_s10_signups"), where("teamName", "in", targetTeams));
   const teamSnap = await getDocs(teamQuery);
 
@@ -522,7 +518,6 @@ async function refreshTeamDashboard() {
 
   teammates.sort((a, b) => b.points - a.points);
 
-  // --- Construction HTML ---
   const hasSisters = sisterTeams.length > 0;
   const titleDisplay = window.teamViewState.showGlobal && hasSisters ? `Structure Globale (${myTeam} & co.)` : myTeam;
 
@@ -615,7 +610,6 @@ async function refreshTeamDashboard() {
   html += `</div>`;
   container.innerHTML = html;
 
-  // --- EVENTS ---
   const toggle = $("toggleGlobalStruct");
   if (toggle) {
     toggle.addEventListener("change", (e) => {
@@ -775,6 +769,7 @@ async function loadEstacupForm(userData) {
             <option value="" disabled selected>-- Sélectionnez une option --</option>
             <option value="personnelle">Je fournirai une livrée personnelle (dépôt sur OneDrive)</option>
             <option value="neutre">Je roulerai avec la livrée neutre par défaut de l'ESTACUP</option>
+            <option value="licence">Je roulerai avec la livrée neutre aux couleurs de ma licence</option>
           </select>
 
           <button id="btnSubmitSignup" class="btn-validate" style="width: 100%; margin-top: 15px;">🏁 Valider mon inscription</button>
@@ -861,7 +856,10 @@ async function loadEstacupForm(userData) {
     if (data.paymentStatus === "adherent") statusText = "Adhérent MEKA";
     if (data.paymentStatus === "paye_5e") statusText = "Frais d'inscription (5€) payés";
 
-    let liveryText = data.liveryChoice === "personnelle" ? "Livrée personnelle (via OneDrive)" : (data.liveryChoice === "neutre" ? "Livrée neutre ESTACUP" : "Non renseigné");
+    let liveryText = "Non renseigné";
+    if (data.liveryChoice === "personnelle") liveryText = "Livrée personnelle (via OneDrive)";
+    else if (data.liveryChoice === "neutre") liveryText = "Livrée neutre ESTACUP";
+    else if (data.liveryChoice === "licence") liveryText = "Livrée neutre (Couleur Licence)";
 
     const infoItemStyle = "padding: 10px 15px; margin: 8px 0; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;";
 
@@ -1011,13 +1009,11 @@ function updateEngagesTable() {
   const container = document.getElementById("engagesTableContainer");
   const countEl = document.getElementById("engagesCount");
 
-  // Filtre
   let filtered = engagesDataCache.filter(p => {
     const str = `${p.name} ${p.number} ${p.team} ${p.licence}`.toLowerCase();
     return str.includes(searchVal);
   });
 
-  // Tri
   filtered.sort((a, b) => {
     if (sortVal === "number_asc") return a.number - b.number;
     if (sortVal === "name_asc") return a.name.localeCompare(b.name);
@@ -1053,6 +1049,11 @@ function updateEngagesTable() {
     let liverySrc = "";
     if (p.liveryChoice === "neutre") {
       liverySrc = "Livrées/000 - Template MEKA.png";
+    } else if (p.liveryChoice === "licence") {
+      let safeLicence = "Rookie";
+      if (p.licence.toLowerCase() === "pro") safeLicence = "Pro";
+      if (p.licence.toLowerCase() === "challenger") safeLicence = "Challenger";
+      liverySrc = `Livrées/000 - Template MEKA ${safeLicence}.png`;
     } else {
       const safeLastName = (p.rawLastName || "").trim().toUpperCase();
       const safeFirstName = (p.rawFirstName || "").trim();
@@ -1324,7 +1325,6 @@ function listenServerStatus() {
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
         btn.textContent = "🚀 Rejoindre via Content Manager";
-        // Utilisation de window.open pour ouvrir dans un nouvel onglet sans quitter le site
         btn.onclick = () => window.open("https://acstuff.ru/s/q:race/online/join?httpPort=18078&ip=157.90.3.32", "_blank");
       } else {
         box.style.borderColor = "#f59e0b";
