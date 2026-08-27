@@ -439,6 +439,7 @@ async function loadMyTeamSection() {
 
 async function refreshTeamDashboard() {
   const container = $("myTeamContainer");
+  
   // 1. Récupérer l'inscription
   const mySignup = await getDoc(doc(db, "estacup_s10_signups", currentUid));
   if (!mySignup.exists() || !mySignup.data().teamName || mySignup.data().teamName.trim().toLowerCase() === "indépendant" || mySignup.data().teamName.trim().toLowerCase() === "sans équipe") {
@@ -451,6 +452,18 @@ async function refreshTeamDashboard() {
   }
 
   const myTeam = mySignup.data().teamName.trim();
+
+  // --- NOUVEAU : Récupérer toutes les équipes uniques existantes ---
+  const allSignupsSnap = await getDocs(collection(db, "estacup_s10_signups"));
+  const allTeamsSet = new Set();
+  allSignupsSnap.forEach(d => {
+    const t = d.data().teamName;
+    if (t && t.trim() !== "" && t.toLowerCase() !== "indépendant" && t.toLowerCase() !== "sans équipe" && t.trim() !== myTeam) {
+      allTeamsSet.add(t.trim());
+    }
+  });
+  const availableTeams = Array.from(allTeamsSet).sort();
+  // -----------------------------------------------------------------
 
   // 2. Récupérer les équipes sœurs
   const configRef = doc(db, "estacup_s10_teams_config", myTeam);
@@ -538,7 +551,10 @@ async function refreshTeamDashboard() {
         <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">Liez votre équipe à d'autres structures (ex: SRT 1 avec SRT 2) pour comparer vos performances globales.</p>
         
         <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-          <input type="text" id="inputSisterTeam" placeholder="Nom exact de l'équipe sœur" style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
+          <select id="inputSisterTeam" style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
+            <option value="" disabled selected>-- Sélectionner une équipe --</option>
+            ${availableTeams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}
+          </select>
           <button id="btnAddSister" class="btn-validate" style="padding: 0.5rem 1rem; height: auto;">Lier</button>
         </div>
         
@@ -613,10 +629,11 @@ async function refreshTeamDashboard() {
   const btnAdd = $("btnAddSister");
   if (btnAdd) {
     btnAdd.addEventListener("click", async () => {
-      const input = $("inputSisterTeam").value.trim();
-      if (!input) return;
-      if (input.toLowerCase() === myTeam.toLowerCase()) {
-        alert("Vous ne pouvez pas lier votre propre équipe.");
+      const selectEl = $("inputSisterTeam");
+      const input = selectEl.value; // Récupère la valeur du select
+      
+      if (!input) {
+        alert("Veuillez sélectionner une équipe dans la liste.");
         return;
       }
       if (sisterTeams.map(s => s.toLowerCase()).includes(input.toLowerCase())) {
