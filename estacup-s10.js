@@ -255,6 +255,7 @@ function showChampionshipSub(subKey) {
   });
 
   if (subKey === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
+  if (subKey === "monequipe") loadMyTeamSection();
   if (subKey === "livree") renderLiverySection();
   if (subKey === "courses") loadResults(currentUid);
   if (subKey === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
@@ -414,6 +415,134 @@ async function loadPilotStats(uid) {
     if ($("statAvg")) $("statAvg").textContent = stats.avgPos ? `${stats.avgPos.toFixed(1)}ᵉ` : "—";
   } catch {}
 }
+
+/* ======================== MON ÉQUIPE ======================== */
+async function loadMyTeamSection() {
+  const container = $("myTeamContainer");
+  if (!container) return;
+
+  if (!currentUid) {
+    container.innerHTML = `<p class="muted-note">Connectez-vous pour voir votre équipe.</p>`;
+    return;
+  }
+  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Analyse des données de l'équipe...</div>`;
+
+  try {
+    // 1. Récupérer l'inscription de l'utilisateur
+    const mySignup = await getDoc(doc(db, "estacup_s10_signups", currentUid));
+    if (!mySignup.exists() || !mySignup.data().teamName || mySignup.data().teamName.trim().toLowerCase() === "indépendant" || mySignup.data().teamName.trim().toLowerCase() === "sans équipe") {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+          <h4 style="color: #94a3b8; font-size: 1.5rem; margin-bottom: 1rem;">🐺 Loup Solitaire</h4>
+          <p style="color: #cbd5e1;">Vous êtes inscrit en tant que pilote Indépendant pour cette saison. Rejoignez une structure pour débloquer le classement d'équipe !</p>
+        </div>`;
+      return;
+    }
+
+    const myTeam = mySignup.data().teamName.trim();
+
+    // 2. Récupérer tous les membres de cette équipe
+    const teamQuery = query(collection(db, "estacup_s10_signups"), where("teamName", "==", myTeam));
+    const teamSnap = await getDocs(teamQuery);
+
+    const teammates = [];
+    let totalTeamPoints = 0;
+
+    for (const d of teamSnap.docs) {
+      const data = d.data();
+      const uid = d.id;
+      
+      const userSnap = await getDoc(doc(db, "users", uid));
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      const historySnap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
+      let pilotPoints = 0;
+      let pilotWins = 0;
+      let pilotPodiums = 0;
+
+      historySnap.forEach(h => {
+        const hData = h.data();
+        pilotPoints += (hData.points || 0);
+        const pos = Number(hData.position) || 999;
+        if (pos === 1) pilotWins++;
+        if (pos >= 1 && pos <= 3) pilotPodiums++;
+      });
+
+      totalTeamPoints += pilotPoints;
+
+      teammates.push({
+        uid,
+        name: `${data.firstName} ${data.lastName}`,
+        number: data.raceNumber,
+        elo: userData.eloRating || 1000,
+        safety: userData.licensePoints || 10,
+        license: userData.licenseClass || userData.licenceClass || "Rookie",
+        points: pilotPoints,
+        wins: pilotWins,
+        podiums: pilotPodiums,
+        isMe: uid === currentUid
+      });
+    }
+
+    // 3. Trier par points décroissants pour le classement interne
+    teammates.sort((a, b) => b.points - a.points);
+
+    // 4. Construction de l'interface
+    let html = `
+      <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h4 style="font-size: 2.2rem; color: #fde68a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);">
+          🛡️ ${escapeHtml(myTeam)}
+        </h4>
+        <p style="color: #94a3b8; font-size: 1.1rem;">Total individuel cumulé : <strong style="color: #38bdf8; font-size: 1.3rem;">${totalTeamPoints} pts</strong></p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    `;
+
+    teammates.forEach((t, index) => {
+      const rankColor = index === 0 ? "#fde68a" : (index === 1 ? "#cbd5e1" : "#cd7f32");
+      const rankMedal = index === 0 ? "🥇" : (index === 1 ? "🥈" : "🥉");
+      
+      html += `
+        <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid ${t.isMe ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden; box-shadow: ${t.isMe ? '0 0 15px rgba(56, 189, 248, 0.2)' : 'none'};">
+          ${t.isMe ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: #38bdf8;"></div>' : ''}
+          
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div>
+              <h5 style="margin: 0; font-size: 1.15rem; color: #fff;">${escapeHtml(t.name)} ${t.isMe ? '<span style="font-size:0.8rem; color:#38bdf8;">(Vous)</span>' : ''}</h5>
+              <span style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); color: #cbd5e1; margin-top: 8px; display: inline-block; text-transform: uppercase; font-weight: bold;">#${t.number} • ${t.license}</span>
+            </div>
+            <div style="font-size: 1.8rem; line-height: 1;" title="Classement interne">${rankMedal}</div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; text-align: center;">
+            <div style="background: rgba(255,255,255,0.03); padding: 12px 5px; border-radius: 8px;">
+              <div style="font-size: 1.6rem; font-weight: 900; color: ${rankColor};">${t.points}</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">Points</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px 5px; border-radius: 8px;">
+              <div style="font-size: 1.6rem; font-weight: 900; color: #34d399;">${t.safety}</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">M-Safety</div>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-around; font-size: 0.95rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+            <span title="Victoires">🏆 ${t.wins}</span>
+            <span title="Podiums">🍾 ${t.podiums}</span>
+            <span title="M-Rating">📈 ${t.elo}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+
+  } catch (e) {
+    console.error("Erreur loadMyTeamSection:", e);
+    container.innerHTML = `<p class="impact-bad">Erreur de chargement des données de l'équipe.</p>`;
+  }
+}
+window.loadMyTeamSection = loadMyTeamSection;
 
 /* ======================== FORMULAIRE D'INSCRIPTION ======================== */
 function setupMekaQuestionnaire(userData) {
