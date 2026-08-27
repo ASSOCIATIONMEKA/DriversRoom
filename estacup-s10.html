@@ -431,6 +431,7 @@
         </nav>
 
         <nav id="cat-piste" class="subcat-pills champ-cat-container hidden">
+          <button data-sub="monequipe" class="champ-sub-btn">Mon équipe</button>
           <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
           <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
           <button data-sub="votecircuit" class="champ-sub-btn" id="navVoteBtn">Votes des circuits</button>
@@ -510,7 +511,7 @@
           <p>Vous serez averti lorsque votre livrée a bien été validée.</p>
 
           <h5>2.5.2 Bandeau pare-soleil</h5>
-          <p>Les bandeaux vous seront attribués par le CO selon votre licence sur le championnat. Ces bandeaux permettent à vos concurrents de connaître votre niveau, mais aussi pour une meilleure compréhension des spectateurs.</p>
+          <p>Les bandeaux vous vous attribués par le CO selon votre licence sur le championnat. Ces bandeaux permettent à vos concurrents de connaître votre niveau, mais aussi pour une meilleure compréhension des spectateurs.</p>
           <p>Votre bandeau attribué vous sera transmis par un membre du CO après votre confirmation d’inscription au championnat. Vous devez impérativement avoir un bandeau conforme pendant les sessions officielles sous peine de pénalités.</p>
 
           <h5>2.5.3 Plaque numéro de course</h5>
@@ -798,6 +799,14 @@
           <button id="submitReclam">📨 Envoyer la réclamation</button>
         </div>
         <div id="reclamHistory" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- MON ÉQUIPE -->
+      <div id="champ-sub-monequipe" class="champ-subsection hidden">
+        <h3>Quartier Général de l'Équipe</h3>
+        <div id="myTeamContainer" class="course-box">
+          <div class="loading-inline"><div class="spinner"></div> Chargement de votre équipe...</div>
+        </div>
       </div>
 
       <!-- LE VÉHICULE -->
