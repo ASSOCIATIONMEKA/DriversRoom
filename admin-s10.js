@@ -1026,7 +1026,9 @@ async function loadEstacupSignups() {
 
       let liveryChoice = "Non renseigné";
       if (sData.liveryChoice === "personnelle") liveryChoice = "Personnelle (OneDrive)";
-      if (sData.liveryChoice === "neutre") liveryChoice = "Neutre (Défaut)";
+      else if (sData.liveryChoice === "neutre") liveryChoice = "Neutre (Défaut)";
+      else if (sData.liveryChoice === "licence") liveryChoice = "Neutre (Licence)";
+      
       const liveryImplemented = sData.liveryImplemented === true;
 
       const steamId = sData.steamID64 || sData.steamId || uData.steamID64 || uData.steamId || "—";
