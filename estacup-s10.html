@@ -1198,7 +1198,7 @@
         if (navVoteBtn) navVoteBtn.style.display = "";
         if (navPaddockCat) navPaddockCat.style.display = "";
         
-        if (isAdmin || (userTeamName && userTeamName !== "indépendant" && userTeamName !== "sans équipe")) {
+        if (userTeamName && userTeamName !== "indépendant" && userTeamName !== "sans équipe" && userTeamName.trim() !== "") {
           if (navMyTeamBtn) navMyTeamBtn.style.display = "";
         }
       }
