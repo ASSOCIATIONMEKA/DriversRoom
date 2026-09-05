@@ -198,6 +198,7 @@ function setupNavigation(isAdmin = false) {
       showChampCategory("admin");
       setupMekaQuestionnaire(lastUserData);
       loadEstacupEngages();
+      loadEstacupEquipes();
       renderVoteCircuit();
     }
     else if (key === "infos" && currentUid) {
@@ -258,6 +259,7 @@ function showChampionshipSub(subKey) {
   if (subKey === "monequipe") loadMyTeamSection();
   if (subKey === "livree") renderLiverySection();
   if (subKey === "courses") loadResults(currentUid);
+  if (subKey === "equipes") loadEstacupEquipes();
   if (subKey === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
   if (subKey === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
   if (subKey === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
@@ -1107,6 +1109,117 @@ function updateEngagesTable() {
   container.innerHTML = html;
 }
 
+/* ======================== LISTE DES ÉQUIPES (PUBLIQUE) ======================== */
+async function loadEstacupEquipes() {
+  const targetArea = document.getElementById("estacupEquipes");
+  if (!targetArea) return;
+  
+  targetArea.innerHTML = `<div class="loading-inline" style="padding: 2rem; text-align: center; justify-content: center;"><div class="spinner"></div> Chargement des écuries...</div>`;
+  
+  try {
+    const signupsRef = collection(db, "estacup_s10_signups");
+    const q = query(signupsRef, where("isValidated", "==", true));
+    const [snap, usersSnap] = await Promise.all([
+      getDocs(q),
+      getDocs(collection(db, "users"))
+    ]);
+
+    const usersMap = new Map();
+    usersSnap.forEach(u => usersMap.set(u.id, u.data()));
+
+    const teamsMap = new Map(); // Va stocker teamName -> Tableau de pilotes
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const uid = data.uid || docSnap.id;
+      const uData = usersMap.get(uid) || {};
+
+      let teamName = (data.teamName || "").trim();
+      // On exclut les indépendants pour ne lister que les vraies équipes
+      if (!teamName || teamName.toLowerCase() === "indépendant" || teamName.toLowerCase() === "sans équipe") {
+        return; 
+      }
+
+      const licence = uData.licenseClass || uData.licenceClass || uData.license || "Rookie";
+      let licColor = "#10b981"; 
+      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; 
+      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; 
+
+      const driver = {
+        name: `${data.firstName || uData.firstName || ""} ${data.lastName || uData.lastName || ""}`.trim() || "Pilote",
+        number: Number(data.raceNumber) || 0,
+        licence: licence,
+        licColor: licColor,
+        mRating: uData.eloRating ?? 1000,
+        safety: uData.licensePoints ?? 10
+      };
+
+      if (!teamsMap.has(teamName)) teamsMap.set(teamName, []);
+      teamsMap.get(teamName).push(driver);
+    });
+
+    // Tri alphabétique des noms d'équipe
+    const sortedTeams = Array.from(teamsMap.keys()).sort();
+
+    if (sortedTeams.length === 0) {
+      targetArea.innerHTML = `<p class="muted-note" style="text-align:center; padding: 2rem; background: rgba(15,23,42,0.6); border-radius: 8px;">Aucune équipe enregistrée pour le moment.</p>`;
+      return;
+    }
+
+    let html = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">`;
+
+    sortedTeams.forEach(teamName => {
+      const drivers = teamsMap.get(teamName);
+      // Tri des pilotes de l'équipe par M-Rating décroissant
+      drivers.sort((a, b) => b.mRating - a.mRating);
+
+      html += `
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 10px 25px rgba(56,189,248,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+          <div style="background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(56,189,248,0.15)); padding: 1.2rem 1.5rem; border-bottom: 2px solid rgba(56,189,248,0.3);">
+            <h4 style="margin: 0; color: #fde68a; font-size: 1.3rem; display: flex; align-items: center; justify-content: space-between; text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);">
+              <span>🛡️ ${escapeHtml(teamName)}</span>
+              <span style="font-size: 0.8rem; color: #cbd5e1; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); font-weight: normal;">${drivers.length} Pilote(s)</span>
+            </h4>
+          </div>
+          <div style="padding: 1rem 1.5rem;">
+      `;
+
+      drivers.forEach((d, i) => {
+        const isLast = i === drivers.length - 1;
+        html += `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 0; ${!isLast ? 'border-bottom: 1px dashed rgba(255,255,255,0.1);' : ''}">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 1.15rem; font-weight: 900; color: var(--accent-primary); background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); padding: 6px 10px; border-radius: 8px; min-width: 50px; text-align: center;">#${d.number}</div>
+              <div>
+                <div style="font-weight: 700; color: #f8fafc; font-size: 1.05rem;">${escapeHtml(d.name)}</div>
+                <div style="font-size: 0.75rem; margin-top: 5px;">
+                  <span style="padding: 3px 8px; border-radius: 6px; border: 1px solid ${d.licColor}; color: ${d.licColor}; text-transform: uppercase; font-weight: bold; background: rgba(0,0,0,0.2);">${escapeHtml(d.licence)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 0.9rem; color: #94a3b8; font-weight: 600;">
+              <div>📈 <span style="color:#38bdf8;">${d.mRating}</span></div>
+              <div style="margin-top: 4px;">🛡️ <span style="color:#34d399;">${d.safety}</span></div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    targetArea.innerHTML = html;
+
+  } catch (err) {
+    console.error("Erreur chargement équipes :", err);
+    targetArea.innerHTML = "<p class='impact-bad'>Erreur lors du chargement de la liste des équipes.</p>";
+  }
+}
+
 /* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
 async function renderVoteCircuit() {
   const host = $("voteCircuitHost");
@@ -1130,6 +1243,7 @@ async function renderVoteCircuit() {
           Votez pour vos tracés préférés pour les manches 3 et 5. Vous pouvez modifier votre sélection à tout moment.
         </p>
 
+        <!-- DUEL MANCHE 3 -->
         <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-primary);">
           <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 3 (24/11/2026)</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez entre les deux tracés américains :</p>
@@ -1153,6 +1267,7 @@ async function renderVoteCircuit() {
           </div>
         </div>
 
+        <!-- DUEL MANCHE 5 -->
         <div style="margin-bottom: 2rem;">
           <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2026)</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre destination européenne :</p>
