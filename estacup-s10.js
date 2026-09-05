@@ -1056,8 +1056,11 @@ function updateEngagesTable() {
       liverySrc = "Livrées/000 - Template MEKA.png";
     } else if (p.liveryChoice === "licence") {
       let safeLicence = "Rookie";
-      if (p.licence.toLowerCase() === "pro") safeLicence = "Pro";
-      if (p.licence.toLowerCase() === "challenger") safeLicence = "Challenger";
+      const lic = p.licence.trim().toLowerCase();
+      
+      if (lic === "pro") safeLicence = "PRO"; 
+      else if (lic === "challenger") safeLicence = "Challenger";
+      
       liverySrc = `Livrées/000 - Template MEKA ${safeLicence}.png`;
     } else {
       const safeLastName = (p.rawLastName || "").trim().toUpperCase();
@@ -1068,24 +1071,19 @@ function updateEngagesTable() {
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
         <td style="padding: 12px 15px; font-weight: 900; font-size: 1.3rem; color: var(--accent-primary);">#${escapeHtml(String(p.number))}</td>
-        
         <td style="padding: 12px 15px; color: var(--text-primary); font-weight: 700; font-size: 1.05rem;">${escapeHtml(p.name)}</td>
-        
         <td style="padding: 12px 15px;">
           <span style="font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">
             ${escapeHtml(p.licence)}
           </span>
         </td>
-        
         <td style="padding: 12px 15px; font-weight: bold; color: #38bdf8;">${p.mRating}</td>
-        
         <td style="padding: 12px 15px; text-align: center;">
           <img src="${escapeHtml(liverySrc)}" 
                onerror="this.onerror=null; this.src='Livrées/En attente.png';" 
                alt="Livrée" 
                style="width: 150px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
         </td>
-        
         <td style="padding: 12px 15px; color: var(--text-secondary); font-weight: 500;">${escapeHtml(p.team)}</td>
         <td style="padding: 12px 15px; color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(p.car)}</td>
       </tr>
