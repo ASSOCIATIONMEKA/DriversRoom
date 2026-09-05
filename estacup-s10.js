@@ -1062,11 +1062,8 @@ function updateEngagesTable() {
     } else if (p.liveryChoice === "licence") {
       let safeLicence = "Rookie";
       const lic = p.licence.trim().toLowerCase();
-      
-      // La casse "Pro", "Challenger", "Rookie" est forcée ici
       if (lic === "pro") safeLicence = "Pro"; 
       else if (lic === "challenger") safeLicence = "Challenger";
-      
       liverySrc = `Livrées/000 - Template MEKA ${safeLicence}.png`;
       fallbackSrc1 = `Livrées/000 - Template MEKA ${safeLicence}.PNG`;
       fallbackSrc2 = `Livrées/000 - Template MEKA ${safeLicence}.jpg`;
@@ -1094,7 +1091,7 @@ function updateEngagesTable() {
                data-fb2="${escapeHtml(fallbackSrc2)}"
                onerror="if(!this.dataset.f1){this.dataset.f1='1';this.src=this.dataset.fb1;}else if(!this.dataset.f2){this.dataset.f2='1';this.src=this.dataset.fb2;}else{this.onerror=null;this.src='Livrées/En attente.png';}" 
                alt="Livrée" 
-               style="width: 150px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+               style="width: 150px; height: auto; object-fit: contain; background: transparent; border: none; box-shadow: none; transform: translateY(12px);">
         </td>
         <td style="padding: 12px 15px; color: var(--text-secondary); font-weight: 500;">${escapeHtml(p.team)}</td>
         <td style="padding: 12px 15px; color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(p.car)}</td>
