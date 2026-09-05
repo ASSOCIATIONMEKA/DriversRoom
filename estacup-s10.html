@@ -8,11 +8,14 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
 
+  <!-- LEAFLET CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
+  <!-- SCRIPTS GLOBAUX -->
   <script type="module" src="nav.js" defer></script>
   <script type="module" src="estacup-s10.js" defer></script>
 
+  <!-- LEAFLET JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
@@ -342,6 +345,7 @@
   <div class="container" style="margin-top: 3rem;">
     <h2 style="margin-bottom: 2rem;">EstaCup Saison 10</h2>
 
+    <!-- MENU PRINCIPAL ÉPURÉ (Niveau 0) -->
     <nav class="menu" id="mainNav">
       <button data-section="infos">Mes informations</button>
       <button data-section="championship">🏆 Le Championnat</button>
@@ -349,6 +353,7 @@
       <button id="goToAdmin" class="hidden" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
     </nav>
 
+    <!-- SECTION : MES INFORMATIONS -->
     <section id="section-infos" class="section hidden">
       <h2 class="section-main-title">Mes Informations</h2>
       
@@ -402,9 +407,11 @@
       </div>
     </section>
 
+    <!-- SECTION : 🏆 LE CHAMPIONNAT -->
     <section id="section-championship" class="section hidden">
       <h2 class="section-main-title">Le Championnat</h2>
 
+      <!-- NIVEAU 1 : CATÉGORIES PRINCIPALES -->
       <nav class="category-tabs" id="champCategoryNav">
         <button data-cat="admin">📋 Administratif</button>
         <button data-cat="piste">🏎️ La Piste</button>
@@ -412,6 +419,7 @@
         <button data-cat="resultats">📊 Résultats</button>
       </nav>
 
+      <!-- NIVEAU 2 : SOUS-MENUS EN PILULES -->
       <div id="champSubnavsContainer">
         
         <nav id="cat-admin" class="subcat-pills champ-cat-container hidden">
@@ -423,6 +431,7 @@
 
         <nav id="cat-piste" class="subcat-pills champ-cat-container hidden">
           <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
+          <button data-sub="equipes" class="champ-sub-btn">Liste des équipes</button> <!-- NOUVEAU BOUTON -->
           <button data-sub="monequipe" class="champ-sub-btn">Mon équipe</button>
           <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
           <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
@@ -443,6 +452,9 @@
 
       </div>
 
+      <!-- ================= CONTENUS DES SOUS-SECTIONS ================= -->
+
+      <!-- RÈGLEMENT OFFICIEL INTÉGRAL -->
       <div id="champ-sub-reglement" class="champ-subsection hidden">
         <h3>Règlement de l'ESTACUP Saison 10</h3>
         <div class="course-box reglement-content">
@@ -648,6 +660,7 @@
         </div>
       </div>
 
+      <!-- PRÉSENCES COURSES -->
       <div id="champ-sub-presence" class="champ-subsection hidden">
         <h3>Formulaire de Présence</h3>
         <div class="course-box">
@@ -655,6 +668,7 @@
             <div class="loading-inline"><div class="spinner"></div> Chargement des présences...</div>
           </div>
 
+          <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS (MASQUÉ PAR DÉFAUT) -->
           <div id="adminPrequalPanel" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
             <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 1rem;">🛠️ Panel Admin : Enregistrer / Modifier un temps</h5>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
@@ -683,9 +697,11 @@
             </div>
           </div>
 
+          <!-- TABLEAUX DE PRÉQUALIFICATIONS -->
           <div id="prequalStatsContainer" style="margin-top: 2rem; border-top: 1px solid var(--border-primary); padding-top: 1.5rem; display: none;">
             <h4 style="color: var(--accent-primary); margin-bottom: 1rem;">Résultats des Préqualifications</h4>
             
+            <!-- Grand Tableau Récapitulatif Général -->
             <div style="overflow-x: auto; margin-bottom: 2rem;">
               <h5 style="color: #fde68a; margin-bottom: 0.5rem;">Classement Général Préqualifs</h5>
               <table class="reglement-table">
@@ -703,7 +719,9 @@
               </table>
             </div>
 
+            <!-- Grille compacte des 4 tableaux journaliers (Sans barre de défilement) -->
             <div class="daily-tables-grid">
+              <!-- Jeudi -->
               <div class="daily-table-box">
                 <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Jeudi</h5>
                 <table>
@@ -716,6 +734,7 @@
                 </table>
               </div>
 
+              <!-- Vendredi -->
               <div class="daily-table-box">
                 <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Vendredi</h5>
                 <table>
@@ -728,6 +747,7 @@
                 </table>
               </div>
 
+              <!-- Samedi -->
               <div class="daily-table-box">
                 <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Samedi</h5>
                 <table>
@@ -740,6 +760,7 @@
                 </table>
               </div>
 
+              <!-- Dimanche -->
               <div class="daily-table-box">
                 <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Dimanche</h5>
                 <table>
@@ -758,6 +779,7 @@
         </div>
       </div>
 
+      <!-- INSCRIPTION -->
       <div id="champ-sub-inscription" class="champ-subsection hidden">
         <h3>Inscription ESTACUP</h3>
         <div class="course-box">
@@ -778,6 +800,7 @@
         </div>
       </div>
 
+      <!-- ENGAGÉS -->
       <div id="champ-sub-engages" class="champ-subsection hidden">
         <h3>Liste des engagés</h3>
         <div class="course-box">
@@ -785,6 +808,17 @@
         </div>
       </div>
 
+      <!-- ÉQUIPES -->
+      <div id="champ-sub-equipes" class="champ-subsection hidden">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+          <h3 style="color: var(--accent-primary); margin: 0;">Liste des Équipes</h3>
+        </div>
+        <div class="course-box" style="background: transparent; border: none; padding: 0;">
+          <div id="estacupEquipes"></div>
+        </div>
+      </div>
+
+      <!-- RÉCLAMATIONS -->
       <div id="champ-sub-reclamations" class="champ-subsection hidden">
         <h3>Dépôt de Réclamation</h3>
         <div class="course-box">
@@ -808,6 +842,7 @@
         <div id="reclamHistory" style="margin-top:20px;"></div>
       </div>
 
+      <!-- MON ÉQUIPE -->
       <div id="champ-sub-monequipe" class="champ-subsection hidden">
         <h3>Quartier Général de l'Équipe</h3>
         <div id="myTeamContainer" class="course-box">
@@ -815,6 +850,7 @@
         </div>
       </div>
 
+      <!-- LE VÉHICULE -->
       <div id="champ-sub-vehicule" class="champ-subsection hidden">
         <h3>Le Prototype : Ligier JS P320 (LMP3)</h3>
         <div class="course-box" style="text-align: center;">
@@ -843,6 +879,7 @@
         </div>
       </div>
 
+      <!-- LES CIRCUITS -->
       <div id="champ-sub-circuits" class="champ-subsection hidden">
         <h3>Le Calendrier de la Saison 10</h3>
         <div class="course-box" style="padding: 2rem;">
@@ -1013,6 +1050,7 @@
         </div>
       </div>
 
+      <!-- VOTES CIRCUITS -->
       <div id="champ-sub-votecircuit" class="champ-subsection hidden">
         <h3>Votes des circuits</h3>
         <div class="course-box">
@@ -1020,6 +1058,7 @@
         </div>
       </div>
 
+      <!-- CONTENU (PACK) -->
       <div id="champ-sub-contenu" class="champ-subsection hidden">
         <h3>Contenu du jeu (Voiture & Circuits)</h3>
         <div class="course-box">
@@ -1041,6 +1080,7 @@
         </div>
       </div>
 
+      <!-- MODS -->
       <div id="champ-sub-mods" class="champ-subsection hidden">
         <h3>Mods & Utilitaires</h3>
         <div class="course-box">
@@ -1082,6 +1122,7 @@
         </div>
       </div>
 
+      <!-- LIVRÉE -->
       <div id="champ-sub-livree" class="champ-subsection hidden">
         <h3>Déposer ma livrée</h3>
         <div class="course-box">
@@ -1089,6 +1130,7 @@
         </div>
       </div>
 
+      <!-- COURSES (RÉSULTATS) -->
       <div id="champ-sub-courses" class="champ-subsection hidden">
         <h3>Résultats des Manches</h3>
         <div class="course-box">
@@ -1097,6 +1139,7 @@
         </div>
       </div>
 
+      <!-- RANK PILOTES -->
       <div id="champ-sub-rankpilots" class="champ-subsection hidden">
         <h3>Classement Pilotes</h3>
         <div class="joker-toggle">
@@ -1108,6 +1151,7 @@
         <div id="estacupPilotStandings" class="course-box"><p>Chargement…</p></div>
       </div>
 
+      <!-- RANK ÉQUIPES -->
       <div id="champ-sub-rankteams" class="champ-subsection hidden">
         <h3>Classement Équipes</h3>
         <div class="joker-toggle">
@@ -1121,6 +1165,7 @@
 
     </section>
 
+    <!-- SECTION : 📡 SERVEURS & ACCÈS -->
     <section id="section-serveurs" class="section hidden">
       <h2 class="section-main-title">Serveurs & Accès</h2>
       
@@ -1139,6 +1184,7 @@
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
           <button id="btnJoinServer" style="width: auto; opacity: 0.5; cursor: not-allowed;" disabled>🚀 Serveur fermé</button>
           
+          <!-- BOUTON LIVE TIMING -->
           <a id="btnLiveTiming" href="#" target="_blank" style="display: none; text-decoration: none;">
             <button style="width: auto; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md); padding: 1rem 2rem; border-radius: var(--radius-lg); cursor: pointer; font-weight: 600; text-transform: uppercase;">📊 Voir le Live Timing</button>
           </a>
@@ -1148,6 +1194,7 @@
 
   </div>
 
+  <!-- SCRIPTS : GESTION DES 7 JOURS ET AFFICHAGE CONDITIONNEL DU PANEL ADMIN -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
