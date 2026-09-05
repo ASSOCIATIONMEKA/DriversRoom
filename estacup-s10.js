@@ -700,7 +700,7 @@ function setupMekaQuestionnaire(userData) {
           if (formContainer) formContainer.classList.remove("hidden"); 
           loadEstacupForm(userData);
         } else if (select.value === "no") {
-          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sarà gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
+          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
         }
       };
     }
