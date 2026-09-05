@@ -1052,20 +1052,30 @@ function updateEngagesTable() {
 
   filtered.forEach(p => {
     let liverySrc = "";
+    let fallbackSrc1 = "";
+    let fallbackSrc2 = "";
+
     if (p.liveryChoice === "neutre") {
       liverySrc = "Livrées/000 - Template MEKA.png";
+      fallbackSrc1 = "Livrées/000 - Template MEKA.PNG";
+      fallbackSrc2 = "Livrées/000 - Template MEKA.jpg";
     } else if (p.liveryChoice === "licence") {
       let safeLicence = "Rookie";
       const lic = p.licence.trim().toLowerCase();
       
-      if (lic === "pro") safeLicence = "PRO"; 
+      // La casse "Pro", "Challenger", "Rookie" est forcée ici
+      if (lic === "pro") safeLicence = "Pro"; 
       else if (lic === "challenger") safeLicence = "Challenger";
       
       liverySrc = `Livrées/000 - Template MEKA ${safeLicence}.png`;
+      fallbackSrc1 = `Livrées/000 - Template MEKA ${safeLicence}.PNG`;
+      fallbackSrc2 = `Livrées/000 - Template MEKA ${safeLicence}.jpg`;
     } else {
       const safeLastName = (p.rawLastName || "").trim().toUpperCase();
       const safeFirstName = (p.rawFirstName || "").trim();
       liverySrc = `Livrées/${p.number} - ${safeLastName}_${safeFirstName}.png`;
+      fallbackSrc1 = `Livrées/${p.number} - ${safeLastName}_${safeFirstName}.PNG`;
+      fallbackSrc2 = `Livrées/${p.number} - ${safeLastName}_${safeFirstName}.jpg`;
     }
 
     html += `
@@ -1080,7 +1090,9 @@ function updateEngagesTable() {
         <td style="padding: 12px 15px; font-weight: bold; color: #38bdf8;">${p.mRating}</td>
         <td style="padding: 12px 15px; text-align: center;">
           <img src="${escapeHtml(liverySrc)}" 
-               onerror="this.onerror=null; this.src='Livrées/En attente.png';" 
+               data-fb1="${escapeHtml(fallbackSrc1)}"
+               data-fb2="${escapeHtml(fallbackSrc2)}"
+               onerror="if(!this.dataset.f1){this.dataset.f1='1';this.src=this.dataset.fb1;}else if(!this.dataset.f2){this.dataset.f2='1';this.src=this.dataset.fb2;}else{this.onerror=null;this.src='Livrées/En attente.png';}" 
                alt="Livrée" 
                style="width: 150px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); object-fit: contain; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
         </td>
