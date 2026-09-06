@@ -431,7 +431,7 @@
 
         <nav id="cat-piste" class="subcat-pills champ-cat-container hidden">
           <button data-sub="engages" class="champ-sub-btn">Liste des engagés</button>
-          <button data-sub="equipes" class="champ-sub-btn">Liste des équipes</button> <!-- NOUVEAU BOUTON -->
+          <button data-sub="equipes" class="champ-sub-btn">Liste des équipes</button>
           <button data-sub="monequipe" class="champ-sub-btn">Mon équipe</button>
           <button data-sub="vehicule" class="champ-sub-btn">Le véhicule</button>
           <button data-sub="circuits" class="champ-sub-btn">Les circuits</button>
@@ -459,7 +459,7 @@
         <h3>Règlement de l'ESTACUP Saison 10</h3>
         <div class="course-box reglement-content">
           <p style="color: #38bdf8; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
-            Dernière mise à jour : 25-08-2026 - V1.0
+            Dernière mise à jour : 25-08-2026 - V1.1
           </p>
 
           <h4 style="margin-top:0;">1. PRÉSENTATION</h4>
@@ -521,7 +521,7 @@
           <p>Votre plaque attribuée sera ajoutée par le CO après réception de votre livrée. Vous pourrez alors retrouver votre voiture complète lors du téléchargement du SkinPack donné avant la course.</p>
 
           <h5>2.6 LISTE DES CIRCUITS</h5>
-          <p>Silverstone, Portimão, Dubaï Autodrome, Indianapolis, Virginia, Brno, Barcelone, Dijon-Prenois, Fuji Speedway.</p>
+          <p>Silverstone, Portimão, Brno, Virginia International Raceway, Road America, Fuji Speedway, Magny-Cours, Dijon-Prenois, Kyalami.</p>
 
           <h5>2.7 TÉLÉCHARGEMENTS</h5>
           <p>Retrouvez l'ensemble du contenu nécessaire directement dans votre Driver's Room :</p>
@@ -533,19 +533,20 @@
           <h4>3. CALENDRIER</h4>
           <p>Un total de 9 circuits a été choisi pour le championnat, où les pilotes auront à choisir sur deux manches (manche 3 et 5) leurs circuits préférés. Le championnat se déroulera sur 7 courses dont 6 comptabilisées (le prologue ne compte pas dans les classements).</p>
           <p>Pour les manches 3 et 5, le circuit choisi sera défini par le résultat des votes fait pendant l’inscription de l’ensemble des pilotes.</p>
+          <p><strong>Info importante :</strong> La course se fera en heure réelle (Real Time) dans le jeu. Le départ serveur étant toujours donné à <strong>21h00 heure française (FR)</strong>, l'heure en jeu dépendra du fuseau horaire local du circuit à ce moment de l'année.</p>
           
           <table class="reglement-table">
             <thead>
-              <tr><th>Épreuve</th><th>Circuit</th><th>Date</th></tr>
+              <tr><th>Épreuve</th><th>Circuit</th><th>Date</th><th>Heure in-game (locale)</th></tr>
             </thead>
             <tbody>
-              <tr><td>Prologue</td><td>Silverstone</td><td>15/09/2026</td></tr>
-              <tr><td>Manche 1</td><td>Portimão</td><td>29/09/2026</td></tr>
-              <tr><td>Manche 2</td><td>Dubaï Autodrome</td><td>20/10/2026</td></tr>
-              <tr><td>Manche 3</td><td>Indianapolis ou Virginia (Vote)</td><td>24/11/2026</td></tr>
-              <tr><td>Manche 4</td><td>Brno</td><td>08/12/2026</td></tr>
-              <tr><td>Manche 5</td><td>Barcelone ou Dijon-Prenois (Vote)</td><td>19/01/2027</td></tr>
-              <tr><td>Manche 6</td><td>Fuji Speedway</td><td>09/02/2027</td></tr>
+              <tr><td>Prologue</td><td>Silverstone</td><td>15/09/2026</td><td>20h00</td></tr>
+              <tr><td>Manche 1</td><td>Portimão</td><td>29/09/2026</td><td>20h00</td></tr>
+              <tr><td>Manche 2</td><td>Brno</td><td>20/10/2026</td><td>21h00</td></tr>
+              <tr><td>Manche 3</td><td>VIR ou Road America (Vote)</td><td>24/11/2026</td><td>15h00 / 14h00</td></tr>
+              <tr><td>Manche 4</td><td>Fuji Speedway</td><td>08/12/2026</td><td>05h00 (+1j)</td></tr>
+              <tr><td>Manche 5</td><td>Magny-Cours ou Dijon (Vote)</td><td>19/01/2027</td><td>21h00</td></tr>
+              <tr><td>Manche 6</td><td>Kyalami</td><td>09/02/2027</td><td>22h00</td></tr>
             </tbody>
           </table>
 
@@ -598,7 +599,7 @@
               <tr><td>20h25</td><td>Qualifications</td><td>15 min</td></tr>
               <tr><td>20h40</td><td>Transition / sélection Top 6</td><td>~5 min</td></tr>
               <tr><td>20h45</td><td>Hyperpole</td><td>~10-12 min</td></tr>
-              <tr><td>~21h00</td><td>Course</td><td>1 heure</td></tr>
+              <tr><td>~21h00</td><td>Course (Heure locale selon circuit)</td><td>1 heure</td></tr>
             </tbody>
           </table>
 
@@ -910,13 +911,13 @@
                 }).addTo(estacupMapInstance);
 
                 const circuits = [
-                  { name: "Prologue : Silverstone", coords: [52.0786, -1.0169], date: "15/09/2026", country: "Royaume-Uni" },
-                  { name: "Manche 1 : Portimão", coords: [37.2270, -8.6267], date: "29/09/2026", country: "Portugal" },
-                  { name: "Manche 2 : Dubaï Autodrome", coords: [24.5539, 55.2383], date: "20/10/2026", country: "Émirats Arabes Unis" },
-                  { name: "Manche 3 (Vote) : Indianapolis / Virginia", coords: [39.7910, -86.2350], date: "24/11/2026", country: "États-Unis" },
-                  { name: "Manche 4 : Brno", coords: [49.2019, 16.5456], date: "08/12/2026", country: "République Tchèque" },
-                  { name: "Manche 5 (Vote) : Barcelone / Dijon", coords: [41.5700, 2.2611], date: "19/01/2027", country: "Espagne / France" },
-                  { name: "Manche 6 : Fuji Speedway", coords: [35.3717, 138.9261], date: "09/02/2027", country: "Japon" }
+                  { name: "Prologue : Silverstone (20h in-game)", coords: [52.0786, -1.0169], date: "15/09/2026", country: "Royaume-Uni" },
+                  { name: "Manche 1 : Portimão (20h in-game)", coords: [37.2270, -8.6267], date: "29/09/2026", country: "Portugal" },
+                  { name: "Manche 2 : Brno (21h in-game)", coords: [49.2019, 16.5456], date: "20/10/2026", country: "République Tchèque" },
+                  { name: "Manche 3 (Vote) : VIR / Road America (15h/14h in-game)", coords: [40.0, -83.0], date: "24/11/2026", country: "États-Unis" },
+                  { name: "Manche 4 : Fuji Speedway (05h in-game)", coords: [35.3717, 138.9261], date: "08/12/2026", country: "Japon" },
+                  { name: "Manche 5 (Vote) : Magny-Cours / Dijon (21h in-game)", coords: [46.8622, 3.1636], date: "19/01/2027", country: "France" },
+                  { name: "Manche 6 : Kyalami (22h in-game)", coords: [-25.9980, 28.0700], date: "09/02/2027", country: "Afrique du Sud" }
                 ];
 
                 circuits.forEach(c => {
@@ -965,7 +966,7 @@
                 <span class="fi fi-gb"></span> Silverstone
               </div>
               <div class="roadmap-location">
-                📍 Royaume-Uni
+                📍 Royaume-Uni (20h00 locale)
               </div>
             </div>
 
@@ -978,7 +979,7 @@
                 <span class="fi fi-pt"></span> Portimão
               </div>
               <div class="roadmap-location">
-                📍 Portugal
+                📍 Portugal (20h00 locale)
               </div>
             </div>
 
@@ -988,10 +989,10 @@
                 <span class="roadmap-date">20/10/2026</span>
               </div>
               <div class="roadmap-title">
-                <span class="fi fi-ae"></span> Dubaï Autodrome
+                <span class="fi fi-cz"></span> Brno
               </div>
               <div class="roadmap-location">
-                📍 Émirats Arabes Unis
+                📍 République Tchèque (21h00 locale)
               </div>
             </div>
 
@@ -1001,10 +1002,10 @@
                 <span class="roadmap-date">24/11/2026</span>
               </div>
               <div class="roadmap-title">
-                <span class="fi fi-us"></span> Indianapolis / Virginia
+                <span class="fi fi-us"></span> VIR / Road America
               </div>
               <div class="roadmap-location">
-                📍 États-Unis
+                📍 États-Unis (15h00 / 14h00 locale)
               </div>
             </div>
 
@@ -1014,10 +1015,10 @@
                 <span class="roadmap-date">08/12/2026</span>
               </div>
               <div class="roadmap-title">
-                <span class="fi fi-cz"></span> Brno
+                <span class="fi fi-jp"></span> Fuji Speedway
               </div>
               <div class="roadmap-location">
-                📍 République Tchèque
+                📍 Japon (05h00 locale le lendemain)
               </div>
             </div>
 
@@ -1027,10 +1028,10 @@
                 <span class="roadmap-date">19/01/2027</span>
               </div>
               <div class="roadmap-title">
-                <span class="fi fi-es"></span> Barcelone / <span class="fi fi-fr"></span> Dijon
+                <span class="fi fi-fr"></span> Magny-Cours / Dijon
               </div>
               <div class="roadmap-location">
-                📍 Espagne / France
+                📍 France (21h00 locale)
               </div>
             </div>
 
@@ -1040,10 +1041,10 @@
                 <span class="roadmap-date">09/02/2027</span>
               </div>
               <div class="roadmap-title">
-                <span class="fi fi-jp"></span> Fuji Speedway
+                <span class="fi fi-za"></span> Kyalami
               </div>
               <div class="roadmap-location">
-                📍 Japon
+                📍 Afrique du Sud (22h00 locale)
               </div>
             </div>
           </div>
@@ -1216,11 +1217,11 @@
     const racesList = [
       { id: "prologue", title: "Prologue - Silverstone", dateStr: "15/09/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-09-15T20:00:00") },
       { id: "manche1", title: "Manche 1 - Portimão", dateStr: "29/09/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-09-29T20:00:00") },
-      { id: "manche2", title: "Manche 2 - Dubaï Autodrome", dateStr: "20/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-20T20:00:00") },
-      { id: "manche3", title: "Manche 3 - Indianapolis / Virginia", dateStr: "24/11/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-11-24T20:00:00") },
-      { id: "manche4", title: "Manche 4 - Brno", dateStr: "08/12/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-12-08T20:00:00") },
-      { id: "manche5", title: "Manche 5 - Barcelone / Dijon", dateStr: "19/01/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-01-19T20:00:00") },
-      { id: "manche6", title: "Manche 6 - Fuji Speedway", dateStr: "09/02/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-02-09T20:00:00") }
+      { id: "manche2", title: "Manche 2 - Brno", dateStr: "20/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-20T20:00:00") },
+      { id: "manche3", title: "Manche 3 - VIR / Road America", dateStr: "24/11/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-11-24T20:00:00") },
+      { id: "manche4", title: "Manche 4 - Fuji Speedway", dateStr: "08/12/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-12-08T20:00:00") },
+      { id: "manche5", title: "Manche 5 - Magny-Cours / Dijon", dateStr: "19/01/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-01-19T20:00:00") },
+      { id: "manche6", title: "Manche 6 - Kyalami", dateStr: "09/02/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-02-09T20:00:00") }
     ];
 
     let currentUser = null;
