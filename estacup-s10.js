@@ -1236,33 +1236,47 @@ async function renderVoteCircuit() {
     const voteDocRef = doc(db, "estacup_s10_circuit_votes", currentUid);
     const voteSnap = await getDoc(voteDocRef);
     const userVotes = voteSnap.exists() ? voteSnap.data() : {};
+    const hasVoted = !!(userVotes.round3 && userVotes.round5);
 
     host.innerHTML = `
       <div class="course-box">
+        <div id="voteSuccessBanner" style="display: ${hasVoted ? 'flex' : 'none'}; align-items: center; gap: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 12px 15px; border-radius: 8px; margin-bottom: 1.5rem; color: #10b981; font-weight: bold; transition: all 0.3s ease;">
+          <span style="font-size: 1.2rem;">✅</span> 
+          <span>Vos votes actuels sont bien enregistrés et pris en compte dans les statistiques !</span>
+        </div>
+
         <p class="muted-note" style="margin-bottom: 1.5rem;">
-          Votez pour vos tracés préférés pour les manches 3 et 5. Vous pouvez modifier votre sélection à tout moment.
+          Votez pour vos tracés préférés pour les manches 3 et 5. Les pourcentages s'actualisent en direct avec les votes des autres pilotes.
         </p>
 
         <!-- DUEL MANCHE 3 -->
-        <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-primary);">
+        <div style="margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-primary);">
           <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 3 (24/11/2026)</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez entre les deux tracés américains :</p>
           
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
-              <input type="radio" name="vote_round_3" value="Road America" ${userVotes.round3 === 'Road America' ? 'checked' : ''}>
-              <div class="vote-pill">
-                <span class="fi fi-us"></span>
-                <strong>Road America</strong>
+            <label id="label-RA" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round3 === 'Road America' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round3 === 'Road America' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <input type="radio" name="vote_round_3" value="Road America" ${userVotes.round3 === 'Road America' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-us" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Road America</strong>
               </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+                <div id="bar-RA" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div id="count-RA" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
             </label>
 
-            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
-              <input type="radio" name="vote_round_3" value="Virginia" ${userVotes.round3 === 'Virginia' ? 'checked' : ''}>
-              <div class="vote-pill">
-                <span class="fi fi-us"></span>
-                <strong>Virginia (VIR)</strong>
+            <label id="label-VIR" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round3 === 'Virginia' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round3 === 'Virginia' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <input type="radio" name="vote_round_3" value="Virginia" ${userVotes.round3 === 'Virginia' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-us" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Virginia (VIR)</strong>
               </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+                <div id="bar-VIR" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div id="count-VIR" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
             </label>
           </div>
         </div>
@@ -1273,29 +1287,91 @@ async function renderVoteCircuit() {
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre destination européenne :</p>
           
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
-              <input type="radio" name="vote_round_5" value="Magny-Cours" ${userVotes.round5 === 'Magny-Cours' ? 'checked' : ''}>
-              <div class="vote-pill">
-                <span class="fi fi-fr"></span>
-                <strong>Magny-Cours</strong>
+            <label id="label-Magny" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Magny-Cours' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Magny-Cours' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <input type="radio" name="vote_round_5" value="Magny-Cours" ${userVotes.round5 === 'Magny-Cours' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-fr" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Magny-Cours</strong>
               </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+                <div id="bar-Magny" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div id="count-Magny" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
             </label>
 
-            <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
-              <input type="radio" name="vote_round_5" value="Dijon-Prenois" ${userVotes.round5 === 'Dijon-Prenois' ? 'checked' : ''}>
-              <div class="vote-pill">
-                <span class="fi fi-fr"></span>
-                <strong>Dijon-Prenois</strong>
+            <label id="label-Dijon" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Dijon-Prenois' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Dijon-Prenois' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <input type="radio" name="vote_round_5" value="Dijon-Prenois" ${userVotes.round5 === 'Dijon-Prenois' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-fr" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Dijon-Prenois</strong>
               </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+                <div id="bar-Dijon" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div id="count-Dijon" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
             </label>
           </div>
         </div>
 
-        <div class="vote-actions" style="text-align: right;">
-          <button id="btnSaveCircuitVotes" class="btn-validate">💾 Enregistrer mes votes</button>
+        <div class="vote-actions" style="text-align: right; margin-top: 2rem;">
+          <button id="btnSaveCircuitVotes" class="btn-validate" style="padding: 12px 24px; font-size: 1.05rem; transition: all 0.3s ease;">
+            ${hasVoted ? '💾 Mettre à jour mes votes' : '💾 Enregistrer mes votes'}
+          </button>
         </div>
       </div>
     `;
+
+    // Met à jour visuellement les bordures/fonds lors du changement de radio
+    const radios = host.querySelectorAll('input[type="radio"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.name === 'vote_round_3') {
+          const isRA = radio.value === 'Road America';
+          $("label-RA").style.borderColor = isRA ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-RA").style.background = isRA ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+          $("label-VIR").style.borderColor = !isRA ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-VIR").style.background = !isRA ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+        }
+        if (radio.name === 'vote_round_5') {
+          const isMagny = radio.value === 'Magny-Cours';
+          $("label-Magny").style.borderColor = isMagny ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-Magny").style.background = isMagny ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+          $("label-Dijon").style.borderColor = !isMagny ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-Dijon").style.background = !isMagny ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+        }
+      });
+    });
+
+    // Écouteur en temps réel pour actualiser les barres de progression
+    onSnapshot(collection(db, "estacup_s10_circuit_votes"), (snapshot) => {
+      let votesRA = 0, votesVIR = 0, votesMagny = 0, votesDijon = 0;
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.round3 === 'Road America') votesRA++;
+        if (d.round3 === 'Virginia') votesVIR++;
+        if (d.round5 === 'Magny-Cours') votesMagny++;
+        if (d.round5 === 'Dijon-Prenois') votesDijon++;
+      });
+      
+      const totalR3 = votesRA + votesVIR;
+      const totalR5 = votesMagny + votesDijon;
+
+      const updateStatUI = (id, votes, total) => {
+        const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
+        const bar = $(`bar-${id}`);
+        const countStr = $(`count-${id}`);
+        if(bar) bar.style.width = `${pct}%`;
+        if(countStr) countStr.innerHTML = `<span style="color: #fff;">${votes}</span> vote${votes > 1 ? 's' : ''} (${pct}%)`;
+      };
+
+      // Léger délai pour que l'animation CSS se déclenche après le render initial
+      setTimeout(() => {
+        updateStatUI('RA', votesRA, totalR3);
+        updateStatUI('VIR', votesVIR, totalR3);
+        updateStatUI('Magny', votesMagny, totalR5);
+        updateStatUI('Dijon', votesDijon, totalR5);
+      }, 100);
+    });
 
     $("btnSaveCircuitVotes").onclick = async () => {
       const r3 = document.querySelector('input[name="vote_round_3"]:checked')?.value || null;
@@ -1306,10 +1382,11 @@ async function renderVoteCircuit() {
         return;
       }
 
+      const btn = $("btnSaveCircuitVotes");
+      const originalText = btn.textContent;
       try {
-        const btn = $("btnSaveCircuitVotes");
         btn.disabled = true;
-        btn.textContent = "Enregistrement...";
+        btn.textContent = "Enregistrement en cours...";
 
         await setDoc(doc(db, "estacup_s10_circuit_votes", currentUid), {
           round3: r3,
@@ -1318,16 +1395,32 @@ async function renderVoteCircuit() {
           updatedAt: new Date()
         }, { merge: true });
 
-        alert("✅ Vos votes ont été pris en compte avec succès !");
-        btn.textContent = "💾 Votes enregistrés !";
+        // Animation et affichage de la bannière de succès
+        const banner = $("voteSuccessBanner");
+        if (banner) {
+          banner.style.display = "flex";
+          banner.innerHTML = `<span style="font-size: 1.2rem;">✅</span> <span>Nouveaux votes enregistrés avec succès !</span>`;
+          banner.style.transform = "scale(1.02)";
+          setTimeout(() => banner.style.transform = "scale(1)", 200);
+        }
+
+        // Animation de confirmation sur le bouton
+        btn.textContent = "✅ VOTES ENREGISTRÉS !";
+        btn.style.background = "#10b981";
+        btn.style.borderColor = "#059669";
+        
         setTimeout(() => {
           btn.disabled = false;
-          btn.textContent = "💾 Enregistrer mes votes";
-        }, 2000);
+          btn.textContent = "💾 Mettre à jour mes votes";
+          btn.style.background = ""; 
+          btn.style.borderColor = "";
+        }, 3000);
+
       } catch (err) {
         console.error("Erreur enregistrement vote:", err);
         alert("Erreur lors de l'enregistrement du vote.");
-        $("btnSaveCircuitVotes").disabled = false;
+        btn.disabled = false;
+        btn.textContent = originalText;
       }
     };
 
