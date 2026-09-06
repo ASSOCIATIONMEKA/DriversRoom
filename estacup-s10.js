@@ -1220,7 +1220,7 @@ async function loadEstacupEquipes() {
   }
 }
 
-/* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
+//* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
 async function renderVoteCircuit() {
   const host = $("voteCircuitHost");
   if (!host) return;
@@ -1257,7 +1257,7 @@ async function renderVoteCircuit() {
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <label id="label-RA" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round3 === 'Road America' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round3 === 'Road America' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_3" value="Road America" ${userVotes.round3 === 'Road America' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <input type="radio" name="vote_round_3" value="Road America" ${userVotes.round3 === 'Road America' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
                 <span class="fi fi-us" style="font-size: 1.2rem;"></span>
                 <strong style="font-size: 1.1rem; color: #fff;">Road America</strong>
               </div>
@@ -1269,7 +1269,7 @@ async function renderVoteCircuit() {
 
             <label id="label-VIR" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round3 === 'Virginia' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round3 === 'Virginia' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_3" value="Virginia" ${userVotes.round3 === 'Virginia' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <input type="radio" name="vote_round_3" value="Virginia" ${userVotes.round3 === 'Virginia' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
                 <span class="fi fi-us" style="font-size: 1.2rem;"></span>
                 <strong style="font-size: 1.1rem; color: #fff;">Virginia (VIR)</strong>
               </div>
@@ -1289,7 +1289,7 @@ async function renderVoteCircuit() {
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <label id="label-Magny" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Magny-Cours' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Magny-Cours' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_5" value="Magny-Cours" ${userVotes.round5 === 'Magny-Cours' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <input type="radio" name="vote_round_5" value="Magny-Cours" ${userVotes.round5 === 'Magny-Cours' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
                 <span class="fi fi-fr" style="font-size: 1.2rem;"></span>
                 <strong style="font-size: 1.1rem; color: #fff;">Magny-Cours</strong>
               </div>
@@ -1301,7 +1301,7 @@ async function renderVoteCircuit() {
 
             <label id="label-Dijon" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Dijon-Prenois' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Dijon-Prenois' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_5" value="Dijon-Prenois" ${userVotes.round5 === 'Dijon-Prenois' ? 'checked' : ''} style="transform: scale(1.2); accent-color: #10b981;">
+                <input type="radio" name="vote_round_5" value="Dijon-Prenois" ${userVotes.round5 === 'Dijon-Prenois' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
                 <span class="fi fi-fr" style="font-size: 1.2rem;"></span>
                 <strong style="font-size: 1.1rem; color: #fff;">Dijon-Prenois</strong>
               </div>
