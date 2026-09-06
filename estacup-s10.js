@@ -1250,10 +1250,10 @@ async function renderVoteCircuit() {
           
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
-              <input type="radio" name="vote_round_3" value="Indianapolis" ${userVotes.round3 === 'Indianapolis' ? 'checked' : ''}>
+              <input type="radio" name="vote_round_3" value="Road America" ${userVotes.round3 === 'Road America' ? 'checked' : ''}>
               <div class="vote-pill">
                 <span class="fi fi-us"></span>
-                <strong>Indianapolis</strong> (Road Course)
+                <strong>Road America</strong>
               </div>
             </label>
 
@@ -1269,15 +1269,15 @@ async function renderVoteCircuit() {
 
         <!-- DUEL MANCHE 5 -->
         <div style="margin-bottom: 2rem;">
-          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2026)</h4>
+          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2027)</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre destination européenne :</p>
           
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <label class="vote-option" style="flex: 1; min-width: 220px; padding: 12px; border-radius: 10px; cursor: pointer;">
-              <input type="radio" name="vote_round_5" value="Barcelone" ${userVotes.round5 === 'Barcelone' ? 'checked' : ''}>
+              <input type="radio" name="vote_round_5" value="Magny-Cours" ${userVotes.round5 === 'Magny-Cours' ? 'checked' : ''}>
               <div class="vote-pill">
-                <span class="fi fi-es"></span>
-                <strong>Barcelone-Catalunya</strong>
+                <span class="fi fi-fr"></span>
+                <strong>Magny-Cours</strong>
               </div>
             </label>
 
@@ -1397,13 +1397,13 @@ let globeInitialized = false;
 const circuitsSaison10 = [
   { round: "PROLOGUE", name: "Silverstone", country: "Royaume-Uni", flag: "gb", date: "15/09/2026", lat: 52.0786, lng: -1.0169, status: "confirm" },
   { round: "Manche 1", name: "Portimão (Algarve)", country: "Portugal", flag: "pt", date: "29/09/2026", lat: 37.2270, lng: -8.6267, status: "confirm" },
-  { round: "Manche 2", name: "Dubaï Autodrome", country: "Émirats Arabes Unis", flag: "ae", date: "20/10/2026", lat: 25.0483, lng: 55.2346, status: "confirm" },
-  { round: "Manche 3 (Vote)", name: "Indianapolis", country: "USA", flag: "us", date: "24/11/2026", lat: 39.7950, lng: -86.2348, status: "vote" },
+  { round: "Manche 2", name: "Brno", country: "République Tchèque", flag: "cz", date: "20/10/2026", lat: 49.2019, lng: 16.5456, status: "confirm" },
+  { round: "Manche 3 (Vote)", name: "Road America", country: "USA", flag: "us", date: "24/11/2026", lat: 43.8003, lng: -87.9944, status: "vote" },
   { round: "Manche 3 (Vote)", name: "Virginia (VIR)", country: "USA", flag: "us", date: "24/11/2026", lat: 36.5658, lng: -79.2069, status: "vote" },
-  { round: "Manche 4", name: "Brno", country: "République Tchèque", flag: "cz", date: "08/12/2026", lat: 49.2031, lng: 16.4444, status: "confirm" },
-  { round: "Manche 5 (Vote)", name: "Barcelone-Catalunya", country: "Espagne", flag: "es", date: "19/01/2026", lat: 41.5700, lng: 2.2611, status: "vote" },
-  { round: "Manche 5 (Vote)", name: "Dijon-Prenois", country: "France", flag: "fr", date: "19/01/2026", lat: 47.3625, lng: 4.8986, status: "vote" },
-  { round: "Manche 6", name: "Fuji Speedway", country: "Japon", flag: "jp", date: "35.3717", lng: 138.9267, status: "confirm" }
+  { round: "Manche 4", name: "Fuji Speedway", country: "Japon", flag: "jp", date: "08/12/2026", lat: 35.3717, lng: 138.9261, status: "confirm" },
+  { round: "Manche 5 (Vote)", name: "Magny-Cours", country: "France", flag: "fr", date: "19/01/2027", lat: 46.8622, lng: 3.1636, status: "vote" },
+  { round: "Manche 5 (Vote)", name: "Dijon-Prenois", country: "France", flag: "fr", date: "19/01/2027", lat: 47.3625, lng: 4.8986, status: "vote" },
+  { round: "Manche 6", name: "Kyalami", country: "Afrique du Sud", flag: "za", date: "09/02/2027", lat: -25.9980, lng: 28.0700, status: "confirm" }
 ];
 
 function init3DGlobe() {
