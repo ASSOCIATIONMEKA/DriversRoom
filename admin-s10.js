@@ -1231,7 +1231,42 @@ async function loadEstacupSignups() {
   }
 }
 
-async function loadVotesResults() { if($("q3_total")) $("q3_total").textContent = "Total : 0"; }
+async function loadVotesResults() {
+  try {
+    const snap = await getDocs(collection(db, "estacup_s10_circuit_votes"));
+    let votesRA = 0, votesVIR = 0, votesMagny = 0, votesDijon = 0;
+    
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      if (d.round3 === 'Road America') votesRA++;
+      if (d.round3 === 'Virginia') votesVIR++;
+      if (d.round5 === 'Magny-Cours') votesMagny++;
+      if (d.round5 === 'Dijon-Prenois') votesDijon++;
+    });
+
+    const totalR3 = votesRA + votesVIR;
+    const totalR5 = votesMagny + votesDijon;
+
+    const updateUI = (el_cnt, el_pct, el_bar, votes, total) => {
+      if (!$(el_cnt)) return;
+      const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
+      $(el_cnt).textContent = votes;
+      $(el_pct).textContent = `${pct}%`;
+      $(el_bar).style.width = `${pct}%`;
+    };
+
+    updateUI("q3_a_cnt", "q3_a_pct", "q3_a_bar", votesRA, totalR3);
+    updateUI("q3_b_cnt", "q3_b_pct", "q3_b_bar", votesVIR, totalR3);
+    if ($("q3_total")) $("q3_total").textContent = `Total : ${totalR3}`;
+
+    updateUI("q5_a_cnt", "q5_a_pct", "q5_a_bar", votesMagny, totalR5);
+    updateUI("q5_b_cnt", "q5_b_pct", "q5_b_bar", votesDijon, totalR5);
+    if ($("q5_total")) $("q5_total").textContent = `Total : ${totalR5}`;
+
+  } catch (err) {
+    console.error("Erreur chargement votes:", err);
+  }
+}
 
 /* ---------------- STATUT DU SERVEUR (LIVE) ---------------- */
 async function loadServerStatusAdmin() {
