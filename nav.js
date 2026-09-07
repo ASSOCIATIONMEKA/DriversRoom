@@ -137,3 +137,46 @@ if (document.readyState === "loading") {
 } else {
     injectNavbar();
 }
+
+// ====== SYSTÈME DE NOTIFICATIONS GLOBALES (TOASTS & CONFIRM) ======
+window.showToast = function(message, type = 'info') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = message;
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    toast.addEventListener('animationend', () => toast.remove());
+  }, 4000);
+};
+
+window.showConfirm = function(message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+      <div class="confirm-box">
+        <p>${message.replace(/\n/g, '<br>')}</p>
+        <div class="confirm-actions">
+          <button id="btnConfirmCancel" class="btn-cancel">Annuler</button>
+          <button id="btnConfirmOk" class="btn-ok">Confirmer</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('btnConfirmCancel').onclick = () => {
+      overlay.remove(); resolve(false);
+    };
+    document.getElementById('btnConfirmOk').onclick = () => {
+      overlay.remove(); resolve(true);
+    };
+  });
+};
