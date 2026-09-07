@@ -1249,7 +1249,6 @@ async function renderVoteCircuit() {
           Votez pour vos tracés préférés pour les manches 3 et 5. Les pourcentages s'actualisent en direct avec les votes des autres pilotes.
         </p>
 
-        <!-- DUEL MANCHE 3 -->
         <div style="margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-primary);">
           <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 3 (24/11/2026)</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez entre les deux tracés américains :</p>
@@ -1281,7 +1280,6 @@ async function renderVoteCircuit() {
           </div>
         </div>
 
-        <!-- DUEL MANCHE 5 -->
         <div style="margin-bottom: 2rem;">
           <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2027)</h4>
           <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre destination européenne :</p>
@@ -1894,3 +1892,5 @@ async function loadEstacupTeamStandings() {
   }
 }
 window.loadEstacupTeamStandings = loadEstacupTeamStandings;
+
+}
