@@ -436,7 +436,7 @@ let mSafetyChartInstance = null;
 
 async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
    const safeElo = currentElo ?? 1000;
-   const safeSafety = currentSafety ?? 8; // Changement de 10 à 8
+   const safeSafety = currentSafety ?? 8;
 
    if ($("eloRating")) $("eloRating").textContent = safeElo;
    if ($("licensePoints")) $("licensePoints").textContent = safeSafety;
@@ -454,7 +454,7 @@ async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
      if (validatedUids.has(d.id)) {
        const u = d.data();
        elos.push(u.eloRating ?? 1000);
-       safeties.push(u.licensePoints ?? 8); // Changement de 10 à 8
+       safeties.push(u.licensePoints ?? 8);
      }
    });
 
@@ -487,49 +487,10 @@ async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
      else $("safetyStatusLine").innerHTML = `<span style="color:#ef4444">Critique</span>`;
    }
 
-   // 2. Construction de l'historique visuel via les résultats de course (S9 + S10)
-   const races = [];
-   try {
-     const [histS9, histS10] = await Promise.all([
-       getDocs(collection(db, "users", uid, "raceHistory")),
-       getDocs(collection(db, "users", uid, "raceHistory_s10"))
-     ]);
-     histS9.forEach(d => races.push(d.data()));
-     histS10.forEach(d => races.push(d.data()));
-   } catch (e) {
-     console.error("Erreur historique:", e);
-   }
-   races.sort((a,b) => toDate(a.date) - toDate(b.date));
-
-   const labels = ["Début S9"];
-   let eloData = [1000];
-   let safetyData = [8];
-
-   if (races.length > 0) {
-     const stepElo = (safeElo - 1000) / races.length;
-     const stepSafety = (safeSafety - 8) / races.length;
-     
-     for (let i = 0; i < races.length; i++) {
-       let raceLabel = races[i].name ? races[i].name.split("•")[0].trim() : `Course ${i+1}`;
-       if(raceLabel.includes("ESTACUP")) raceLabel = raceLabel.replace("ESTACUP", "").trim();
-       
-       labels.push(raceLabel || `Course ${i+1}`);
-       
-       if (i === races.length - 1) {
-         eloData.push(safeElo);
-         safetyData.push(safeSafety);
-       } else {
-         let simElo = 1000 + (stepElo * (i+1)) + (Math.random() * 20 - 10);
-         let simSaf = 8 + (stepSafety * (i+1)) + (Math.random() * 0.6 - 0.3);
-         eloData.push(Math.round(simElo));
-         safetyData.push(Math.round(simSaf * 10) / 10);
-       }
-     }
-   } else {
-     labels.push("Actuel");
-     eloData.push(safeElo);
-     safetyData.push(safeSafety);
-   }
+   // 2. Construction de l'historique visuel (Simplifié : Base S10 -> Actuel)
+   const labels = ["Début S10", "Actuel"];
+   const eloData = [1000, safeElo];
+   const safetyData = [8, safeSafety];
 
    renderChart("chartMRating", "M-Rating", labels, eloData, "#38bdf8", "rgba(56, 189, 248, 0.15)");
    renderChart("chartMSafety", "M-Safety", labels, safetyData, "#34d399", "rgba(52, 211, 153, 0.15)");
@@ -576,7 +537,10 @@ function renderChart(canvasId, label, labels, data, borderColor, bgColor) {
       scales: {
         y: {
           grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          ticks: { color: '#94a3b8' }
+          ticks: { color: '#94a3b8' },
+          // Optionnel : Forcer le graphique à ne pas trop zoomer si les valeurs sont proches
+          suggestedMin: label === "M-Safety" ? 0 : 900,
+          suggestedMax: label === "M-Safety" ? 10 : 1100
         },
         x: {
           grid: { color: 'rgba(255, 255, 255, 0.05)' },
