@@ -109,23 +109,27 @@
           <div id="filesWrap" style="margin-top:12px">
             <h5 style="margin:6px 0">Fichiers JSON (résultats serveur)</h5>
 
-            <div class="course-box" style="padding:12px">
-              <h4 style="margin:0 0 8px">Split 1</h4>
-              <label> Sprint S1 (JSON) </label>
+            <div class="course-box" style="padding:15px; border-color: rgba(56, 189, 248, 0.3);">
+              <h4 style="margin:0 0 12px; color: #38bdf8;">Split 1</h4>
+              
+              <label style="font-weight: 600;">Course (Principale / 1H) (JSON) <span style="color:#34d399; font-size:0.8rem; font-weight: normal;">*Requis S10</span></label>
+              <input type="file" id="fileMainS1" accept=".json,application/json" style="margin-bottom: 15px;" />
+              
+              <label style="display:block; color:var(--text-muted); font-size: 0.9rem;">Sprint (Optionnel / Format S9)</label>
               <input type="file" id="fileSprintS1" accept=".json,application/json" />
-              <label> Finale / Principale S1 (JSON) </label>
-              <input type="file" id="fileMainS1" accept=".json,application/json" />
             </div>
 
-            <div id="split2Wrap" class="course-box" style="padding:12px;display:none">
-              <h4 style="margin:0 0 8px">Split 2</h4>
-              <label> Sprint S2 (JSON) </label>
+            <div id="split2Wrap" class="course-box" style="padding:15px; border-color: rgba(56, 189, 248, 0.3); display:none">
+              <h4 style="margin:0 0 12px; color: #38bdf8;">Split 2</h4>
+              
+              <label style="font-weight: 600;">Course (Principale / 1H) (JSON) <span style="color:#34d399; font-size:0.8rem; font-weight: normal;">*Requis S10</span></label>
+              <input type="file" id="fileMainS2" accept=".json,application/json" style="margin-bottom: 15px;" />
+              
+              <label style="display:block; color:var(--text-muted); font-size: 0.9rem;">Sprint (Optionnel / Format S9)</label>
               <input type="file" id="fileSprintS2" accept=".json,application/json" />
-              <label> Finale / Principale S2 (JSON) </label>
-              <input type="file" id="fileMainS2" accept=".json,application/json" />
             </div>
 
-            <button id="analyzeJson">Analyser les fichiers</button>
+            <button id="analyzeJson" class="btn-validate" style="margin-top: 10px;">Analyser les fichiers</button>
           </div>
 
           <div id="matchBlock" class="course-box" style="display:none">
@@ -138,7 +142,7 @@
           <div id="previewBlock" class="course-box" style="display:none">
             <h4>Aperçu des résultats (finales)</h4>
             <div id="resultsPreview"></div>
-            <button id="submitJsonResults">✅ Enregistrer ces résultats</button>
+            <button id="submitJsonResults" class="btn-validate">✅ Enregistrer ces résultats</button>
           </div>
         </div>
 
@@ -180,15 +184,22 @@
           <select id="incidentRaceSelect"></select>
           <textarea id="incidentDescription" placeholder="Description de l'incident" rows="3" style="margin-top:10px"></textarea>
           <div style="margin-top:10px">
-            <button type="button" id="submitIncident">✅ Enregistrer l'incident</button>
+            <button type="button" id="submitIncident" class="btn-validate">✅ Enregistrer l'incident</button>
           </div>
         </div>
         <div id="incidentHistory" style="margin-top:24px"></div>
       </section>
 
+      <!-- SEPARATION DES ARCHIVES ET DES COURSES S10 -->
       <section id="section-courses" class="admin-section hidden">
         <h3>Courses enregistrées</h3>
-        <div id="courseList"></div>
+        <p class="muted-note" style="margin-bottom: 2rem;">Les courses sont triées automatiquement par saison en fonction de leur date d'enregistrement.</p>
+        
+        <h4 style="color: #38bdf8; margin-top: 1rem; border-bottom: 2px solid rgba(56, 189, 248, 0.3); padding-bottom: 0.5rem; text-transform: uppercase;">🟢 Saison 10</h4>
+        <div id="courseListS10" style="margin-bottom: 3rem;"></div>
+
+        <h4 style="color: #94a3b8; margin-top: 1rem; border-bottom: 2px solid rgba(148, 163, 184, 0.3); padding-bottom: 0.5rem; text-transform: uppercase;">⚪ Saison 9 (Archives)</h4>
+        <div id="courseListS9"></div>
       </section>
 
       <section id="section-estacup" class="admin-section hidden">
@@ -339,7 +350,7 @@
               <input type="url" id="adminSrvLive" placeholder="https://de2.assettohosting.com:40078/live-timing" />
             </div>
           </div>
-          <button id="btnSaveServer" style="margin-top:20px;">💾 Mettre à jour en direct</button>
+          <button id="btnSaveServer" class="btn-validate" style="margin-top:20px;">💾 Mettre à jour en direct</button>
         </div>
       </section>
 
