@@ -1566,7 +1566,7 @@
           const timeInput = document.getElementById("adminPqTime").value.trim();
 
           if (!pilotVal || !timeInput) {
-            alert("Veuillez sélectionner un pilote et indiquer une moyenne de temps.");
+            showToast("⚠️ Veuillez sélectionner un pilote et indiquer une moyenne de temps.", "warning");
             return;
           }
 
@@ -1585,11 +1585,11 @@
               timestamp: new Date()
             }, { merge: true });
 
-            alert(`✅ Temps de ${pilotName} (${daySelect}) enregistré avec succès !`);
+            showToast(`✅ Temps de ${pilotName} (${daySelect}) enregistré avec succès !`, "success");
             document.getElementById("adminPqTime").value = "";
           } catch (err) {
             console.error("Erreur enregistrement admin préqualif:", err);
-            alert("Erreur lors de l'enregistrement.");
+            showToast("❌ Erreur lors de l'enregistrement.", "error");
           } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Enregistrer";
@@ -1600,19 +1600,20 @@
 
     window.deletePrequalSession = async function(raceId, docId) {
       if (!isAdmin) return;
-      if (confirm("Voulez-vous vraiment supprimer ce temps de préqualification ?")) {
+      if (await showConfirm("Voulez-vous vraiment supprimer ce temps de préqualification ?")) {
         try {
           await deleteDoc(doc(db, `prequals_${raceId}`, docId));
+          showToast("✅ Temps supprimé avec succès.", "success");
         } catch (err) {
           console.error("Erreur suppression préqualif:", err);
-          alert("Erreur lors de la suppression.");
+          showToast("❌ Erreur lors de la suppression.", "error");
         }
       }
     };
 
     window.togglePresence = async function(raceId, status) {
       if (!currentUser) {
-        alert("Vous devez être connecté pour indiquer votre présence.");
+        showToast("⚠️ Vous devez être connecté pour indiquer votre présence.", "warning");
         window.location.href = "login.html";
         return;
       }
@@ -1633,7 +1634,7 @@
         }
       } catch (err) {
         console.error("Erreur lors de la modification de la présence :", err);
-        alert("Une erreur est survenue. Veuillez réessayer.");
+        showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
       }
     };
   </script>
