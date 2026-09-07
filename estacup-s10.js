@@ -207,7 +207,6 @@ function setupNavigation(isAdmin = false) {
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.dataset.section)));
   showSection("infos"); 
   
-  // NOUVEAU : Setup de la sous-navigation de l'onglet "Mes Informations"
   setupInfosCategories();
 }
 
@@ -462,7 +461,6 @@ async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
    elos.sort((a,b) => b - a);
    safeties.sort((a,b) => b - a);
 
-   // Si le joueur n'est pas encore validé, on l'inclut pour le calcul personnel
    if (!validatedUids.has(uid)) {
      elos.push(safeElo);
      elos.sort((a,b) => b - a);
@@ -493,8 +491,10 @@ async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
    const eloData = [1000, safeElo];
    const safetyData = [8, safeSafety];
 
-   renderChart("chartMRating", "M-Rating", labels, eloData, "#38bdf8", "rgba(56, 189, 248, 0.15)");
-   renderChart("chartMSafety", "M-Safety", labels, safetyData, "#34d399", "rgba(52, 211, 153, 0.15)");
+   if (typeof Chart !== 'undefined') {
+     renderChart("chartMRating", "M-Rating", labels, eloData, "#38bdf8", "rgba(56, 189, 248, 0.15)");
+     renderChart("chartMSafety", "M-Safety", labels, safetyData, "#34d399", "rgba(52, 211, 153, 0.15)");
+   }
 }
 
 function renderChart(canvasId, label, labels, data, borderColor, bgColor) {
@@ -539,7 +539,6 @@ function renderChart(canvasId, label, labels, data, borderColor, bgColor) {
         y: {
           grid: { color: 'rgba(255, 255, 255, 0.05)' },
           ticks: { color: '#94a3b8' },
-          // Optionnel : Forcer le graphique à ne pas trop zoomer si les valeurs sont proches
           suggestedMin: label === "M-Safety" ? 0 : 900,
           suggestedMax: label === "M-Safety" ? 10 : 1100
         },
@@ -564,7 +563,6 @@ async function loadMyIncidents(uid) {
     const snap = await getDocs(collection(db, "incidents"));
     let myIncidents = [];
     
-    // Filtrer pour ne garder que les incidents où l'UID du pilote apparait
     snap.forEach(d => {
       const data = d.data();
       const pilotes = data.pilotes || [];
@@ -582,7 +580,6 @@ async function loadMyIncidents(uid) {
       return;
     }
 
-    // Tri du plus récent au plus ancien
     myIncidents.sort((a, b) => (toDate(b.data.date) || 0) - (toDate(a.data.date) || 0));
 
     let html = "";
@@ -591,15 +588,12 @@ async function loadMyIncidents(uid) {
       const m = inc.myData;
       const dateObj = toDate(d.date);
       
-      // Formatage de la date comme sur l'image (DD/MM/YYYY HH:MM:SS)
       const dateStr = dateObj ? dateObj.toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit'}) : "Date inconnue";
       
-      // Calcul mathématique de l'incidence (Avant -> Après)
       const diff = m.after - m.before;
       const diffColor = diff < 0 ? "#ef4444" : (diff > 0 ? "#10b981" : "#94a3b8");
       const diffSign = diff > 0 ? "+" : "";
 
-      // Récupération du nom de la course si renseigné par l'admin
       let courseName = "Non spécifiée";
       if (d.courseId) {
          try {
@@ -847,11 +841,11 @@ async function refreshTeamDashboard() {
       const input = selectEl.value;
       
       if (!input) {
-        showToast("⚠️ Veuillez sélectionner une équipe dans la liste.", "warning");
+        if (window.showToast) window.showToast("⚠️ Veuillez sélectionner une équipe dans la liste.", "warning");
         return;
       }
       if (sisterTeams.map(s => s.toLowerCase()).includes(input.toLowerCase())) {
-        showToast("⚠️ Cette équipe est déjà liée.", "warning");
+        if (window.showToast) window.showToast("⚠️ Cette équipe est déjà liée.", "warning");
         return;
       }
       
@@ -867,7 +861,11 @@ async function refreshTeamDashboard() {
   document.querySelectorAll(".btn-remove-sister").forEach(btn => {
     btn.addEventListener("click", async (e) => {
       const teamToRemove = e.target.getAttribute("data-team");
-      if (!(await showConfirm(`Retirer l'équipe sœur "${teamToRemove}" ?`))) return;
+      if (window.showConfirm) {
+        if (!(await window.showConfirm(`Retirer l'équipe sœur "${teamToRemove}" ?`))) return;
+      } else {
+        if (!confirm(`Retirer l'équipe sœur "${teamToRemove}" ?`)) return;
+      }
 
       const newSisterTeams = sisterTeams.filter(st => st !== teamToRemove);
       await setDoc(doc(db, "estacup_s10_teams_config", myTeam), { sisterTeams: newSisterTeams }, { merge: true });
@@ -1007,7 +1005,7 @@ async function loadEstacupForm(userData) {
         const liveryChoice = $("regLiveryChoice").value;
 
         if (!fName || !lName || !status || isNaN(num) || !steam || !liveryChoice) {
-          showToast("⚠️ Veuillez remplir tous champs obligatoires correctement.", "warning");
+          if (window.showToast) window.showToast("⚠️ Veuillez remplir tous champs obligatoires correctement.", "warning");
           return;
         }
 
@@ -1024,7 +1022,7 @@ async function loadEstacupForm(userData) {
             let membersCount = 0;
             teamSnap.forEach(d => { if (d.id !== currentUid) membersCount++; });
             if (membersCount >= 3) {
-              showToast(`❌ L'équipe "${team}" est déjà complète (3 pilotes max).`, "error");
+              if (window.showToast) window.showToast(`❌ L'équipe "${team}" est déjà complète (3 pilotes max).`, "error");
               btn.disabled = false;
               btn.textContent = "🏁 Valider mon inscription";
               return;
@@ -1037,7 +1035,7 @@ async function loadEstacupForm(userData) {
           numSnap.forEach(d => { if (d.id !== currentUid) numberTaken = true; });
 
           if (numberTaken) {
-            showToast(`❌ Le numéro #${num} vient d'être réservé par un autre pilote !`, "error");
+            if (window.showToast) window.showToast(`❌ Le numéro #${num} vient d'être réservé par un autre pilote !`, "error");
             btn.disabled = false;
             btn.textContent = "🏁 Valider mon inscription";
             return;
@@ -1057,12 +1055,12 @@ async function loadEstacupForm(userData) {
             updatedAt: new Date()
           });
 
-          showToast("✅ Inscription transmise avec succès ! En attente de validation.", "success");
+          if (window.showToast) window.showToast("✅ Inscription transmise avec succès ! En attente de validation.", "success");
           loadEstacupForm(userData);
           setupMekaQuestionnaire(userData);
         } catch (err) {
           console.error("Erreur inscription:", err);
-          showToast("❌ Erreur lors de l'enregistrement.", "error");
+          if (window.showToast) window.showToast("❌ Erreur lors de l'enregistrement.", "error");
           btn.disabled = false;
           btn.textContent = "🏁 Valider mon inscription";
         }
@@ -1592,7 +1590,7 @@ async function renderVoteCircuit() {
       const r5 = document.querySelector('input[name="vote_round_5"]:checked')?.value || null;
 
       if (!r3 || !r5) {
-        showToast("⚠️ Veuillez faire un choix pour chaque manche avant de valider.", "warning");
+        if (window.showToast) window.showToast("⚠️ Veuillez faire un choix pour chaque manche avant de valider.", "warning");
         return;
       }
 
@@ -1632,7 +1630,7 @@ async function renderVoteCircuit() {
 
       } catch (err) {
         console.error("Erreur enregistrement vote:", err);
-        showToast("❌ Erreur lors de l'enregistrement du vote.", "error");
+        if (window.showToast) window.showToast("❌ Erreur lors de l'enregistrement du vote.", "error");
         btn.disabled = false;
         btn.textContent = originalText;
       }
@@ -2108,80 +2106,3 @@ async function loadEstacupTeamStandings() {
   }
 }
 window.loadEstacupTeamStandings = loadEstacupTeamStandings;
-
-/* ======================== MES INCIDENTS ======================== */
-async function loadMyIncidents(uid) {
-  const container = $("myIncidentsList");
-  if (!container) return;
-
-  try {
-    const snap = await getDocs(collection(db, "incidents"));
-    let myIncidents = [];
-    
-    // Filtrer pour ne garder que les incidents où l'UID du pilote apparait
-    snap.forEach(d => {
-      const data = d.data();
-      const pilotes = data.pilotes || [];
-      const myData = pilotes.find(p => p.uid === uid);
-      if (myData) {
-        myIncidents.push({ id: d.id, data, myData });
-      }
-    });
-
-    if (myIncidents.length === 0) {
-      container.innerHTML = `
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.5rem; text-align: center;">
-          <p class="muted-note" style="margin: 0; font-size: 1rem;">Aucun incident enregistré à votre encontre. Continuez comme ça ! 👏</p>
-        </div>`;
-      return;
-    }
-
-    // Tri du plus récent au plus ancien
-    myIncidents.sort((a, b) => (toDate(b.data.date) || 0) - (toDate(a.data.date) || 0));
-
-    let html = "";
-    for (const inc of myIncidents) {
-      const d = inc.data;
-      const m = inc.myData;
-      const dateObj = toDate(d.date);
-      
-      // Formatage de la date (DD/MM/YYYY HH:MM:SS)
-      const dateStr = dateObj ? dateObj.toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit'}) : "Date inconnue";
-      
-      // Calcul mathématique de l'incidence (Avant -> Après)
-      const diff = m.after - m.before;
-      const diffColor = diff < 0 ? "#ef4444" : (diff > 0 ? "#10b981" : "#94a3b8");
-      const diffSign = diff > 0 ? "+" : "";
-
-      // Récupération du nom de la course si renseigné par l'admin
-      let courseName = "Non spécifiée";
-      if (d.courseId) {
-         try {
-           const cSnap = await getDoc(doc(db, "courses", d.courseId));
-           if (cSnap.exists()) courseName = cSnap.data().name || d.courseId;
-         } catch(e) {}
-      }
-
-      html += `
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.5rem;">
-          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Date et heure de la décision</p>
-          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${dateStr}</p>
-
-          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Course</p>
-          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${escapeHtml(courseName)}</p>
-
-          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Description de l'incident</p>
-          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${escapeHtml(d.description)}</p>
-
-          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Incidence M-Safety</p>
-          <p style="margin: 0; color: ${diffColor}; font-weight: bold; font-size: 1.1rem;">${diffSign}${diff}</p>
-        </div>
-      `;
-    }
-    container.innerHTML = html;
-
-  } catch (e) {
-    console.error("Erreur chargement incidents", e);
-    container.innerHTML = `<p class="impact-bad">Erreur de chargement des incidents.</p>`;
-  }
-}
