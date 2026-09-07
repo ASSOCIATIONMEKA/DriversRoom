@@ -205,11 +205,10 @@ async function loadAllUsers() {
         const targetUid = e.currentTarget.getAttribute("data-uid");
         const pilotName = e.currentTarget.getAttribute("data-name");
         
-        const confirmation = confirm(`⚠️ ATTENTION ⚠️\n\nÊtes-vous sûr de vouloir supprimer DÉFINITIVEMENT le profil de ${pilotName} de la base de données ?\n\nCette action est irréversible.`);
-        
-        if (confirmation) {
-          await deleteUserAccount(targetUid);
-        }
+        const confirmation = await showConfirm(`⚠️ ATTENTION ⚠️<br><br>Êtes-vous sûr de vouloir supprimer DÉFINITIVEMENT le profil de <strong>${pilotName}</strong> ?<br><br>Cette action est irréversible.`);
+if (confirmation) {
+  await deleteUserAccount(targetUid);
+}
       });
     });
 
