@@ -96,7 +96,7 @@ async function showPilotTooltipFor(uid, fallbackName, anchorEl) {
         const age = computeAgeFromDob(dobRaw);
         const name = `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || safeName;
         const mRating = d.eloRating ?? 1000; 
-        const mSafety = d.licensePoints ?? 8; // Changement 10 -> 8
+        const mSafety = d.licensePoints ?? 8;
         info = { name, age, mRating, mSafety };
       } else info = { name: safeName, age: null, mRating: null, mSafety: null };
       pilotInfoCache.set(uid, info);
@@ -302,6 +302,7 @@ onAuthStateChanged(auth, async (user) => {
     await ensureSignupCache();
     await loadPilotStats(currentUid);
     await loadAdvancedMRatingAndSafety(currentUid, data.eloRating, data.licensePoints);
+    await loadMyIncidents(currentUid);
   } catch (err) { console.error("Erreur sécurité S10:", err); }
 });
 
@@ -554,6 +555,83 @@ function renderChart(canvasId, label, labels, data, borderColor, bgColor) {
   if (canvasId === "chartMSafety") mSafetyChartInstance = chart;
 }
 
+/* ======================== MES INCIDENTS ======================== */
+async function loadMyIncidents(uid) {
+  const container = $("myIncidentsList");
+  if (!container) return;
+
+  try {
+    const snap = await getDocs(collection(db, "incidents"));
+    let myIncidents = [];
+    
+    // Filtrer pour ne garder que les incidents où l'UID du pilote apparait
+    snap.forEach(d => {
+      const data = d.data();
+      const pilotes = data.pilotes || [];
+      const myData = pilotes.find(p => p.uid === uid);
+      if (myData) {
+        myIncidents.push({ id: d.id, data, myData });
+      }
+    });
+
+    if (myIncidents.length === 0) {
+      container.innerHTML = `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.5rem; text-align: center;">
+          <p class="muted-note" style="margin: 0; font-size: 1rem;">Aucun incident enregistré à votre encontre. Continuez comme ça ! 👏</p>
+        </div>`;
+      return;
+    }
+
+    // Tri du plus récent au plus ancien
+    myIncidents.sort((a, b) => (toDate(b.data.date) || 0) - (toDate(a.data.date) || 0));
+
+    let html = "";
+    for (const inc of myIncidents) {
+      const d = inc.data;
+      const m = inc.myData;
+      const dateObj = toDate(d.date);
+      
+      // Formatage de la date comme sur l'image (DD/MM/YYYY HH:MM:SS)
+      const dateStr = dateObj ? dateObj.toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit'}) : "Date inconnue";
+      
+      // Calcul mathématique de l'incidence (Avant -> Après)
+      const diff = m.after - m.before;
+      const diffColor = diff < 0 ? "#ef4444" : (diff > 0 ? "#10b981" : "#94a3b8");
+      const diffSign = diff > 0 ? "+" : "";
+
+      // Récupération du nom de la course si renseigné par l'admin
+      let courseName = "Non spécifiée";
+      if (d.courseId) {
+         try {
+           const cSnap = await getDoc(doc(db, "courses", d.courseId));
+           if (cSnap.exists()) courseName = cSnap.data().name || d.courseId;
+         } catch(e) {}
+      }
+
+      html += `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.5rem;">
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Date et heure de la décision</p>
+          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${dateStr}</p>
+
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Course</p>
+          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${escapeHtml(courseName)}</p>
+
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Description de l'incident</p>
+          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${escapeHtml(d.description)}</p>
+
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Incidence M-Safety</p>
+          <p style="margin: 0; color: ${diffColor}; font-weight: bold; font-size: 1.1rem;">${diffSign}${diff}</p>
+        </div>
+      `;
+    }
+    container.innerHTML = html;
+
+  } catch (e) {
+    console.error("Erreur chargement incidents", e);
+    container.innerHTML = `<p class="impact-bad">Erreur de chargement des incidents.</p>`;
+  }
+}
+
 /* ======================== MON ÉQUIPE ======================== */
 window.teamViewState = { showGlobal: false };
 
@@ -648,7 +726,7 @@ async function refreshTeamDashboard() {
       number: data.raceNumber,
       teamName: data.teamName.trim(), 
       elo: userData.eloRating || 1000,
-      safety: userData.licensePoints || 8, // Changement 10 -> 8
+      safety: userData.licensePoints || 8,
       license: userData.licenseClass || userData.licenceClass || "Rookie",
       points: pilotPoints,
       wins: pilotWins,
@@ -2030,3 +2108,80 @@ async function loadEstacupTeamStandings() {
   }
 }
 window.loadEstacupTeamStandings = loadEstacupTeamStandings;
+
+/* ======================== MES INCIDENTS ======================== */
+async function loadMyIncidents(uid) {
+  const container = $("myIncidentsList");
+  if (!container) return;
+
+  try {
+    const snap = await getDocs(collection(db, "incidents"));
+    let myIncidents = [];
+    
+    // Filtrer pour ne garder que les incidents où l'UID du pilote apparait
+    snap.forEach(d => {
+      const data = d.data();
+      const pilotes = data.pilotes || [];
+      const myData = pilotes.find(p => p.uid === uid);
+      if (myData) {
+        myIncidents.push({ id: d.id, data, myData });
+      }
+    });
+
+    if (myIncidents.length === 0) {
+      container.innerHTML = `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.5rem; text-align: center;">
+          <p class="muted-note" style="margin: 0; font-size: 1rem;">Aucun incident enregistré à votre encontre. Continuez comme ça ! 👏</p>
+        </div>`;
+      return;
+    }
+
+    // Tri du plus récent au plus ancien
+    myIncidents.sort((a, b) => (toDate(b.data.date) || 0) - (toDate(a.data.date) || 0));
+
+    let html = "";
+    for (const inc of myIncidents) {
+      const d = inc.data;
+      const m = inc.myData;
+      const dateObj = toDate(d.date);
+      
+      // Formatage de la date (DD/MM/YYYY HH:MM:SS)
+      const dateStr = dateObj ? dateObj.toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit'}) : "Date inconnue";
+      
+      // Calcul mathématique de l'incidence (Avant -> Après)
+      const diff = m.after - m.before;
+      const diffColor = diff < 0 ? "#ef4444" : (diff > 0 ? "#10b981" : "#94a3b8");
+      const diffSign = diff > 0 ? "+" : "";
+
+      // Récupération du nom de la course si renseigné par l'admin
+      let courseName = "Non spécifiée";
+      if (d.courseId) {
+         try {
+           const cSnap = await getDoc(doc(db, "courses", d.courseId));
+           if (cSnap.exists()) courseName = cSnap.data().name || d.courseId;
+         } catch(e) {}
+      }
+
+      html += `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.5rem;">
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Date et heure de la décision</p>
+          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${dateStr}</p>
+
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Course</p>
+          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${escapeHtml(courseName)}</p>
+
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Description de l'incident</p>
+          <p style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 0.95rem;">${escapeHtml(d.description)}</p>
+
+          <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: #94a3b8; font-weight: bold;">Incidence M-Safety</p>
+          <p style="margin: 0; color: ${diffColor}; font-weight: bold; font-size: 1.1rem;">${diffSign}${diff}</p>
+        </div>
+      `;
+    }
+    container.innerHTML = html;
+
+  } catch (e) {
+    console.error("Erreur chargement incidents", e);
+    container.innerHTML = `<p class="impact-bad">Erreur de chargement des incidents.</p>`;
+  }
+}
