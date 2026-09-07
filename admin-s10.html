@@ -204,6 +204,65 @@
           </select>
         </div>
         <div id="estacupList"></div>
+        
+        <!-- MODAL ÉDITION INSCRIPTION -->
+        <div id="editSignupModal" class="hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; background: #0f172a; border: 1px solid #38bdf8; border-radius: 12px; width: 90%; max-width: 500px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+          <h4 style="color: #38bdf8; margin-top: 0; margin-bottom: 20px; font-size: 1.2rem;">✏️ Éditer les informations du pilote</h4>
+          <input type="hidden" id="editSignupId">
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="font-size: 0.85rem; color: var(--text-muted);">Prénom</label>
+              <input type="text" id="editSignupFirst" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; color: var(--text-muted);">Nom</label>
+              <input type="text" id="editSignupLast" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; color: var(--text-muted);">Équipe</label>
+            <input type="text" id="editSignupTeam" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="font-size: 0.85rem; color: var(--text-muted);">Numéro</label>
+              <input type="number" id="editSignupNumber" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; color: var(--text-muted);">Steam ID</label>
+              <input type="text" id="editSignupSteam" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div>
+              <label style="font-size: 0.85rem; color: var(--text-muted);">Paiement</label>
+              <select id="editSignupPayment" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+                <option value="adherent">Adhérent MEKA</option>
+                <option value="paye_5e">Payé 5€</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; color: var(--text-muted);">Livrée</label>
+              <select id="editSignupLivery" style="width: 100%; padding: 8px; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #fff;">
+                <option value="personnelle">Personnelle</option>
+                <option value="neutre">Neutre (Défaut)</option>
+                <option value="licence">Neutre (Licence)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 15px;">
+            <button id="btnSaveSignupEdit" class="btn-validate" style="flex: 1;">💾 Enregistrer</button>
+            <button id="btnCancelSignupEdit" style="flex: 1; background: transparent; border: 1px solid #475569; color: #cbd5e1; border-radius: 8px; cursor: pointer;">Annuler</button>
+          </div>
+        </div>
+        <!-- OVERLAY MODAL -->
+        <div id="editSignupOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9998;"></div>
+        
       </section>
 
       <section id="section-votes" class="admin-section hidden">
