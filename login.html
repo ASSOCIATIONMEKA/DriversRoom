@@ -75,5 +75,21 @@
     <p id="error" class="error" style="text-align: center; margin-top: 1rem;"></p>
     <p id="success" class="success" style="text-align: center; margin-top: 1rem; color: var(--accent-success);"></p>
   </div>
+  <!-- MODALE MOT DE PASSE OUBLIÉ -->
+<div id="forgotPasswordModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+  <div class="course-box" style="max-width: 400px; width: 90%; text-align: center; padding: 2.5rem 2rem;">
+    <h3 style="margin-top: 0; color: var(--accent-primary);">Mot de passe oublié ?</h3>
+    <p class="muted-note" style="margin-bottom: 1.5rem; line-height: 1.5;">Saisissez l'adresse email associée à votre compte. Nous vous enverrons un lien sécurisé pour le réinitialiser.</p>
+    
+    <input type="email" id="resetEmailInput" placeholder="Votre adresse email" style="margin-bottom: 1rem; width: 100%;" />
+    
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button id="btnCancelReset" style="flex: 1; background: transparent; border: 1px solid var(--border-secondary); color: var(--text-secondary); box-shadow: none;">Annuler</button>
+      <button id="btnConfirmReset" style="flex: 1; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));">Envoyer</button>
+    </div>
+    
+    <p id="resetMessage" style="margin-top: 1rem; font-size: 0.9rem; font-weight: 600; min-height: 20px;"></p>
+  </div>
+</div>
 </body>
 </html>
