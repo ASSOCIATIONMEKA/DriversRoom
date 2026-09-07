@@ -303,7 +303,7 @@ function updateIncidentList() {
 document.getElementById("submitIncident")?.addEventListener("click", async () => {
   const description = document.getElementById("incidentDescription")?.value.trim();
   const raceId = document.getElementById("incidentRaceSelect")?.value || null;
-  if (!description || selectedPilots.length === 0) { alert("Description et au moins un pilote requis."); return; }
+  if (!description || selectedPilots.length === 0) { showToast("⚠️ Description et au moins un pilote requis.", "warning"); return; }
 
   const adminName = (document.getElementById("adminName")?.textContent || "").trim();
   const payload = {
@@ -324,7 +324,7 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
   selectedPilots = [];
   updateIncidentList();
   document.getElementById("incidentDescription").value = "";
-  alert("Incident enregistré.");
+  showToast("✅ Incident enregistré.", "success");
   await loadIncidentHistory();
 });
 
@@ -521,7 +521,7 @@ function setupPilotsSection() {
     if (dobStr) payload.dob = dobStr;
 
     await setDoc(ref, payload);
-    alert("Pilote mis à jour.");
+    showToast("✅ Pilote mis à jour.", "success");
     await fetchPilots();
     const again = allPilots.find(x => x.id === current.id);
     if (again) selectPilot(again);
@@ -530,7 +530,7 @@ function setupPilotsSection() {
   btnReset?.addEventListener("click", () => {
     if (!current) return;
     selectPilot(current);
-    alert("Formulaire réinitialisé.");
+    showToast("ℹ️ Formulaire réinitialisé.", "info");
   });
 
   refresh?.addEventListener("click", fetchPilots);
@@ -908,12 +908,12 @@ function renderMatchingUI() {
 
 function applyMatchingSelections() {
   document.querySelectorAll(".match-select").forEach(sel => { if(sel.value) ImportState.nameMap.set(sel.dataset.key, { uid: sel.value }); });
-  renderPreviewTables(); alert("Assignations appliquées.");
+  renderPreviewTables(); showToast("✅ Assignations appliquées.", "success");
 }
 
 async function saveImportedResults() {
   const baseName = buildBaseName(); const raceDate = $("raceDate")?.valueAsDate || new Date();
-  if (!baseName) { alert("Formulaire incomplet."); return; }
+  if (!baseName) { showToast("⚠️ Formulaire incomplet.", "warning"); return; }
   const races = [];
   if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint S1", rows: ImportState.parsed.S1.sprint });
   if (ImportState.parsed.S1.main.length) races.push({ key: "S1_main", label: "Principale S1", rows: ImportState.parsed.S1.main });
@@ -936,7 +936,7 @@ async function saveImportedResults() {
 
     await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: ImportState.isEstacup, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
   }
-  alert("Importation terminée !"); await loadCourses();
+  showToast("✅ Importation terminée !", "success"); await loadCourses();
 }
 
 function buildBaseName() {
@@ -955,7 +955,7 @@ async function loadCourses() {
   
   document.querySelectorAll(".delete-course").forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Supprimer ?")) return;
+      if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?"))) return;
       await deleteDoc(doc(db, "courses", btn.dataset.id)); loadCourses();
     });
   });
@@ -1207,7 +1207,7 @@ async function loadEstacupSignups() {
 
     document.querySelectorAll('.btn-delete-signup').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        if(!confirm("Êtes-vous sûr de vouloir supprimer définitivement cette inscription ?")) return;
+        if(!(await showConfirm("Êtes-vous sûr de vouloir supprimer définitivement cette inscription ?"))) return;
         const id = e.target.getAttribute('data-id');
         e.target.disabled = true;
         await deleteDoc(doc(db, "estacup_s10_signups", id));
@@ -1247,7 +1247,7 @@ async function loadEstacupSignups() {
           loadEstacupSignups();
         } catch (err) {
           console.error("Erreur mise à jour livrée :", err);
-          alert("Erreur lors de la mise à jour.");
+          showToast("❌ Erreur lors de la mise à jour.", "error");
           e.target.checked = !isChecked; 
           e.target.disabled = false;
         }
@@ -1383,9 +1383,10 @@ document.addEventListener("DOMContentLoaded", () => {
               modal.classList.add("hidden");
               overlay.classList.add("hidden");
               loadEstacupSignups();
+              showToast("✅ Inscription sauvegardée.", "success");
           } catch(e) {
               console.error(e);
-              alert("Erreur lors de la sauvegarde de l'inscription.");
+              showToast("❌ Erreur lors de la sauvegarde de l'inscription.", "error");
           } finally {
               btnSave.disabled = false;
               btnSave.textContent = "💾 Enregistrer";
