@@ -181,19 +181,55 @@ $("registerForm").addEventListener("submit", async (e) => {
   }
 });
 
-// ================= MOT DE PASSE OUBLIÉ =================
-$("forgotPassword").addEventListener("click", async () => {
-  setError(""); setSuccess("");
-  const email = $("loginEmail").value.trim();
+// ================= MOT DE PASSE OUBLIÉ (MODALE) =================
+const forgotModal = $("forgotPasswordModal");
+const resetEmailInput = $("resetEmailInput");
+const resetMessage = $("resetMessage");
+const btnConfirmReset = $("btnConfirmReset");
+
+// Ouvrir la modale
+$("forgotPassword").addEventListener("click", () => {
+  forgotModal.classList.remove("hidden");
+  // Astuce UX : on pré-remplit le champ si l'utilisateur avait déjà commencé à taper son email
+  resetEmailInput.value = $("loginEmail").value.trim(); 
+  resetMessage.textContent = "";
+});
+
+// Fermer la modale
+$("btnCancelReset").addEventListener("click", () => {
+  forgotModal.classList.add("hidden");
+});
+
+// Valider l'envoi
+btnConfirmReset.addEventListener("click", async () => {
+  const email = resetEmailInput.value.trim();
+  
   if (!email) {
-    setError("Entre ton email dans le champ ‘Email’, puis clique à nouveau sur « Mot de passe oublié ? »");
+    resetMessage.style.color = "#f87171"; // Rouge
+    resetMessage.textContent = "Veuillez saisir une adresse email valide.";
     return;
   }
+  
+  btnConfirmReset.disabled = true;
+  btnConfirmReset.textContent = "Envoi...";
+  
   try {
     await sendPasswordResetEmail(auth, email);
-    setSuccess("Un email de réinitialisation vient d’être envoyé. Vérifie ta boîte de réception (ainsi que tes spams). L’envoi peut prendre jusqu’à une minute.");
+    resetMessage.style.color = "#34d399"; // Vert
+    resetMessage.textContent = "Lien envoyé ! Vérifiez votre boîte de réception (et vos spams).";
+    
+    // Fermeture automatique après 4 secondes
+    setTimeout(() => {
+      forgotModal.classList.add("hidden");
+      btnConfirmReset.disabled = false;
+      btnConfirmReset.textContent = "Envoyer";
+    }, 4000);
+    
   } catch (err) {
-    setError(normalizeAuthError(err));
+    resetMessage.style.color = "#f87171";
+    resetMessage.textContent = normalizeAuthError(err);
+    btnConfirmReset.disabled = false;
+    btnConfirmReset.textContent = "Envoyer";
   }
 });
 
