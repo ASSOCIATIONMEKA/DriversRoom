@@ -11,6 +11,9 @@
   <!-- LEAFLET CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
+  <!-- CHART.JS POUR LES GRAPHIQUES -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <!-- SCRIPTS GLOBAUX -->
   <script type="module" src="nav.js" defer></script>
   <script type="module" src="estacup-s10.js" defer></script>
@@ -356,53 +359,88 @@
     <!-- SECTION : MES INFORMATIONS -->
     <section id="section-infos" class="section hidden">
       <h2 class="section-main-title">Mes Informations</h2>
+
+      <!-- NOUVEAU SOUS-MENU POUR LES INFORMATIONS -->
+      <nav class="subcat-pills" id="infosSubnav" style="margin-bottom: 2rem;">
+        <button data-infosub="general" class="infos-sub-btn active">👤 Général</button>
+        <button data-infosub="mrating" class="infos-sub-btn">📈 M-Rating</button>
+        <button data-infosub="msafety" class="infos-sub-btn">🛡️ M-Safety</button>
+      </nav>
       
-      <h3>Informations Pilote</h3>
-      <div class="course-box">
-        <p><strong>Nom :</strong> <span id="fullName">—</span></p>
-        <p><strong>Date de naissance :</strong> <span id="dob">—</span></p>
-        <p><strong>Licence ID :</strong> <span id="licenseId">—</span></p>
-        <p><strong>Classe de licence :</strong> <span id="licenseClass">—</span></p>
-        <p><strong>Steam ID :</strong> <span id="steamIdLine">—</span></p>
+      <!-- INFOS : GÉNÉRAL -->
+      <div id="infos-sub-general" class="infos-subsection">
+        <h3>Informations Pilote</h3>
+        <div class="course-box">
+          <p><strong>Nom :</strong> <span id="fullName">—</span></p>
+          <p><strong>Date de naissance :</strong> <span id="dob">—</span></p>
+          <p><strong>Licence ID :</strong> <span id="licenseId">—</span></p>
+          <p><strong>Classe de licence :</strong> <span id="licenseClass">—</span></p>
+          <p><strong>Steam ID :</strong> <span id="steamIdLine">—</span></p>
 
-        <h4 style="margin-top:16px; color: var(--accent-primary);">Statistiques en course</h4>
-        <ul class="pilot-stats" style="list-style: none; padding: 0;">
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Départs :</strong> <span id="statStarts">0</span></li>
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Meilleur résultat :</strong> <span id="statBest">—</span></li>
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Victoires :</strong> <span id="statWins">0</span></li>
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Podiums (Top 3) :</strong> <span id="statTop3">0</span></li>
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Top 5 :</strong> <span id="statTop5">0</span></li>
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Top 10 :</strong> <span id="statTop10">0</span></li>
-          <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Position moyenne :</strong> <span id="statAvg">—</span></li>
-        </ul>
-      </div>
+          <h4 style="margin-top:16px; color: var(--accent-primary);">Statistiques en course</h4>
+          <ul class="pilot-stats" style="list-style: none; padding: 0;">
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Départs :</strong> <span id="statStarts">0</span></li>
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Meilleur résultat :</strong> <span id="statBest">—</span></li>
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Victoires :</strong> <span id="statWins">0</span></li>
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Podiums (Top 3) :</strong> <span id="statTop3">0</span></li>
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Top 5 :</strong> <span id="statTop5">0</span></li>
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Top 10 :</strong> <span id="statTop10">0</span></li>
+            <li style="padding: 0.5rem 0; border: none; background: transparent; margin: 0;"><strong>Position moyenne :</strong> <span id="statAvg">—</span></li>
+          </ul>
+        </div>
 
-      <div id="compareWrapper" class="compare-wrapper" style="margin-bottom: 2rem;">
-        <h4 style="color: var(--accent-primary);">Comparer avec d'autres pilotes</h4>
-        <p class="muted-note">Sélectionnez un ou plusieurs pilotes pour vous comparer sur les statistiques globales.</p>
-        <select id="compareSelect" multiple size="5"></select>
-        <p class="muted-note small">Astuce : Ctrl/Cmd + clic pour sélectionner plusieurs pilotes.</p>
-        <div id="compareResults" style="margin-top:10px;"></div>
-      </div>
-
-      <hr style="border: 1px solid var(--border-primary); margin: 3rem 0;">
-
-      <h3>M-Rating</h3>
-      <div class="course-box" style="margin-top:12px">
-        <p style="font-size: 1.2rem;"><strong>M-Rating actuel :</strong> <span id="eloRating" style="color: #38bdf8; font-weight: bold;">—</span></p>
-        <div id="eratingSummary" style="margin-top: 20px;">
-          <p><strong> Classement M-Rating global :</strong><br><span id="eloRankLine">—</span></p>
-          <p style="margin-top:10px"><strong> Record personnel :</strong><br><span id="eloBest">—</span></p>
-          <p style="margin-top:10px"><strong> Plus faible valeur :</strong><br><span id="eloWorst">—</span></p>
+        <div id="compareWrapper" class="compare-wrapper" style="margin-bottom: 2rem;">
+          <h4 style="color: var(--accent-primary);">Comparer avec d'autres pilotes</h4>
+          <p class="muted-note">Sélectionnez un ou plusieurs pilotes pour vous comparer sur les statistiques globales.</p>
+          <select id="compareSelect" multiple size="5"></select>
+          <p class="muted-note small">Astuce : Ctrl/Cmd + clic pour sélectionner plusieurs pilotes.</p>
+          <div id="compareResults" style="margin-top:10px;"></div>
         </div>
       </div>
 
-      <hr style="border: 1px solid var(--border-primary); margin: 3rem 0;">
+      <!-- INFOS : M-RATING -->
+      <div id="infos-sub-mrating" class="infos-subsection hidden">
+        <h3>Analyse de la Performance</h3>
+        <div class="course-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: center;">
+          <div>
+            <p style="font-size: 1.2rem; margin-bottom: 0;"><strong>M-Rating actuel :</strong></p>
+            <p><span id="eloRating" style="color: #38bdf8; font-weight: 900; font-size: 3rem; line-height: 1;">—</span></p>
+            
+            <div id="eratingSummary" style="margin-top: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2);">
+              <p style="margin: 0 0 10px 0;"><strong>🏆 Classement Serveur :</strong> <br><span id="eloRankLine" style="color: #fde68a; font-size: 1.2rem; font-weight: bold;">—</span></p>
+              <p style="margin: 0;"><strong>🔥 Niveau global :</strong> <br><span id="eloTopPctLine" style="color: #cbd5e1;">—</span></p>
+            </div>
+            <p class="muted-note" style="margin-top: 15px; font-size: 0.85rem;">
+              Le M-Rating s'ajuste après chaque course officielle. Battez des pilotes mieux classés pour le faire grimper !
+            </p>
+          </div>
+          
+          <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="chartMRating"></canvas>
+          </div>
+        </div>
+      </div>
 
-      <h3>M-Safety</h3>
-      <div class="course-box">
-        <p style="font-size: 1.2rem;"><strong>Points de licence :</strong> <span id="licensePoints" style="color: #34d399; font-weight: bold;">—</span></p>
-        <div id="esafetyIncidents" style="margin-top: 20px;">
+      <!-- INFOS : M-SAFETY -->
+      <div id="infos-sub-msafety" class="infos-subsection hidden">
+        <h3>Analyse du Comportement</h3>
+        <div class="course-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: center;">
+          <div>
+            <p style="font-size: 1.2rem; margin-bottom: 0;"><strong>M-Safety actuel :</strong></p>
+            <p><span id="licensePoints" style="color: #34d399; font-weight: 900; font-size: 3rem; line-height: 1;">—</span></p>
+            
+            <div id="esafetySummary" style="margin-top: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(52, 211, 153, 0.2);">
+              <p style="margin: 0 0 10px 0;"><strong>🛡️ Statut :</strong> <br><span id="safetyStatusLine" style="font-size: 1.2rem; font-weight: bold;">—</span></p>
+              <p style="margin: 0;"><strong>📊 Classement Serveur :</strong> <br><span id="safetyRankLine" style="color: #cbd5e1;">—</span></p>
+            </div>
+            <p class="muted-note" style="margin-top: 15px; font-size: 0.85rem;">
+              Le M-Safety diminue en cas de pénalité ou comportement anti-sportif. Roulez proprement pour le restaurer.
+            </p>
+          </div>
+          
+          <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="chartMSafety"></canvas>
+          </div>
         </div>
       </div>
     </section>
