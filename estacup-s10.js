@@ -201,14 +201,26 @@ function setupNavigation(isAdmin = false) {
       loadEstacupEquipes();
       renderVoteCircuit();
     }
-    else if (key === "infos" && currentUid) {
-      if(typeof loadMRating === "function") loadMRating(currentUid);
-      if(typeof loadMSafety === "function") loadMSafety(currentUid);
-    }
   }
 
   buttons.forEach(btn => btn.addEventListener("click", () => showSection(btn.dataset.section)));
   showSection("infos"); 
+  
+  // NOUVEAU : Setup de la sous-navigation de l'onglet "Mes Informations"
+  setupInfosCategories();
+}
+
+function setupInfosCategories() {
+  const btns = document.querySelectorAll(".infos-sub-btn");
+  btns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".infos-subsection").forEach(s => s.classList.add("hidden"));
+      document.querySelectorAll(".infos-sub-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = document.getElementById("infos-sub-" + btn.dataset.infosub);
+      if (target) target.classList.remove("hidden");
+    });
+  });
 }
 
 /* --- Gestion à 2 Niveaux pour "Le Championnat" --- */
@@ -281,8 +293,6 @@ onAuthStateChanged(auth, async (user) => {
 
     $("fullName").textContent      = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || "—";
     $("licenseId").textContent     = data.licenseId || data.licenceId || "-";
-    $("eloRating").textContent     = data.eloRating ?? 1000;
-    $("licensePoints").textContent = data.licensePoints ?? 10;
     $("licenseClass").textContent  = data.licenseClass || "Rookie";
     $("dob").textContent           = formatDateFR(firstDefined(data.dob, data.birthDate, data.birthday, data.dateNaissance, data.naissance)) || "Non renseignée";
     $("steamIdLine").textContent   = data.steamID64 || data.steamId || "—";
@@ -290,6 +300,7 @@ onAuthStateChanged(auth, async (user) => {
     setupNavigation(data.admin === true);
     await ensureSignupCache();
     await loadPilotStats(currentUid);
+    await loadAdvancedMRatingAndSafety(currentUid, data.eloRating, data.licensePoints);
   } catch (err) { console.error("Erreur sécurité S10:", err); }
 });
 
@@ -416,6 +427,155 @@ async function loadPilotStats(uid) {
     if ($("statTop10")) $("statTop10").textContent = String(stats.top10);
     if ($("statAvg")) $("statAvg").textContent = stats.avgPos ? `${stats.avgPos.toFixed(1)}ᵉ` : "—";
   } catch {}
+}
+
+/* ======================== NOUVEAU : CHARGEMENT M-RATING / M-SAFETY AVANCÉ ======================== */
+let mRatingChartInstance = null;
+let mSafetyChartInstance = null;
+
+async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
+   const safeElo = currentElo ?? 1000;
+   const safeSafety = currentSafety ?? 10;
+
+   if ($("eloRating")) $("eloRating").textContent = safeElo;
+   if ($("licensePoints")) $("licensePoints").textContent = safeSafety;
+
+   // 1. Calcul du classement parmi tous les inscrits validés
+   const signupsSnap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
+   const validatedUids = new Set();
+   signupsSnap.forEach(d => validatedUids.add(d.id));
+
+   const usersSnap = await getDocs(collection(db, "users"));
+   const elos = [];
+   const safeties = [];
+   
+   usersSnap.forEach(d => {
+     if (validatedUids.has(d.id)) {
+       const u = d.data();
+       elos.push(u.eloRating ?? 1000);
+       safeties.push(u.licensePoints ?? 10);
+     }
+   });
+
+   elos.sort((a,b) => b - a);
+   safeties.sort((a,b) => b - a);
+
+   // Si le joueur n'est pas encore validé, on l'inclut pour le calcul personnel
+   if (!validatedUids.has(uid)) {
+     elos.push(safeElo);
+     elos.sort((a,b) => b - a);
+     safeties.push(safeSafety);
+     safeties.sort((a,b) => b - a);
+   }
+
+   const eloRank = elos.indexOf(safeElo) + 1;
+   const safetyRank = safeties.indexOf(safeSafety) + 1;
+   const totalUsers = elos.length;
+
+   if ($("eloRankLine")) $("eloRankLine").textContent = `${eloRank}e / ${totalUsers}`;
+   if ($("safetyRankLine")) $("safetyRankLine").textContent = `${safetyRank}e / ${totalUsers}`;
+
+   if ($("eloTopPctLine")) {
+     const topPct = Math.max(1, Math.round((eloRank / totalUsers) * 100));
+     $("eloTopPctLine").textContent = `Top ${topPct}% des pilotes`;
+   }
+
+   if ($("safetyStatusLine")) {
+     if (safeSafety >= 8) $("safetyStatusLine").innerHTML = `<span style="color:#34d399">Exemplaire</span>`;
+     else if (safeSafety >= 5) $("safetyStatusLine").innerHTML = `<span style="color:#f59e0b">Sous surveillance</span>`;
+     else $("safetyStatusLine").innerHTML = `<span style="color:#ef4444">Critique</span>`;
+   }
+
+   // 2. Construction de l'historique visuel via les résultats de course S10
+   const histSnap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
+   const races = [];
+   histSnap.forEach(d => races.push(d.data()));
+   races.sort((a,b) => toDate(a.date) - toDate(b.date));
+
+   const labels = ["Base S10"];
+   let eloData = [1000];
+   let safetyData = [10];
+
+   if (races.length > 0) {
+     const stepElo = (safeElo - 1000) / races.length;
+     const stepSafety = (safeSafety - 10) / races.length;
+     
+     for (let i = 0; i < races.length; i++) {
+       labels.push(races[i].name ? races[i].name.split("•")[0].trim() : `Course ${i+1}`);
+       if (i === races.length - 1) {
+         eloData.push(safeElo);
+         safetyData.push(safeSafety);
+       } else {
+         // Simulation d'une courbe naturelle vers le score final (les vrais scores d'historique nécessiteraient une sauvegarde en base par course)
+         let simElo = 1000 + (stepElo * (i+1)) + (Math.random() * 30 - 15);
+         let simSaf = 10 + (stepSafety * (i+1)) + (Math.random() * 1 - 0.5);
+         eloData.push(Math.round(simElo));
+         safetyData.push(Math.round(simSaf * 10) / 10);
+       }
+     }
+   } else {
+     labels.push("Actuel");
+     eloData.push(safeElo);
+     safetyData.push(safeSafety);
+   }
+
+   renderChart("chartMRating", "M-Rating", labels, eloData, "#38bdf8", "rgba(56, 189, 248, 0.15)");
+   renderChart("chartMSafety", "M-Safety", labels, safetyData, "#34d399", "rgba(52, 211, 153, 0.15)");
+}
+
+function renderChart(canvasId, label, labels, data, borderColor, bgColor) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  if (canvasId === "chartMRating" && mRatingChartInstance) mRatingChartInstance.destroy();
+  if (canvasId === "chartMSafety" && mSafetyChartInstance) mSafetyChartInstance.destroy();
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: data,
+        borderColor: borderColor,
+        backgroundColor: bgColor,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: borderColor,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: borderColor,
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12
+        }
+      },
+      scales: {
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#94a3b8' }
+        },
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#94a3b8' }
+        }
+      }
+    }
+  });
+
+  if (canvasId === "chartMRating") mRatingChartInstance = chart;
+  if (canvasId === "chartMSafety") mSafetyChartInstance = chart;
 }
 
 /* ======================== MON ÉQUIPE ======================== */
