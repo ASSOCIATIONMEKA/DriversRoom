@@ -1035,11 +1035,14 @@ async function loadEstacupSignups() {
 
       const pilotObj = {
         docId: docu.id,
+        rawFirst: sData.firstName || uData.firstName || "",
+        rawLast: sData.lastName || uData.lastName || "",
         fullName: `${sData.firstName || uData.firstName || ""} ${sData.lastName || uData.lastName || ""}`.trim() || "Pilote Inconnu",
         team: sData.teamName || "Indépendant",
-        number: sData.raceNumber || "—",
-        car: sData.carChoice || "Ligier JS P320",
+        number: sData.raceNumber || "",
         steam: steamId,
+        rawPayment: sData.paymentStatus || "",
+        rawLivery: sData.liveryChoice || "",
         age: ageText,
         regDate: regDateText, 
         licence: licence,
@@ -1105,6 +1108,7 @@ async function loadEstacupSignups() {
         </ul>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
           <button class="btn-validate-signup" data-id="${p.docId}" style="flex: 1; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">✔️ Valider</button>
+          <button class="btn-edit-signup" data-id="${p.docId}" data-first="${escapeHtml(p.rawFirst)}" data-last="${escapeHtml(p.rawLast)}" data-team="${escapeHtml(p.team)}" data-num="${p.number}" data-steam="${escapeHtml(p.steam)}" data-pay="${p.rawPayment}" data-liv="${p.rawLivery}" style="flex: 1; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">✏️ Éditer</button>
           <button class="btn-delete-signup" data-id="${p.docId}" style="flex: 1; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">❌ Refuser</button>
         </div>
       </div>
@@ -1168,9 +1172,12 @@ async function loadEstacupSignups() {
                   </div>
               </td>
 
-              <td style="padding: 12px 15px; vertical-align: middle; text-align: right;">
+              <td style="padding: 12px 15px; vertical-align: middle; text-align: right; white-space: nowrap;">
+                  <button class="btn-edit-signup" data-id="${p.docId}" data-first="${escapeHtml(p.rawFirst)}" data-last="${escapeHtml(p.rawLast)}" data-team="${escapeHtml(p.team)}" data-num="${p.number}" data-steam="${escapeHtml(p.steam)}" data-pay="${p.rawPayment}" data-liv="${p.rawLivery}" style="background: transparent; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; margin-right: 5px;" onmouseover="this.style.background='rgba(56, 189, 248, 0.1)'" onmouseout="this.style.background='transparent'">
+                      ✏️ Éditer
+                  </button>
                   <button class="btn-delete-signup" data-id="${p.docId}" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
-                      🗑️ Supprimer
+                      🗑️
                   </button>
               </td>
             </tr>
@@ -1205,6 +1212,28 @@ async function loadEstacupSignups() {
         e.target.disabled = true;
         await deleteDoc(doc(db, "estacup_s10_signups", id));
         loadEstacupSignups();
+      });
+    });
+
+    // Attachement de l'ouverture de la modale d'édition
+    document.querySelectorAll('.btn-edit-signup').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const t = e.currentTarget;
+        document.getElementById("editSignupId").value = t.dataset.id;
+        document.getElementById("editSignupFirst").value = t.dataset.first;
+        document.getElementById("editSignupLast").value = t.dataset.last;
+        document.getElementById("editSignupTeam").value = t.dataset.team;
+        document.getElementById("editSignupNumber").value = t.dataset.num;
+        document.getElementById("editSignupSteam").value = t.dataset.steam;
+        
+        const payVal = t.dataset.pay;
+        if(payVal) document.getElementById("editSignupPayment").value = payVal;
+        
+        const livVal = t.dataset.liv;
+        if(livVal) document.getElementById("editSignupLivery").value = livVal;
+        
+        document.getElementById("editSignupModal").classList.remove("hidden");
+        document.getElementById("editSignupOverlay").classList.remove("hidden");
       });
     });
 
@@ -1309,7 +1338,58 @@ if (btnSaveServer) {
 }
 
 window.loadCourses = loadCourses;
+
 document.addEventListener("DOMContentLoaded", () => { 
   if ($("section-courses")) loadCourses(); 
   loadServerStatusAdmin();
+  
+  // Handlers pour la modal d'édition
+  const modal = document.getElementById("editSignupModal");
+  const overlay = document.getElementById("editSignupOverlay");
+  const btnCancel = document.getElementById("btnCancelSignupEdit");
+  const btnSave = document.getElementById("btnSaveSignupEdit");
+
+  if(btnCancel) {
+      btnCancel.addEventListener("click", () => {
+          modal.classList.add("hidden");
+          overlay.classList.add("hidden");
+      });
+  }
+
+  if(btnSave) {
+      btnSave.addEventListener("click", async () => {
+          const id = document.getElementById("editSignupId").value;
+          const first = document.getElementById("editSignupFirst").value.trim();
+          const last = document.getElementById("editSignupLast").value.trim();
+          const team = document.getElementById("editSignupTeam").value.trim();
+          const num = document.getElementById("editSignupNumber").value;
+          const steam = document.getElementById("editSignupSteam").value.trim();
+          const pay = document.getElementById("editSignupPayment").value;
+          const liv = document.getElementById("editSignupLivery").value;
+
+          btnSave.disabled = true;
+          btnSave.textContent = "Enregistrement...";
+
+          try {
+              await updateDoc(doc(db, "estacup_s10_signups", id), {
+                  firstName: first,
+                  lastName: last,
+                  teamName: team,
+                  raceNumber: Number(num),
+                  steamID64: steam,
+                  paymentStatus: pay,
+                  liveryChoice: liv
+              });
+              modal.classList.add("hidden");
+              overlay.classList.add("hidden");
+              loadEstacupSignups();
+          } catch(e) {
+              console.error(e);
+              alert("Erreur lors de la sauvegarde de l'inscription.");
+          } finally {
+              btnSave.disabled = false;
+              btnSave.textContent = "💾 Enregistrer";
+          }
+      });
+  }
 });
