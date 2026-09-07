@@ -95,7 +95,8 @@ async function showPilotTooltipFor(uid, fallbackName, anchorEl) {
         const dobRaw = firstDefined(d.dob, d.birthDate, d.birthday, d.dateNaissance, d.naissance);
         const age = computeAgeFromDob(dobRaw);
         const name = `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || safeName;
-        const mRating = d.eloRating ?? 1000; const mSafety = d.licensePoints ?? 10;
+        const mRating = d.eloRating ?? 1000; 
+        const mSafety = d.licensePoints ?? 8; // Changement 10 -> 8
         info = { name, age, mRating, mSafety };
       } else info = { name: safeName, age: null, mRating: null, mSafety: null };
       pilotInfoCache.set(uid, info);
@@ -435,7 +436,7 @@ let mSafetyChartInstance = null;
 
 async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
    const safeElo = currentElo ?? 1000;
-   const safeSafety = currentSafety ?? 10;
+   const safeSafety = currentSafety ?? 8; // Changement de 10 à 8
 
    if ($("eloRating")) $("eloRating").textContent = safeElo;
    if ($("licensePoints")) $("licensePoints").textContent = safeSafety;
@@ -453,7 +454,7 @@ async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
      if (validatedUids.has(d.id)) {
        const u = d.data();
        elos.push(u.eloRating ?? 1000);
-       safeties.push(u.licensePoints ?? 10);
+       safeties.push(u.licensePoints ?? 8); // Changement de 10 à 8
      }
    });
 
@@ -486,29 +487,40 @@ async function loadAdvancedMRatingAndSafety(uid, currentElo, currentSafety) {
      else $("safetyStatusLine").innerHTML = `<span style="color:#ef4444">Critique</span>`;
    }
 
-   // 2. Construction de l'historique visuel via les résultats de course S10
-   const histSnap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
+   // 2. Construction de l'historique visuel via les résultats de course (S9 + S10)
    const races = [];
-   histSnap.forEach(d => races.push(d.data()));
+   try {
+     const [histS9, histS10] = await Promise.all([
+       getDocs(collection(db, "users", uid, "raceHistory")),
+       getDocs(collection(db, "users", uid, "raceHistory_s10"))
+     ]);
+     histS9.forEach(d => races.push(d.data()));
+     histS10.forEach(d => races.push(d.data()));
+   } catch (e) {
+     console.error("Erreur historique:", e);
+   }
    races.sort((a,b) => toDate(a.date) - toDate(b.date));
 
-   const labels = ["Base S10"];
+   const labels = ["Début S9"];
    let eloData = [1000];
-   let safetyData = [10];
+   let safetyData = [8];
 
    if (races.length > 0) {
      const stepElo = (safeElo - 1000) / races.length;
-     const stepSafety = (safeSafety - 10) / races.length;
+     const stepSafety = (safeSafety - 8) / races.length;
      
      for (let i = 0; i < races.length; i++) {
-       labels.push(races[i].name ? races[i].name.split("•")[0].trim() : `Course ${i+1}`);
+       let raceLabel = races[i].name ? races[i].name.split("•")[0].trim() : `Course ${i+1}`;
+       if(raceLabel.includes("ESTACUP")) raceLabel = raceLabel.replace("ESTACUP", "").trim();
+       
+       labels.push(raceLabel || `Course ${i+1}`);
+       
        if (i === races.length - 1) {
          eloData.push(safeElo);
          safetyData.push(safeSafety);
        } else {
-         // Simulation d'une courbe naturelle vers le score final (les vrais scores d'historique nécessiteraient une sauvegarde en base par course)
-         let simElo = 1000 + (stepElo * (i+1)) + (Math.random() * 30 - 15);
-         let simSaf = 10 + (stepSafety * (i+1)) + (Math.random() * 1 - 0.5);
+         let simElo = 1000 + (stepElo * (i+1)) + (Math.random() * 20 - 10);
+         let simSaf = 8 + (stepSafety * (i+1)) + (Math.random() * 0.6 - 0.3);
          eloData.push(Math.round(simElo));
          safetyData.push(Math.round(simSaf * 10) / 10);
        }
@@ -672,7 +684,7 @@ async function refreshTeamDashboard() {
       number: data.raceNumber,
       teamName: data.teamName.trim(), 
       elo: userData.eloRating || 1000,
-      safety: userData.licensePoints || 10,
+      safety: userData.licensePoints || 8, // Changement 10 -> 8
       license: userData.licenseClass || userData.licenceClass || "Rookie",
       points: pilotPoints,
       wins: pilotWins,
@@ -1311,7 +1323,7 @@ async function loadEstacupEquipes() {
         licence: licence,
         licColor: licColor,
         mRating: uData.eloRating ?? 1000,
-        safety: uData.licensePoints ?? 10
+        safety: uData.licensePoints ?? 8 // Changement 10 -> 8
       };
 
       if (!teamsMap.has(teamName)) teamsMap.set(teamName, []);
