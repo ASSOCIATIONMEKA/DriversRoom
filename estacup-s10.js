@@ -633,11 +633,11 @@ async function refreshTeamDashboard() {
       const input = selectEl.value;
       
       if (!input) {
-        alert("Veuillez sélectionner une équipe dans la liste.");
+        showToast("⚠️ Veuillez sélectionner une équipe dans la liste.", "warning");
         return;
       }
       if (sisterTeams.map(s => s.toLowerCase()).includes(input.toLowerCase())) {
-        alert("Cette équipe est déjà liée.");
+        showToast("⚠️ Cette équipe est déjà liée.", "warning");
         return;
       }
       
@@ -653,7 +653,7 @@ async function refreshTeamDashboard() {
   document.querySelectorAll(".btn-remove-sister").forEach(btn => {
     btn.addEventListener("click", async (e) => {
       const teamToRemove = e.target.getAttribute("data-team");
-      if (!confirm(`Retirer l'équipe sœur "${teamToRemove}" ?`)) return;
+      if (!(await showConfirm(`Retirer l'équipe sœur "${teamToRemove}" ?`))) return;
 
       const newSisterTeams = sisterTeams.filter(st => st !== teamToRemove);
       await setDoc(doc(db, "estacup_s10_teams_config", myTeam), { sisterTeams: newSisterTeams }, { merge: true });
@@ -793,7 +793,7 @@ async function loadEstacupForm(userData) {
         const liveryChoice = $("regLiveryChoice").value;
 
         if (!fName || !lName || !status || isNaN(num) || !steam || !liveryChoice) {
-          alert("Veuillez remplir tous champs obligatoires correctement.");
+          showToast("⚠️ Veuillez remplir tous champs obligatoires correctement.", "warning");
           return;
         }
 
@@ -810,7 +810,7 @@ async function loadEstacupForm(userData) {
             let membersCount = 0;
             teamSnap.forEach(d => { if (d.id !== currentUid) membersCount++; });
             if (membersCount >= 3) {
-              alert(`Désolé, l'équipe "${team}" est déjà complète (3 pilotes maximum).`);
+              showToast(`❌ L'équipe "${team}" est déjà complète (3 pilotes max).`, "error");
               btn.disabled = false;
               btn.textContent = "🏁 Valider mon inscription";
               return;
@@ -823,7 +823,7 @@ async function loadEstacupForm(userData) {
           numSnap.forEach(d => { if (d.id !== currentUid) numberTaken = true; });
 
           if (numberTaken) {
-            alert(`Désolé, le numéro #${num} vient d'être réservé par un autre pilote ! Veuillez en choisir un autre.`);
+            showToast(`❌ Le numéro #${num} vient d'être réservé par un autre pilote !`, "error");
             btn.disabled = false;
             btn.textContent = "🏁 Valider mon inscription";
             return;
@@ -843,12 +843,12 @@ async function loadEstacupForm(userData) {
             updatedAt: new Date()
           });
 
-          alert("✅ Inscription transmise avec succès ! En attente de validation par les administrateurs.");
+          showToast("✅ Inscription transmise avec succès ! En attente de validation.", "success");
           loadEstacupForm(userData);
           setupMekaQuestionnaire(userData);
         } catch (err) {
           console.error("Erreur inscription:", err);
-          alert("Erreur lors de l'enregistrement.");
+          showToast("❌ Erreur lors de l'enregistrement.", "error");
           btn.disabled = false;
           btn.textContent = "🏁 Valider mon inscription";
         }
@@ -1378,7 +1378,7 @@ async function renderVoteCircuit() {
       const r5 = document.querySelector('input[name="vote_round_5"]:checked')?.value || null;
 
       if (!r3 || !r5) {
-        alert("Veuillez faire un choix pour chaque manche avant de valider.");
+        showToast("⚠️ Veuillez faire un choix pour chaque manche avant de valider.", "warning");
         return;
       }
 
@@ -1418,7 +1418,7 @@ async function renderVoteCircuit() {
 
       } catch (err) {
         console.error("Erreur enregistrement vote:", err);
-        alert("Erreur lors de l'enregistrement du vote.");
+        showToast("❌ Erreur lors de l'enregistrement du vote.", "error");
         btn.disabled = false;
         btn.textContent = originalText;
       }
