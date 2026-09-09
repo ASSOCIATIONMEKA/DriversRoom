@@ -557,7 +557,7 @@
           <p>Vous serez averti lorsque votre livrée a bien été validée.</p>
 
           <h5>2.5.2 Bandeau pare-soleil</h5>
-          <p>Les bandeaux vous seront attribués par le CO selon votre licence sur le championnat. Ces bandeaux permettent à vos concurrents de connaître votre niveau, mais aussi pour une meilleure compréhension des spectateurs.</p>
+          <p>Les bandeaux vous vous seront attribués par le CO selon votre licence sur le championnat. Ces bandeaux permettent à vos concurrents de connaître votre niveau, mais aussi pour une meilleure compréhension des spectateurs.</p>
           <p>Votre bandeau attribué vous sera transmis par un membre du CO après votre confirmation d’inscription au championnat. Vous devez impérativement avoir un bandeau conforme pendant les sessions officielles sous peine de pénalités.</p>
 
           <h5>2.5.3 Plaque numéro de course</h5>
@@ -1292,13 +1292,16 @@
     
     const adminPrequalPanel = document.getElementById("adminPrequalPanel");
 
-    function showRestrictedFeatures() {
+    window.showRestrictedFeatures = function() {
       if (navPresenceBtn) navPresenceBtn.style.display = "none";
       if (navReclamBtn) navReclamBtn.style.display = "none";
       if (navVoteBtn) navVoteBtn.style.display = "none";
       if (navContenuBtn) navContenuBtn.style.display = "none";
       if (navLivreeBtn) navLivreeBtn.style.display = "none";
       if (navMyTeamBtn) navMyTeamBtn.style.display = "none";
+
+      const paddockNav = document.getElementById("cat-paddock");
+      let lockMsg = document.getElementById("paddockLockMsg");
 
       if (isAdmin || isUserValidated) {
         if (navPresenceBtn) navPresenceBtn.style.display = "";
@@ -1310,8 +1313,26 @@
         if (userTeamName && userTeamName !== "indépendant" && userTeamName !== "sans équipe" && userTeamName.trim() !== "") {
           if (navMyTeamBtn) navMyTeamBtn.style.display = "";
         }
+        
+        if (lockMsg) lockMsg.remove();
+      } else {
+        if (paddockNav && !lockMsg) {
+          lockMsg = document.createElement("div");
+          lockMsg.id = "paddockLockMsg";
+          lockMsg.style.width = "100%";
+          lockMsg.style.textAlign = "center";
+          lockMsg.style.marginTop = "15px";
+          lockMsg.style.color = "#f59e0b";
+          lockMsg.style.fontSize = "0.95rem";
+          lockMsg.style.padding = "10px 15px";
+          lockMsg.style.background = "rgba(245, 158, 11, 0.1)";
+          lockMsg.style.border = "1px solid rgba(245, 158, 11, 0.3)";
+          lockMsg.style.borderRadius = "8px";
+          lockMsg.innerHTML = "🔒 <strong>Contenu verrouillé :</strong> Le pack (Voitures & Circuits) ainsi que le dépôt de livrée apparaîtront ici dès que votre inscription aura été validée par un administrateur.";
+          paddockNav.appendChild(lockMsg);
+        }
       }
-    }
+    };
 
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
@@ -1346,7 +1367,7 @@
         console.error("Erreur de vérification de l'inscription:", e);
       }
 
-      showRestrictedFeatures();
+      window.showRestrictedFeatures();
       loadNextRacePresence();
     });
 
