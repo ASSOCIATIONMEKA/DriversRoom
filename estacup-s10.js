@@ -178,7 +178,11 @@ function toFiniteNumber(v) { const n = Number(v); return Number.isFinite(n) ? n 
 /* ======================== GESTION DES MENUS (NOUVELLE STRUCTURE) ======================== */
 function setupNavigation(isAdmin = false) {
   const goToAdmin = $("goToAdmin");
-  if (isAdmin && goToAdmin) goToAdmin.classList.remove("hidden");
+  if (goToAdmin) {
+    if (isAdmin) goToAdmin.classList.remove("hidden");
+    else goToAdmin.classList.add("hidden");
+  }
+
   goToAdmin?.addEventListener("click", () => (window.location.href = "admin-s10.html"));
 
   const buttons  = document.querySelectorAll('#mainNav > button[data-section]');
@@ -267,7 +271,7 @@ function showChampionshipSub(subKey) {
     else btn.classList.remove("active");
   });
 
-  if (subKey === "reglement") loadReglement(); // Charge le règlement dynamique
+  if (subKey === "reglement" && typeof loadReglement === "function") loadReglement();
   if (subKey === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
   if (subKey === "monequipe") loadMyTeamSection();
   if (subKey === "livree") renderLiverySection();
@@ -1829,7 +1833,7 @@ async function loadEstacupPilotStandings() {
       const data = d.data();
       pilots.set(data.uid || d.id, {
         uid: data.uid || d.id,
-        name: `${data.firstName} ${data.lastName}`.trim(),
+        name: `${data.firstName}${data.lastName}`.trim(),
         lastName: data.lastName || "",
         team: data.teamName || "Indépendant",
         number: data.raceNumber || "—",
