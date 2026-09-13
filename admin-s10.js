@@ -145,7 +145,7 @@ onAuthStateChanged(auth, async (user) => {
     
     setupResultsUI();
 
-    // ================= GESTION DU BOUTON MODE TRAVAUX =================
+    // GESTION DU BOUTON MODE TRAVAUX
     const btnMaint = document.getElementById("btnToggleMaintenance");
     if (btnMaint) {
       onSnapshot(doc(db, "config", "maintenance"), (snapMaint) => {
@@ -178,6 +178,46 @@ onAuthStateChanged(auth, async (user) => {
     console.error("Erreur globale au chargement admin S10 :", globalErr);
   }
 });
+
+/* ---------------- GESTION DU RÈGLEMENT ---------------- */
+async function loadReglementAdmin() {
+  const textarea = $("adminReglementContent");
+  if (!textarea) return;
+  try {
+    const snap = await getDoc(doc(db, "config", "reglement_s10"));
+    if (snap.exists() && snap.data().content) {
+      textarea.value = snap.data().content;
+    } else {
+      // Code HTML par défaut si rien n'existe en base
+      textarea.value = `
+<p style="color: #38bdf8; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">Dernière mise à jour : 25-08-2026 - V1.1</p>
+<h4 style="margin-top:0;">1. PRÉSENTATION</h4>
+<h5>1.1 OBJECTIF ET ORGANISATION</h5>
+<p>MEKA présente la saison 10 de son championnat EstaCup. Il est destiné à promouvoir des courses de SimRacing sur la simulation Assetto Corsa.</p>
+<!-- Continuez à écrire votre code HTML ici -->
+      `.trim();
+    }
+  } catch(e) { console.error("Erreur lors du chargement du règlement", e); }
+}
+
+const btnSaveReglement = $("btnSaveReglement");
+if (btnSaveReglement) {
+  btnSaveReglement.addEventListener("click", async () => {
+    const content = $("adminReglementContent").value;
+    btnSaveReglement.disabled = true;
+    btnSaveReglement.textContent = "⏳ Enregistrement...";
+    try {
+      await setDoc(doc(db, "config", "reglement_s10"), { content: content }, { merge: true });
+      if (typeof window.showToast === "function") window.showToast("✅ Règlement mis à jour !", "success");
+    } catch(e) {
+      console.error(e);
+      if (typeof window.showToast === "function") window.showToast("❌ Erreur de sauvegarde.", "error");
+    } finally {
+      btnSaveReglement.disabled = false;
+      btnSaveReglement.textContent = "💾 Mettre à jour le règlement";
+    }
+  });
+}
 
 /* ---------------- UI helpers ---------------- */
 function ensureDriversRoomButton() {
@@ -212,6 +252,7 @@ function setupNavigation() {
     if (key === "estacup") loadEstacupSignups?.();
     if (key === "courses") loadCourses?.();
     if (key === "votes")   loadVotesResults?.();
+    if (key === "reglement") loadReglementAdmin(); // Chargement au clic
   }
   buttons.forEach((btn) => btn.addEventListener("click", () => showSection(btn.dataset.section)));
   showSection("results");
