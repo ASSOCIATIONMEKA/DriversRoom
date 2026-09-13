@@ -48,10 +48,25 @@
         <button data-section="estacup">Gestion ESTACUP</button>
         <button data-section="votes">Votes</button>
         <button data-section="serveur">Statut Serveur</button>
+        <button data-section="reglement">Règlement</button>
         
-        <!-- NOUVEAU BOUTON MODE TRAVAUX -->
+        <!-- BOUTON MODE TRAVAUX -->
         <button id="btnToggleMaintenance" style="background: #f59e0b; color: #fff; border: 1px solid #f59e0b; font-weight: bold; margin-left: auto;">🚧 Mode Travaux : OFF</button>
       </nav>
+
+      <!-- GESTION DU RÈGLEMENT -->
+      <section id="section-reglement" class="admin-section hidden">
+        <h3>Gestion du Règlement Officiel</h3>
+        <div class="course-box">
+          <p class="muted-note" style="margin-bottom: 1rem;">
+            Modifiez le texte ci-dessous (format HTML autorisé). Les changements seront instantanément visibles pour les pilotes sur la page de l'ESTACUP.
+          </p>
+          <textarea id="adminReglementContent" rows="30" style="width: 100%; font-family: monospace; font-size: 0.9rem; background: #020617; color: #e2e8f0; border: 1px solid #334155; border-radius: 8px; padding: 15px; line-height: 1.5;"></textarea>
+          <div style="margin-top: 15px; text-align: right;">
+            <button id="btnSaveReglement" class="btn-validate" style="padding: 12px 24px; font-size: 1.1rem;">💾 Mettre à jour le règlement</button>
+          </div>
+        </div>
+      </section>
 
       <section id="section-results" class="admin-section hidden">
         <h3>Résultats de course</h3>
