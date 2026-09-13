@@ -278,7 +278,7 @@ function showChampionshipSub(subKey) {
   if (subKey === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
 }
 
-/* ======================== CHARGEMENT DYNAMIQUE DU RÈGLEMENT ======================== */
+/* ======================== CHARGEMENT DYNAMIQUE DU RÈGLEMENT (AVEC MARKDOWN) ======================== */
 async function loadReglement() {
   const container = document.querySelector("#champ-sub-reglement .reglement-content #reglementContent");
   if (!container) return;
@@ -289,9 +289,16 @@ async function loadReglement() {
   try {
     const snap = await getDoc(doc(db, "config", "reglement_s10"));
     if (snap.exists() && snap.data().content) {
-      container.innerHTML = snap.data().content;
+      const rawMarkdown = snap.data().content;
+      container.dataset.rawMarkdown = rawMarkdown; // Sauvegarde la version brute pour l'éditeur
+      if (typeof marked !== 'undefined') {
+        container.innerHTML = marked.parse(rawMarkdown);
+      } else {
+        container.innerHTML = rawMarkdown;
+      }
     } else {
       container.innerHTML = `<p class="muted-note">Le règlement n'a pas encore été publié par l'organisation.</p>`;
+      container.dataset.rawMarkdown = "";
     }
     container.dataset.loaded = "true";
   } catch (e) {
