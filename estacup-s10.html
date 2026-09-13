@@ -947,7 +947,7 @@
             <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
               <a href="https://estaca-my.sharepoint.com/:f:/g/personal/meka_estaca_eu/IgAU6GdKCCp6Sq579usXW2v3AdINaWFobdwJ_N6rJoc45rI?e=kSSxTH" target="_blank" style="text-decoration: none; flex: 1; min-width: 250px;">
                 <button class="btn-validate" style="width: 100%; padding: 1.2rem; font-size: 1.05rem; background: linear-gradient(135deg, #10b981, #059669);">
-                  🚗 Télécharger la Voiture (F3 2026)
+                  🚗 Télécharger la Voiture (FIA F3 2026)
                 </button>
               </a>
 
@@ -1319,7 +1319,7 @@
         container.innerHTML = `
           <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
             <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">⏳ Aucun formulaire de présence ouvert pour le moment.</p>
-            <p style="font-size: 0.9rem;">Le formulaire pour la <strong>${nextRace.title}</strong> s'ouvrira automatiquement <strong>7 jours avant l'épreuve</strong> (le ${new Date(nextRace.dateObj.getTime() - 7*24*60*60*1000).toLocaleDateString("fr-FR")}).</p>
+            <p style="font-size: 0.9rem;">Le formulaire pour la course du <strong>${nextRace.dateStr}</strong> s'ouvrira automatiquement 7 jours avant l'épreuve.</p>
           </div>
         `;
         document.getElementById("prequalStatsContainer").style.display = "none";
