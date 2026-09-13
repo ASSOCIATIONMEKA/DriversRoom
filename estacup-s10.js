@@ -267,6 +267,7 @@ function showChampionshipSub(subKey) {
     else btn.classList.remove("active");
   });
 
+  if (subKey === "reglement") loadReglement(); // Charge le règlement dynamique
   if (subKey === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
   if (subKey === "monequipe") loadMyTeamSection();
   if (subKey === "livree") renderLiverySection();
@@ -277,6 +278,27 @@ function showChampionshipSub(subKey) {
   if (subKey === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
 }
 
+/* ======================== CHARGEMENT DYNAMIQUE DU RÈGLEMENT ======================== */
+async function loadReglement() {
+  const container = document.querySelector("#champ-sub-reglement .reglement-content #reglementContent");
+  if (!container) return;
+  if (container.dataset.loaded) return; 
+
+  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement du règlement...</div>`;
+  
+  try {
+    const snap = await getDoc(doc(db, "config", "reglement_s10"));
+    if (snap.exists() && snap.data().content) {
+      container.innerHTML = snap.data().content;
+    } else {
+      container.innerHTML = `<p class="muted-note">Le règlement n'a pas encore été publié par l'organisation.</p>`;
+    }
+    container.dataset.loaded = "true";
+  } catch (e) {
+    console.error("Erreur de chargement du règlement:", e);
+    container.innerHTML = `<p class="impact-bad">Erreur de chargement du règlement.</p>`;
+  }
+}
 
 /* ======================== AUTHENTIFICATION ======================== */
 onAuthStateChanged(auth, async (user) => {
