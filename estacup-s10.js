@@ -774,7 +774,7 @@ async function refreshTeamDashboard() {
       
       <div style="flex: 1; min-width: 300px;">
         <h4 style="font-size: 2.2rem; color: #fde68a; text-transform: uppercase; letter-spacing: 2px; margin-top: 0; margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);">
-          🛡️ ${escapeHtml(titleDisplay)}
+          ${escapeHtml(titleDisplay)}
         </h4>
         <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 1rem;">Total cumulé : <strong style="color: #38bdf8; font-size: 1.3rem;">${totalTeamPoints} pts</strong></p>
         
@@ -1081,7 +1081,7 @@ async function loadEstacupForm(userData) {
             paymentStatus: status,
             teamName: team,
             raceNumber: num,
-            carChoice: "Formula 3 2026",
+            carChoice: "FIA F3 2026",
             steamID64: steam,
             liveryChoice: liveryChoice,
             isValidated: false,
@@ -1125,7 +1125,7 @@ async function loadEstacupForm(userData) {
             <div style="${infoItemStyle}"><strong>Statut :</strong> ${statusText}</div>
             <div style="${infoItemStyle}"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</div>
             <div style="${infoItemStyle}"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</div>
-            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Formula 3 (Gén. 2026)</div>
+            <div style="${infoItemStyle}"><strong>Véhicule :</strong> FIA F3 2026</div>
             <div style="${infoItemStyle}"><strong>Livrée :</strong> ${liveryText}</div>
           </div>
           <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
@@ -1143,7 +1143,7 @@ async function loadEstacupForm(userData) {
             <div style="${infoItemStyle}"><strong>Statut :</strong> ${statusText}</div>
             <div style="${infoItemStyle}"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</div>
             <div style="${infoItemStyle}"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</div>
-            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Formula 3 (Gén. 2026)</div>
+            <div style="${infoItemStyle}"><strong>Véhicule :</strong> FIA F3 2026</div>
             <div style="${infoItemStyle}"><strong>Livrée :</strong> ${liveryText}</div>
           </div>
           
@@ -1216,7 +1216,7 @@ async function loadEstacupEngages() {
         name: `${data.firstName || uData.firstName || ""} ${data.lastName || uData.lastName || ""}`.trim() || "Pilote",
         team: data.teamName || "Indépendant",
         number: Number(data.raceNumber) || 0,
-        car: data.carChoice || "Formula 3 2026",
+        car: "FIA F3 2026",
         licence: licence,
         licColor: licColor,
         mRating: mRating,
@@ -1430,7 +1430,7 @@ async function loadEstacupEquipes() {
         <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 10px 25px rgba(56,189,248,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
           <div style="background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(56,189,248,0.15)); padding: 1.2rem 1.5rem; border-bottom: 2px solid rgba(56,189,248,0.3);">
             <h4 style="margin: 0; color: #fde68a; font-size: 1.3rem; display: flex; align-items: center; justify-content: space-between; text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);">
-              <span>🛡️ ${escapeHtml(teamName)}</span>
+              <span>${escapeHtml(teamName)}</span>
               <span style="font-size: 0.8rem; color: #cbd5e1; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); font-weight: normal;">${drivers.length} Pilote(s)</span>
             </h4>
           </div>
@@ -2115,7 +2115,7 @@ async function loadEstacupTeamStandings() {
         html += `
           <tr style="transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
             <td style="font-size: 1.1rem; color: var(--text-primary);"><strong>${pos}</strong></td>
-            <td style="font-size: 1.05rem; font-weight: 700;">🛡️ ${escapeHtml(t.name)}</td>
+            <td style="font-size: 1.05rem; font-weight: 700;">${escapeHtml(t.name)}</td>
         `;
 
         standardRounds.forEach(rnd => {
