@@ -1048,7 +1048,7 @@ async function loadEstacupForm(userData) {
             paymentStatus: status,
             teamName: team,
             raceNumber: num,
-            carChoice: "Ligier JS P320",
+            carChoice: "Formula 3 2026",
             steamID64: steam,
             liveryChoice: liveryChoice,
             isValidated: false,
@@ -1092,7 +1092,7 @@ async function loadEstacupForm(userData) {
             <div style="${infoItemStyle}"><strong>Statut :</strong> ${statusText}</div>
             <div style="${infoItemStyle}"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</div>
             <div style="${infoItemStyle}"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</div>
-            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</div>
+            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Formula 3 (Gén. 2026)</div>
             <div style="${infoItemStyle}"><strong>Livrée :</strong> ${liveryText}</div>
           </div>
           <p style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
@@ -1110,7 +1110,7 @@ async function loadEstacupForm(userData) {
             <div style="${infoItemStyle}"><strong>Statut :</strong> ${statusText}</div>
             <div style="${infoItemStyle}"><strong>Équipe :</strong> ${escapeHtml(data.teamName || "Indépendant")}</div>
             <div style="${infoItemStyle}"><strong>Numéro :</strong> #${escapeHtml(String(data.raceNumber))}</div>
-            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Ligier JS P320 (LMP3)</div>
+            <div style="${infoItemStyle}"><strong>Véhicule :</strong> Formula 3 (Gén. 2026)</div>
             <div style="${infoItemStyle}"><strong>Livrée :</strong> ${liveryText}</div>
           </div>
           
@@ -1183,7 +1183,7 @@ async function loadEstacupEngages() {
         name: `${data.firstName || uData.firstName || ""} ${data.lastName || uData.lastName || ""}`.trim() || "Pilote",
         team: data.teamName || "Indépendant",
         number: Number(data.raceNumber) || 0,
-        car: data.carChoice || "Ligier JS P320",
+        car: data.carChoice || "Formula 3 2026",
         licence: licence,
         licColor: licColor,
         mRating: mRating,
