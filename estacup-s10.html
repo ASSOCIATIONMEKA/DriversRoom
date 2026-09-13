@@ -7,63 +7,36 @@
 
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
-
-  <!-- LEAFLET CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-
-  <!-- CHART.JS POUR LES GRAPHIQUES -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- SCRIPTS GLOBAUX -->
   <script type="module" src="nav.js" defer></script>
   <script type="module" src="estacup-s10.js" defer></script>
-
-  <!-- LEAFLET JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <style>
-    /* Styles inline pour l’affichage déroulant des classements de course */
     .race-item { margin-bottom:10px; }
-    .race-btn {
-      background:#0b1220; border:1px solid #1e293b; color:#e2e8f0;
-      padding:8px 10px; border-radius:8px; width:100%; text-align:left; cursor:pointer;
-    }
+    .race-btn { background:#0b1220; border:1px solid #1e293b; color:#e2e8f0; padding:8px 10px; border-radius:8px; width:100%; text-align:left; cursor:pointer; }
     .race-btn:hover { border-color:#38bdf8; }
-    .race-classification {
-      margin:8px 0 0 0; padding:10px; border:1px dashed #334155; border-radius:8px; background:#0a1020;
-    }
+    .race-classification { margin:8px 0 0 0; padding:10px; border:1px dashed #334155; border-radius:8px; background:#0a1020; }
     .race-table { width:100%; border-collapse:collapse; }
     .race-table th, .race-table td { padding:10px 12px; border-bottom:1px solid #1e293b; text-align: left; vertical-align: middle; }
     .race-table th { color: var(--text-muted); font-weight: 600; border-bottom: 2px solid #334155; }
     .muted-note { color:#94a3b8; font-size:.9rem; }
     .impact-bad { color:#f87171; font-weight:600; }
     .impact-good { color:#34d399; font-weight:600; }
-
-    /* Tableaux classements et règlement */
     .table-standings, .reglement-table {width:100%;border-collapse:collapse;background:rgba(15,23,42,.6);border:1px solid #334155;border-radius:8px;overflow:hidden;margin:1rem 0}
     .table-standings th,.table-standings td, .reglement-table th, .reglement-table td{padding:.75rem .9rem;border-bottom:1px solid #233047; text-align: left; font-size: 0.9rem;}
     .table-standings thead th, .reglement-table thead th{background:rgba(51,65,85,.5); color: #fde68a;}
     .rank-badge{display:inline-block;min-width:2rem;text-align:center;background:#0b1220;border:1px solid #334155;border-radius:999px;padding:.2rem .5rem}
-
-    /* Liens interactifs internes au règlement */
     .reglement-link { color: #38bdf8; text-decoration: underline; cursor: pointer; font-weight: 600; }
     .reglement-link:hover { color: #818cf8; }
-
-    /* Loader animé (spinner) */
     .loading-inline{display:flex;align-items:center;gap:.6rem;color:#cbd5e1}
     .loading-inline .spinner{width:28px;height:28px;border:3px solid #334155;border-top-color:#38bdf8;border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* Toggle "course joker" */
-    .joker-toggle{
-      display:flex; align-items:center; gap:0.6rem; margin-bottom:12px; padding:0.6rem 0.9rem;
-      border-radius:999px; background:rgba(15,23,42,0.95); border:1px solid #38bdf8;
-      color:#e2e8f0; font-size:0.95rem; box-shadow:0 0 0 1px rgba(15,23,42,0.8),0 8px 20px rgba(15,23,42,0.8);
-    }
+    .joker-toggle{ display:flex; align-items:center; gap:0.6rem; margin-bottom:12px; padding:0.6rem 0.9rem; border-radius:999px; background:rgba(15,23,42,0.95); border:1px solid #38bdf8; color:#e2e8f0; font-size:0.95rem; box-shadow:0 0 0 1px rgba(15,23,42,0.8),0 8px 20px rgba(15,23,42,0.8); }
     .joker-toggle label{ display:flex; align-items:center; gap:0.5rem; cursor:pointer; margin:0; width:100%; }
     .joker-toggle input[type="checkbox"]{ width:20px; height:20px; transform:scale(1.15); accent-color:#38bdf8; cursor:pointer; flex-shrink:0; }
     .joker-toggle strong{ font-weight:600; color:#e0f2fe; }
-    
     .compare-wrapper{ margin-top:18px; padding:12px 14px; border-radius:12px; background:rgba(15,23,42,0.85); border:1px solid #334155; }
     .compare-wrapper h4{ margin-top:0; margin-bottom:6px; }
     #compareSelect{ width:100%; min-height:120px; background:#020617; color:#e2e8f0; border-radius:8px; border:1px solid #1e293b; padding:6px; font-size:0.9rem; }
@@ -72,274 +45,53 @@
     .compare-self{ background:rgba(56,189,248,0.08); }
     .compare-best{ color:#bbf7d0; font-weight:600; }
     .compare-worst{ color:#fecaca; }
-
-    /* Style du grand titre de section */
-    .section-main-title {
-      text-align: center;
-      color: var(--accent-primary);
-      margin-bottom: 2rem;
-      font-size: 2.2rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
-    }
-
-    /* --- NAVIGATION INTERNE (TABS & PILLS) --- */
-    .category-tabs {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.05);
-      margin-bottom: 1.5rem;
-      padding-bottom: 0;
-      flex-wrap: wrap;
-    }
-    .category-tabs button {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      color: var(--text-muted);
-      font-size: 1.1rem;
-      padding: 0.5rem 1rem;
-      border-radius: 0;
-      border-bottom: 3px solid transparent !important;
-      margin-bottom: -2px;
-      transition: all 0.2s;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .category-tabs button:hover {
-      color: var(--text-primary);
-      transform: none;
-    }
-    .category-tabs button.active {
-      color: var(--accent-primary);
-      border-bottom-color: var(--accent-primary) !important;
-      font-weight: 800;
-    }
-
-    .subcat-pills {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      margin-bottom: 2.5rem;
-    }
-    .subcat-pills button {
-      background: rgba(30, 37, 48, 0.6) !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      color: var(--text-secondary);
-      padding: 0.6rem 1.25rem !important;
-      font-size: 0.95rem !important;
-      border-radius: 999px !important;
-      box-shadow: none !important;
-      transition: all 0.2s;
-      font-weight: 500 !important;
-      text-transform: none !important;
-      letter-spacing: normal !important;
-    }
-    .subcat-pills button:hover {
-      background: rgba(255, 255, 255, 0.1) !important;
-      transform: translateY(-2px) !important;
-      color: white;
-    }
-    .subcat-pills button.active {
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
-      color: white !important;
-      border-color: transparent !important;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important;
-      font-weight: 700 !important;
-    }
-
-    /* Styles spécifiques pour l'affichage du règlement complet */
+    .section-main-title { text-align: center; color: var(--accent-primary); margin-bottom: 2rem; font-size: 2.2rem; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+    .category-tabs { display: flex; justify-content: center; gap: 2rem; border-bottom: 2px solid rgba(255, 255, 255, 0.05); margin-bottom: 1.5rem; padding-bottom: 0; flex-wrap: wrap; }
+    .category-tabs button { background: transparent !important; border: none !important; box-shadow: none !important; color: var(--text-muted); font-size: 1.1rem; padding: 0.5rem 1rem; border-radius: 0; border-bottom: 3px solid transparent !important; margin-bottom: -2px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+    .category-tabs button:hover { color: var(--text-primary); transform: none; }
+    .category-tabs button.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary) !important; font-weight: 800; }
+    .subcat-pills { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 2.5rem; }
+    .subcat-pills button { background: rgba(30, 37, 48, 0.6) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: var(--text-secondary); padding: 0.6rem 1.25rem !important; font-size: 0.95rem !important; border-radius: 999px !important; box-shadow: none !important; transition: all 0.2s; font-weight: 500 !important; text-transform: none !important; letter-spacing: normal !important; }
+    .subcat-pills button:hover { background: rgba(255, 255, 255, 0.1) !important; transform: translateY(-2px) !important; color: white; }
+    .subcat-pills button.active { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important; color: white !important; border-color: transparent !important; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important; font-weight: 700 !important; }
     .reglement-content h4 { color: #38bdf8; margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.2rem; }
     .reglement-content h5 { color: #fde68a; margin-top: 1rem; margin-bottom: 0.25rem; font-size: 1.05rem; }
     .reglement-content p { color: #CBD5E1; line-height: 1.6; margin-bottom: 0.75rem; }
     .reglement-content ul { padding-left: 1.5rem; margin-bottom: 1rem; color: #CBD5E1; list-style-type: disc; }
     .reglement-content li { margin-bottom: 0.3rem; background: none; border: none; padding: 0; }
-
-    /* --- CARTE LEAFLET INTERACTIVE 2D STYLISÉE DARK MODE --- */
-    #leafletWorldMap {
-      width: 100%;
-      height: 420px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      margin-bottom: 2rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      z-index: 1;
-    }
-    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-      background: #0f172a !important;
-      color: #fff !important;
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-    }
-    .leaflet-popup-content {
-      font-family: inherit;
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-
-    /* --- ROADMAP / CALENDRIER ESPORT PRO --- */
-    .season-roadmap {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-      margin-top: 1.5rem;
-    }
-    .roadmap-card {
-      background: rgba(15, 23, 42, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-    .roadmap-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 4px; height: 100%;
-      background: var(--accent-primary);
-    }
-    .roadmap-card.vote-card {
-      border-color: rgba(245, 158, 11, 0.4);
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(245, 158, 11, 0.05));
-    }
-    .roadmap-card.vote-card::before {
-      background: #f59e0b;
-    }
-    .roadmap-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent-primary);
-      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.25);
-    }
-    .roadmap-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.85rem;
-      color: #94a3b8;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-    .roadmap-date {
-      background: rgba(56, 189, 248, 0.1);
-      color: #38bdf8;
-      padding: 0.2rem 0.6rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      border: 1px solid rgba(56, 189, 248, 0.2);
-    }
-    .roadmap-card.vote-card .roadmap-date {
-      background: rgba(245, 158, 11, 0.1);
-      color: #f59e0b;
-      border-color: rgba(245, 158, 11, 0.2);
-    }
-    .roadmap-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: #fff;
-    }
-    .roadmap-location {
-      font-size: 0.95rem;
-      color: #cbd5e1;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* --- STYLES DU FORMULAIRE DE PRÉSENCE --- */
-    .presence-race-card {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .presence-actions {
-      display: flex;
-      gap: 1rem;
-      margin: 1rem 0;
-      flex-wrap: wrap;
-    }
-    .btn-presence {
-      flex: 1;
-      min-width: 120px;
-      padding: 0.75rem;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(30, 41, 59, 0.7);
-      color: #e2e8f0;
-      transition: all 0.2s;
-    }
+    #leafletWorldMap { width: 100%; height: 420px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #0f172a !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; }
+    .leaflet-popup-content { font-family: inherit; font-size: 0.9rem; line-height: 1.4; }
+    .season-roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .roadmap-card { background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; position: relative; overflow: hidden; transition: all 0.3s ease; }
+    .roadmap-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-primary); }
+    .roadmap-card.vote-card { border-color: rgba(245, 158, 11, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(245, 158, 11, 0.05)); }
+    .roadmap-card.vote-card::before { background: #f59e0b; }
+    .roadmap-card:hover { transform: translateY(-4px); border-color: var(--accent-primary); box-shadow: 0 10px 25px rgba(99, 102, 241, 0.25); }
+    .roadmap-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #94a3b8; font-weight: 700; letter-spacing: 1px; }
+    .roadmap-date { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(56, 189, 248, 0.2); }
+    .roadmap-card.vote-card .roadmap-date { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); }
+    .roadmap-title { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .roadmap-location { font-size: 0.95rem; color: #cbd5e1; display: flex; align-items: center; gap: 6px; }
+    .presence-race-card { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .presence-actions { display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }
+    .btn-presence { flex: 1; min-width: 120px; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; transition: all 0.2s; }
     .btn-presence:hover { transform: translateY(-2px); }
     .btn-presence.active-present { background: #10b981; border-color: #059669; color: white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
     .btn-presence.active-absent { background: #ef4444; border-color: #dc2626; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
     .btn-presence.active-tentative { background: #f59e0b; border-color: #d97706; color: white; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
-    
-    .presence-lists-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-      font-size: 0.9rem;
-    }
-    .presence-list-box {
-      background: rgba(2, 6, 23, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      padding: 1rem;
-    }
+    .presence-lists-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; font-size: 0.9rem; }
+    .presence-list-box { background: rgba(2, 6, 23, 0.5); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; }
     .presence-list-box h5 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1rem; display: flex; justify-content: space-between; }
     .presence-list-box ul { padding-left: 1.2rem; margin: 0; color: #94a3b8; }
     .presence-list-box li { list-style-type: disc; margin-bottom: 0.2rem; }
-
-    /* Ajustement tableaux journaliers compacts sans scrollbar */
-    .daily-tables-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.8rem;
-    }
-    @media (max-width: 1024px) {
-      .daily-tables-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 640px) {
-      .daily-tables-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .daily-table-box {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 0.75rem;
-    }
-    .daily-table-box table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-    .daily-table-box th, .daily-table-box td {
-      padding: 6px 8px;
-      border-bottom: 1px solid #233047;
-      text-align: left;
-    }
-    .daily-table-box th {
-      background: rgba(51, 65, 85, 0.4);
-      color: #fde68a;
-      font-size: 0.8rem;
-    }
+    .daily-tables-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; }
+    @media (max-width: 1024px) { .daily-tables-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .daily-tables-grid { grid-template-columns: 1fr; } }
+    .daily-table-box { background: rgba(15, 23, 42, 0.5); border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; }
+    .daily-table-box table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .daily-table-box th, .daily-table-box td { padding: 6px 8px; border-bottom: 1px solid #233047; text-align: left; }
+    .daily-table-box th { background: rgba(51, 65, 85, 0.4); color: #fde68a; font-size: 0.8rem; }
   </style>
 </head>
 <body>
@@ -348,7 +100,6 @@
   <div class="container" style="margin-top: 3rem;">
     <h2 style="margin-bottom: 2rem;">EstaCup Saison 10</h2>
 
-    <!-- CONTENEURS DE MAINTENANCE -->
     <div id="adminMaintenanceBanner" class="hidden" style="background: rgba(245, 158, 11, 0.1); color: #fde68a; padding: 15px; border-radius: 8px; border: 2px solid #f59e0b; margin-bottom: 20px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);">
       ⚠️ MODE TRAVAUX ACTIVÉ : Cette page est actuellement fermée au public. Vous la voyez car vous êtes Administrateur.
     </div>
@@ -358,10 +109,8 @@
        <p style="font-size: 1.2rem; color: #cbd5e1; line-height: 1.6;">L'espace Driver's Room de l'ESTACUP S10 est actuellement en maintenance pour amélioration.<br>L'accès est temporairement suspendu. Merci de repasser un peu plus tard !</p>
     </div>
 
-    <!-- CONTENU NORMAL -->
     <div id="normalContent">
 
-      <!-- MENU PRINCIPAL ÉPURÉ (Niveau 0) -->
       <nav class="menu" id="mainNav">
         <button data-section="infos">Mes informations</button>
         <button data-section="championship">🏆 Le Championnat</button>
@@ -369,18 +118,15 @@
         <button id="goToAdmin" class="hidden" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
       </nav>
 
-      <!-- SECTION : MES INFORMATIONS -->
       <section id="section-infos" class="section hidden">
         <h2 class="section-main-title">Mes Informations</h2>
 
-        <!-- NOUVEAU SOUS-MENU POUR LES INFORMATIONS -->
         <nav class="subcat-pills" id="infosSubnav" style="margin-bottom: 2rem;">
           <button data-infosub="general" class="infos-sub-btn active">👤 Général</button>
           <button data-infosub="mrating" class="infos-sub-btn">📈 M-Rating</button>
           <button data-infosub="msafety" class="infos-sub-btn">🛡️ M-Safety</button>
         </nav>
         
-        <!-- INFOS : GÉNÉRAL -->
         <div id="infos-sub-general" class="infos-subsection">
           <h3>Informations Pilote</h3>
           <div class="course-box">
@@ -411,7 +157,6 @@
           </div>
         </div>
 
-        <!-- INFOS : M-RATING -->
         <div id="infos-sub-mrating" class="infos-subsection hidden">
           <h3>Analyse de la Performance</h3>
           <div class="course-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: center;">
@@ -434,7 +179,6 @@
           </div>
         </div>
 
-        <!-- INFOS : M-SAFETY -->
         <div id="infos-sub-msafety" class="infos-subsection hidden">
           <h3>Analyse du Comportement</h3>
           <div class="course-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: center;">
@@ -456,7 +200,6 @@
             </div>
           </div>
 
-          <!-- === NOUVEAU BLOC : VOS INCIDENTS === -->
           <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.25rem;">Vos incidents</h4>
           <div id="myIncidentsList" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
             <div class="loading-inline"><div class="spinner"></div> Recherche de vos incidents...</div>
@@ -464,11 +207,9 @@
         </div>
       </section>
 
-      <!-- SECTION : 🏆 LE CHAMPIONNAT -->
       <section id="section-championship" class="section hidden">
         <h2 class="section-main-title">Le Championnat</h2>
 
-        <!-- NIVEAU 1 : CATÉGORIES PRINCIPALES -->
         <nav class="category-tabs" id="champCategoryNav">
           <button data-cat="admin">📋 Administratif</button>
           <button data-cat="piste">🏎️ La Piste</button>
@@ -476,7 +217,6 @@
           <button data-cat="resultats">📊 Résultats</button>
         </nav>
 
-        <!-- NIVEAU 2 : SOUS-MENUS EN PILULES -->
         <div id="champSubnavsContainer">
           
           <nav id="cat-admin" class="subcat-pills champ-cat-container hidden">
@@ -509,219 +249,14 @@
 
         </div>
 
-        <!-- ================= CONTENUS DES SOUS-SECTIONS ================= -->
-
-        <!-- RÈGLEMENT OFFICIEL INTÉGRAL -->
+        <!-- RÈGLEMENT DYNAMIQUE -->
         <div id="champ-sub-reglement" class="champ-subsection hidden">
           <h3>Règlement de l'ESTACUP Saison 10</h3>
-          <div class="course-box reglement-content">
-            <p style="color: #38bdf8; font-weight: bold; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
-              Dernière mise à jour : 25-08-2026 - V1.1
-            </p>
-
-            <h4 style="margin-top:0;">1. PRÉSENTATION</h4>
-            <h5>1.1 OBJECTIF ET ORGANISATION</h5>
-            <p>MEKA présente la saison 10 de son championnat EstaCup. Il est destiné à promouvoir des courses de SimRacing sur la simulation Assetto Corsa.</p>
-            <p>Ce championnat est constitué d’un prologue et de six manches du 01/09/2026 au 28/02/2027.</p>
-            <p>L'organisation par MEKA certifie une compétition sérieusement organisée, dans un esprit de fairplay et de bonne conduite.</p>
-            <p>Le Comité d’Organisation (CO) se charge du financement de la compétition et de choisir les partenaires qui peuvent aider à ce financement.</p>
-
-            <h5>1.2 MISE À JOUR</h5>
-            <p>Le CO s’autorise si nécessaire à modifier des détails du présent règlement mais s’engage à en conserver l’esprit et l’objectif.</p>
-            <p>Toute adaptation de celui-ci sera communiquée à tous les participants sur le canal Discord "Annonces” de MEKA SimRacing.</p>
-            <p>En s’inscrivant au championnat, l'ensemble des participants déclarent avoir lu le présent règlement et l’accepter.</p>
-
-            <h5>1.3 UTILISATION DES DONNÉES</h5>
-            <p>L’organisation utilise les informations recueillies sur les formulaires d’inscription pour le championnat et pour communiquer avec les équipes et les pilotes.</p>
-
-            <h4>2. CONTENU ET TÉLÉCHARGEMENT</h4>
-            <h5>2.1 SIMULATION ET APPLICATIONS IN-GAME</h5>
-            <p>Pour participer, les pilotes devront avoir Assetto Corsa Ultimate Edition sur PC. Les applications suivantes seront demandées :</p>
-            <ul>
-              <li>Real Penalty (voir la rubrique Paddock & Mods).</li>
-              <li>CSP Rain & Weather (voir la rubrique Paddock & Mods).</li>
-              <li>Track Map et/ou Realtime (ou équivalent).</li>
-            </ul>
-
-            <h5>2.2 LISTE DES VOITURES</h5>
-            <p>Formula 3 (Génération 2026)</p>
-
-            <h5>2.3 PNEUMATIQUES, CARBURANTS ET DÉGÂTS</h5>
-            <p>Un seul type de pneumatique est mis à disposition des pilotes pour la totalité du championnat.</p>
-            <p>Pas de couvertures de chauffe des pneus.</p>
-            <p>Un changement de pneumatique est obligatoire pendant la course.</p>
-            <p>La consommation de carburant est fixe en x1.</p>
-            <p>Pour le serveur course, les dégâts seront de 25%.</p>
-
-            <h5>2.4 LIVRÉES</h5>
-            <p>MEKA met à disposition des livrées semi-personnalisables pour les pilotes ne souhaitant ou ne pouvant pas créer les leurs. Le modèle est unique, seules les couleurs sont libres, et seront à renseigner au moment de l’inscription.</p>
-            <p>L’utilisation de livrées personnalisées est acceptée et même encouragée. Néanmoins, les règles suivantes sont à respecter :</p>
-            <ul>
-              <li>Respect du règlement Twitch (pas de contenus pornographiques, racistes, injurieux, xénophobes, etc.).</li>
-              <li>Les plaques de numéros seront ajoutées par le CO, nous vous demandons donc de ne pas rajouter vos plaques personnalisées sur votre livrée ou dans votre dossier (voir article 2.5.1).</li>
-              <li>Utilisation du bandeau de pare-soleil fourni par le CO (voir article 2.5.2).</li>
-              <li>Toute livrée non-rendue avant le samedi précédent la course à 23h59, ne sera pas intégrée au Skin Pack de la course à venir.</li>
-            </ul>
-            <p>Le CO se réserve le droit de refuser une livrée pour des raisons non-citées ci-dessus, avec justification auprès du pilote.</p>
-
-            <h5>2.5.1 Dépôt de votre livrée</h5>
-            <p>Le dépôt de votre livrée se fait via l'espace dédié, accessible depuis votre Driver's Room dans la rubrique <strong>Le Championnat > Paddock & Mods > Déposer ma livrée</strong>.</p>
-            <p>Votre livrée ne doit pas contenir de plaque de numéro de course, le CO vous l’attribuant et vous l’appliquant après la réception de votre fichier.</p>
-            <p>Vous serez averti lorsque votre livrée a bien été validée.</p>
-
-            <h5>2.5.2 Bandeau pare-soleil</h5>
-            <p>Les bandeaux vous vous seront attribués par le CO selon votre licence sur le championnat. Ces bandeaux permettent à vos concurrents de connaître votre niveau, mais aussi pour une meilleure compréhension des spectateurs.</p>
-            <p>Votre bandeau attribué vous sera transmis par un membre du CO après votre confirmation d’inscription au championnat. Vous devez impérativement avoir un bandeau conforme pendant les sessions officielles sous peine de pénalités.</p>
-
-            <h5>2.5.3 Plaque numéro de course</h5>
-            <p>Les plaques vous seront attribuées par le CO selon votre licence sur le championnat. Ces plaques permettent à vos concurrents de connaître votre niveau, mais aussi pour une meilleure compréhension des spectateurs.</p>
-            <p>Votre plaque attribuée sera ajoutée par le CO après réception de votre livrée. Vous pourrez alors retrouver votre voiture complète lors du téléchargement du SkinPack donné avant la course.</p>
-
-            <h5>2.6 LISTE DES CIRCUITS</h5>
-            <p>Silverstone, Portimão, Brno, Virginia International Raceway, Road America, Fuji Speedway, Magny-Cours, Dijon-Prenois, Kyalami.</p>
-
-            <h5>2.7 TÉLÉCHARGEMENTS</h5>
-            <p>Retrouvez l'ensemble du contenu nécessaire directement dans votre Driver's Room :</p>
-            <ul>
-              <li><strong>Real Penalty & Mods :</strong> Allez dans <strong>Le Championnat > Paddock & Mods > Mods obligatoires</strong></li>
-              <li><strong>Voitures & Circuits :</strong> Allez dans <strong>Le Championnat > Paddock & Mods > Télécharger le pack</strong></li>
-            </ul>
-
-            <h4>3. CALENDRIER</h4>
-            <p>Un total de 9 circuits a été choisi pour le championnat, où les pilotes auront à choisir sur deux manches (manche 3 et 5) leurs circuits préférés. Le championnat se déroulera sur 7 courses dont 6 comptabilisées (le prologue ne compte pas dans les classements).</p>
-            <p>Pour les manches 3 et 5, le circuit choisi sera défini par le résultat des votes fait pendant l’inscription de l’ensemble des pilotes.</p>
-            <p><strong>Info importante :</strong> La course se fera en heure réelle (Real Time) dans le jeu. Le départ serveur étant toujours donné à <strong>21h00 heure française (FR)</strong>, l'heure en jeu dépendra du fuseau horaire local du circuit à ce moment de l'année.</p>
-            
-            <table class="reglement-table">
-              <thead>
-                <tr><th>Épreuve</th><th>Circuit</th><th>Date</th><th>Heure in-game (locale)</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>Prologue</td><td>Silverstone</td><td>15/09/2026</td><td>20h00</td></tr>
-                <tr><td>Manche 1</td><td>Portimão</td><td>29/09/2026</td><td>20h00</td></tr>
-                <tr><td>Manche 2</td><td>Brno</td><td>20/10/2026</td><td>21h00</td></tr>
-                <tr><td>Manche 3</td><td>VIR ou Road America (Vote)</td><td>24/11/2026</td><td>15h00 / 14h00</td></tr>
-                <tr><td>Manche 4</td><td>Fuji Speedway</td><td>08/12/2026</td><td>05h00 (+1j)</td></tr>
-                <tr><td>Manche 5</td><td>Magny-Cours ou Dijon (Vote)</td><td>19/01/2027</td><td>21h00</td></tr>
-                <tr><td>Manche 6</td><td>Kyalami</td><td>09/02/2027</td><td>22h00</td></tr>
-              </tbody>
-            </table>
-
-            <h4>4. DRIVER’S ROOM</h4>
-            <h5>4.1 Inscription</h5>
-            <p>Une fois votre compte créé, accédez à l’onglet « ESTACUP » puis « Inscription » pour retrouver le formulaire.</p>
-            <p>Gratuit pour les membres MEKA, participation de 5€ pour les non-membres (financement de la diffusion Twitch et mods).</p>
-            <p>Changement de voiture illimité jusqu'au prologue, puis un seul changement autorisé pour le reste de la saison.</p>
-            <p>Équipes de 3 pilotes maximum. Sur un meeting, les 2 pilotes ayant fait le meilleur résultat marquent des points.</p>
-
-            <h5>4.2 Réclamation</h5>
-            <p>Le seul et unique moyen de porter réclamation est depuis l’onglet dédié dans l’espace ESTACUP. Fournissez des informations précises et un lien vidéo YouTube.</p>
-
-            <h4>5. PROGRAMME D’UNE ÉPREUVE</h4>
-            <h5>5.1 Préqualifications & Splits</h5>
-            <p>Du jeudi au dimanche précédant la course à 21h00 (durée 20 minutes). Obligatoire pour tous les participants (sauf cas exceptionnel validé par le CO, entraînant un placement direct en split 2).</p>
-            <p>Maximum 2 participations par manche, conservation de la meilleure moyenne des 3 meilleurs tours valides.</p>
-            <p>Si ≥ 32 pilotes, la manche est divisée en 2 splits.</p>
-
-            <h5>5.2 Essais libres</h5>
-            <p>Ouverts 24h/24h sur le serveur Assetto Hosting (sauf pendant les sessions officielles).</p>
-
-            <h5>5.3 Qualifications & Hyperpole</h5>
-            <p>Les qualifications durent 15 minutes. Interdiction de quitter la voie des stands si le feu est rouge. Interdiction d'utiliser la touche « Echap » en dehors de la pit lane.</p>
-            
-            <p><strong>Hyperpole :</strong> Les six pilotes les plus rapides de la qualification accèdent à l'Hyperpole.</p>
-            <ul>
-              <li><strong>Format :</strong> Un tour de sortie et un seul tour lancé par pilote.</li>
-              <li><strong>Ordre de départ :</strong> Ils prennent la piste successivement, dans l'ordre inverse du classement des qualifications (le 6ème s'élance en premier, le 1er en dernier).</li>
-              <li><strong>Espacement :</strong> Départ à une minute d'intervalle (le 6ème part au feu vert, le 5ème à la minute 1, le 4ème à la minute 2, etc.) afin de ne pas se gêner.</li>
-              <li><strong>Règle de conduite :</strong> <strong style="color: #f87171;">Il est strictement interdit de se gêner mutuellement ou d'échanger de position sur ou en dehors de la piste.</strong></li>
-              <li><strong>Classement :</strong> Le résultat de l'Hyperpole détermine les six premières positions sur la grille de départ.</li>
-              <li><strong>Sans-temps :</strong> Si un ou plusieurs pilotes ne réalisent pas de temps lors de cette session, leur ordre de départ (parmi les sans-temps) sera défini par leur classement initial en qualification.</li>
-            </ul>
-
-            <h5>5.4 Course</h5>
-            <p>La course a une durée de 1 heure. La grille est définie par les qualifications et l'Hyperpole.</p>
-
-            <h5>5.5 Conditions de piste</h5>
-            <p>Grip à 100% pour les qualifications et l'Hyperpole, 98% de départ pour la course (augmentation de 1% tous les 50 tours).</p>
-
-            <h5>5.6 Horaires et durée des sessions</h5>
-            <table class="reglement-table">
-              <thead>
-                <tr><th>Heure FR</th><th>Session</th><th>Durée</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>20h00</td><td>Briefing obligatoire</td><td>15 min</td></tr>
-                <tr><td>20h15</td><td>Warm-up</td><td>10 min</td></tr>
-                <tr><td>20h25</td><td>Qualifications</td><td>15 min</td></tr>
-                <tr><td>20h40</td><td>Transition / sélection Top 6</td><td>~5 min</td></tr>
-                <tr><td>20h45</td><td>Hyperpole</td><td>~10-12 min</td></tr>
-                <tr><td>~21h00</td><td>Course (Heure locale selon circuit)</td><td>1 heure</td></tr>
-              </tbody>
-            </table>
-
-            <h5>5.7 Déroulement du départ</h5>
-            <p>Tour de formation en double file, vitesse max 140 km/h. Dans le dernier tiers, passage à 80 km/h (limiteur de stand obligatoire pour le leader dans les 5 secondes). Drapeau vert donné après le signal sonore pour libérer la meute.</p>
-
-            <h4>6. LICENCE ESTACUP</h4>
-            <p>Système de licence basé sur le fair-play et la propreté (indépendant de la performance) :</p>
-            <ul>
-              <li>Licence 1 : Rookie 🟩 (Attribuée par défaut ou aux nouveaux)</li>
-              <li>Licence 2 : Challenger 🟦 (Pour les habitués propres)</li>
-              <li>Licence 3 : Pro 🟥 (Sur performance de propreté)</li>
-            </ul>
-            <p>Chaque pilote commence avec 8 points de M-Safety. À 0 point, suspension des deux prochaines courses.</p>
-
-            <h4>7. PÉNALITÉS</h4>
-            <p>Les pénalités infligées par le CO ne peuvent être contestées sauf erreur flagrante. Retrouvez l'ensemble des barèmes détaillés pour les cuts, les excès de vitesse dans la pitlane, les mauvais comportements sur piste et les contrôles administratifs (conformité des pseudos, numéros et bandeaux) directement sur notre canal Discord.</p>
-
-            <h4>8. POINTS ATTRIBUÉS & CLASSEMENTS</h4>
-            <p>Le pire résultat (ou absence) de la saison est retiré pour chaque pilote afin d'assurer l'équité. Les points sont attribués selon la grille officielle :</p>
-            
-            <table class="reglement-table">
-              <thead>
-                <tr><th>Position</th><th>Course (Split 1)</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>1er</td><td>35 pts</td></tr>
-                <tr><td>2ème</td><td>30 pts</td></tr>
-                <tr><td>3ème</td><td>27 pts</td></tr>
-                <tr><td>4ème</td><td>24 pts</td></tr>
-                <tr><td>5ème</td><td>22 pts</td></tr>
-                <tr><td>6ème</td><td>20 pts</td></tr>
-                <tr><td>7ème</td><td>18 pts</td></tr>
-                <tr><td>8ème</td><td>16 pts</td></tr>
-                <tr><td>9ème</td><td>14 pts</td></tr>
-                <tr><td>10ème</td><td>12 pts</td></tr>
-                <tr><td>11ème</td><td>11 pts</td></tr>
-                <tr><td>12ème</td><td>10 pts</td></tr>
-                <tr><td>13ème</td><td>9 pts</td></tr>
-                <tr><td>14ème</td><td>8 pts</td></tr>
-                <tr><td>15ème</td><td>7 pts</td></tr>
-                <tr><td>16ème</td><td>6 pts</td></tr>
-                <tr><td>17ème</td><td>5 pts</td></tr>
-                <tr><td>18ème</td><td>4 pts</td></tr>
-                <tr><td>19ème</td><td>3 pts</td></tr>
-                <tr><td>20ème</td><td>2 pts</td></tr>
-                <tr><td>21ème et au-delà (ayant terminé)</td><td>1 pt</td></tr>
-              </tbody>
-            </table>
-
-            <p><strong>Points Bonus :</strong></p>
-            <ul>
-              <li><strong>Pole position (Hyperpole) :</strong> +2 pts</li>
-              <li><strong>Meilleur tour en course :</strong> +1 pt</li>
-            </ul>
-
-            <h4>9. COMMUNICATION</h4>
-            <p>Communications officielles sur le serveur Discord MEKA SimRacing et retransmission en direct assurée par notre partenaire <strong>WARLOCK Production</strong> sur la chaîne Twitch officielle de l'association.</p>
-            
-            <h4>10. PROCÉDURE DE SAFETY CAR & FCY</h4>
-            <p><em>En cours de rédaction... Les détails de la procédure de Safety Car et de Full Course Yellow (FCY) seront ajoutés prochainement.</em></p>
+          <div class="course-box reglement-content" id="reglementContainer">
+            <div class="loading-inline"><div class="spinner"></div> Chargement du règlement...</div>
           </div>
         </div>
 
-        <!-- PRÉSENCES COURSES -->
         <div id="champ-sub-presence" class="champ-subsection hidden">
           <h3>Formulaire de Présence</h3>
           <div class="course-box">
@@ -729,7 +264,6 @@
               <div class="loading-inline"><div class="spinner"></div> Chargement des présences...</div>
             </div>
 
-            <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS (MASQUÉ PAR DÉFAUT) -->
             <div id="adminPrequalPanel" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
               <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 1rem;">🛠️ Panel Admin : Enregistrer / Modifier un temps</h5>
               <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
@@ -758,11 +292,9 @@
               </div>
             </div>
 
-            <!-- TABLEAUX DE PRÉQUALIFICATIONS -->
             <div id="prequalStatsContainer" style="margin-top: 2rem; border-top: 1px solid var(--border-primary); padding-top: 1.5rem; display: none;">
               <h4 style="color: var(--accent-primary); margin-bottom: 1rem;">Résultats des Préqualifications</h4>
               
-              <!-- Grand Tableau Récapitulatif Général -->
               <div style="overflow-x: auto; margin-bottom: 2rem;">
                 <h5 style="color: #fde68a; margin-bottom: 0.5rem;">Classement Général Préqualifs</h5>
                 <table class="reglement-table">
@@ -780,9 +312,7 @@
                 </table>
               </div>
 
-              <!-- Grille compacte des 4 tableaux journaliers (Sans barre de défilement) -->
               <div class="daily-tables-grid">
-                <!-- Jeudi -->
                 <div class="daily-table-box">
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Jeudi</h5>
                   <table>
@@ -795,7 +325,6 @@
                   </table>
                 </div>
 
-                <!-- Vendredi -->
                 <div class="daily-table-box">
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Vendredi</h5>
                   <table>
@@ -808,7 +337,6 @@
                   </table>
                 </div>
 
-                <!-- Samedi -->
                 <div class="daily-table-box">
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Samedi</h5>
                   <table>
@@ -821,7 +349,6 @@
                   </table>
                 </div>
 
-                <!-- Dimanche -->
                 <div class="daily-table-box">
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Dimanche</h5>
                   <table>
@@ -840,7 +367,6 @@
           </div>
         </div>
 
-        <!-- INSCRIPTION -->
         <div id="champ-sub-inscription" class="champ-subsection hidden">
           <h3>Inscription ESTACUP</h3>
           <div class="course-box">
@@ -861,7 +387,6 @@
           </div>
         </div>
 
-        <!-- ENGAGÉS -->
         <div id="champ-sub-engages" class="champ-subsection hidden">
           <h3>Liste des engagés</h3>
           <div class="course-box">
@@ -869,7 +394,6 @@
           </div>
         </div>
 
-        <!-- ÉQUIPES -->
         <div id="champ-sub-equipes" class="champ-subsection hidden">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
             <h3 style="color: var(--accent-primary); margin: 0;">Liste des Équipes</h3>
@@ -879,7 +403,6 @@
           </div>
         </div>
 
-        <!-- RÉCLAMATIONS -->
         <div id="champ-sub-reclamations" class="champ-subsection hidden">
           <h3>Dépôt de Réclamation</h3>
           <div class="course-box">
@@ -903,7 +426,6 @@
           <div id="reclamHistory" style="margin-top:20px;"></div>
         </div>
 
-        <!-- MON ÉQUIPE -->
         <div id="champ-sub-monequipe" class="champ-subsection hidden">
           <h3>Quartier Général de l'Équipe</h3>
           <div id="myTeamContainer" class="course-box">
@@ -911,7 +433,6 @@
           </div>
         </div>
 
-        <!-- LE VÉHICULE -->
         <div id="champ-sub-vehicule" class="champ-subsection hidden">
           <h3>La Monoplace : Formula 3 (Génération 2026)</h3>
           <div class="course-box" style="text-align: center;">
@@ -940,7 +461,6 @@
           </div>
         </div>
 
-        <!-- LES CIRCUITS -->
         <div id="champ-sub-circuits" class="champ-subsection hidden">
           <h3>Le Calendrier de la Saison 10</h3>
           <div class="course-box" style="padding: 2rem;">
@@ -1111,7 +631,6 @@
           </div>
         </div>
 
-        <!-- VOTES CIRCUITS -->
         <div id="champ-sub-votecircuit" class="champ-subsection hidden">
           <h3>Votes des circuits</h3>
           <div class="course-box">
@@ -1119,7 +638,6 @@
           </div>
         </div>
 
-        <!-- CONTENU (PACK) -->
         <div id="champ-sub-contenu" class="champ-subsection hidden">
           <h3>Contenu du jeu (Voiture & Circuits)</h3>
           <div class="course-box">
@@ -1147,7 +665,6 @@
           </div>
         </div>
 
-        <!-- MODS -->
         <div id="champ-sub-mods" class="champ-subsection hidden">
           <h3>Mods & Utilitaires</h3>
           <div class="course-box">
@@ -1189,7 +706,6 @@
           </div>
         </div>
 
-        <!-- LIVRÉE -->
         <div id="champ-sub-livree" class="champ-subsection hidden">
           <h3>Déposer ma livrée</h3>
           <div class="course-box">
@@ -1197,7 +713,6 @@
           </div>
         </div>
 
-        <!-- COURSES (RÉSULTATS) -->
         <div id="champ-sub-courses" class="champ-subsection hidden">
           <h3>Résultats des Manches</h3>
           <div class="course-box">
@@ -1206,7 +721,6 @@
           </div>
         </div>
 
-        <!-- RANK PILOTES -->
         <div id="champ-sub-rankpilots" class="champ-subsection hidden">
           <h3>Classement Pilotes</h3>
           <div class="joker-toggle">
@@ -1218,7 +732,6 @@
           <div id="estacupPilotStandings" class="course-box"><p>Chargement…</p></div>
         </div>
 
-        <!-- RANK ÉQUIPES -->
         <div id="champ-sub-rankteams" class="champ-subsection hidden">
           <h3>Classement Équipes</h3>
           <div class="joker-toggle">
@@ -1232,7 +745,6 @@
 
       </section>
 
-      <!-- SECTION : 📡 SERVEURS & ACCÈS -->
       <section id="section-serveurs" class="section hidden">
         <h2 class="section-main-title">Serveurs & Accès</h2>
         
@@ -1251,7 +763,6 @@
           <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
             <button id="btnJoinServer" style="width: auto; opacity: 0.5; cursor: not-allowed;" disabled>🚀 Serveur fermé</button>
             
-            <!-- BOUTON LIVE TIMING -->
             <a id="btnLiveTiming" href="#" target="_blank" style="display: none; text-decoration: none;">
               <button style="width: auto; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md); padding: 1rem 2rem; border-radius: var(--radius-lg); cursor: pointer; font-weight: 600; text-transform: uppercase;">📊 Voir le Live Timing</button>
             </a>
@@ -1262,7 +773,6 @@
     </div> <!-- /normalContent -->
   </div>
 
-  <!-- SCRIPTS : GESTION DES 7 JOURS ET AFFICHAGE CONDITIONNEL DU PANEL ADMIN -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1384,7 +894,6 @@
       window.showRestrictedFeatures();
       loadNextRacePresence();
 
-      // ================= GESTION DU MODE TRAVAUX =================
       onSnapshot(doc(db, "config", "maintenance"), (snap) => {
         const isMaint = snap.exists() && snap.data().s10_under_maintenance === true;
         const normalContent = document.getElementById("normalContent");
@@ -1407,7 +916,6 @@
           if (adminBanner) adminBanner.classList.add("hidden");
         }
       });
-      // =========================================================
     });
 
     function timeToMs(tStr) {
