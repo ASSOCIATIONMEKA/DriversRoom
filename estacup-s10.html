@@ -344,6 +344,25 @@
       color: #fde68a;
       font-size: 0.8rem;
     }
+
+    /* Switch Vue Admin */
+    #adminViewToggleContainer {
+      position: fixed; bottom: 20px; left: 20px; z-index: 9999;
+      background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8;
+      padding: 10px 18px; border-radius: 999px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+    }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: #10b981; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Utilitaires pour masquer les éléments réservés aux admins quand on est en vue pilote */
+    body.pilot-view-mode .admin-only { display: none !important; }
   </style>
 </head>
 <body>
@@ -370,7 +389,7 @@
         <button data-section="infos">Mes informations</button>
         <button data-section="championship">🏆 Le Championnat</button>
         <button data-section="serveurs">📡 Serveurs & Accès</button>
-        <button id="goToAdmin" class="hidden" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
+        <button id="goToAdmin" class="hidden admin-only" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
       </nav>
 
       <!-- SECTION : MES INFORMATIONS -->
@@ -519,7 +538,7 @@
         <div id="champ-sub-reglement" class="champ-subsection hidden">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
             <h3 style="margin: 0;">Règlement de l'ESTACUP Saison 10</h3>
-            <button id="btnEditReglement" class="btn-validate hidden" style="padding: 8px 15px; font-size: 0.9rem; width: auto;">✏️ Éditer le règlement</button>
+            <button id="btnEditReglement" class="btn-validate hidden admin-only" style="padding: 8px 15px; font-size: 0.9rem; width: auto;">✏️ Éditer le règlement</button>
           </div>
 
           <!-- LECTURE SEULE -->
@@ -549,7 +568,7 @@
             </div>
 
             <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS (MASQUÉ PAR DÉFAUT) -->
-            <div id="adminPrequalPanel" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
+            <div id="adminPrequalPanel" class="admin-only" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
               <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 1rem;">🛠️ Panel Admin : Enregistrer / Modifier un temps</h5>
               <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
                 <div style="flex: 1; min-width: 160px;">
@@ -606,7 +625,7 @@
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Jeudi</h5>
                   <table>
                     <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelJeu" style="display:none; width: 20px;"></th></tr>
+                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelJeu" class="admin-only" style="display:none; width: 20px;"></th></tr>
                     </thead>
                     <tbody id="pqaThursdayBody">
                       <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
@@ -619,7 +638,7 @@
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Vendredi</h5>
                   <table>
                     <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelVen" style="display:none; width: 20px;"></th></tr>
+                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelVen" class="admin-only" style="display:none; width: 20px;"></th></tr>
                     </thead>
                     <tbody id="pqaFridayBody">
                       <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
@@ -632,7 +651,7 @@
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Samedi</h5>
                   <table>
                     <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelSam" style="display:none; width: 20px;"></th></tr>
+                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelSam" class="admin-only" style="display:none; width: 20px;"></th></tr>
                     </thead>
                     <tbody id="pqaSaturdayBody">
                       <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
@@ -645,7 +664,7 @@
                   <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Dimanche</h5>
                   <table>
                     <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelDim" style="display:none; width: 20px;"></th></tr>
+                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelDim" class="admin-only" style="display:none; width: 20px;"></th></tr>
                     </thead>
                     <tbody id="pqaSundayBody">
                       <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
@@ -1081,6 +1100,15 @@
     </div> <!-- /normalContent -->
   </div>
 
+  <!-- SWITCH VUE ADMIN -->
+  <div id="adminViewToggleContainer" class="hidden">
+    <span style="font-size: 0.9rem; font-weight: bold; color: #e2e8f0; text-transform: uppercase;">Vue Admin</span>
+    <label class="switch">
+      <input type="checkbox" id="adminViewToggle" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
   <!-- SCRIPTS : GESTION DES 7 JOURS ET AFFICHAGE CONDITIONNEL DU PANEL ADMIN -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1116,6 +1144,10 @@
     let isUserValidated = false;
     let userTeamName = "";
 
+    // GESTION DU TOGGLE VUE ADMIN / VUE PILOTE
+    let isMaintMode = false;
+    let adminViewActive = true;
+
     const navPresenceBtn = document.querySelector('[data-sub="presence"]');
     const navReclamBtn = document.querySelector('[data-sub="reclamations"]');
     const navVoteBtn = document.querySelector('[data-sub="votecircuit"]');
@@ -1125,7 +1157,43 @@
     
     const adminPrequalPanel = document.getElementById("adminPrequalPanel");
 
+    window.updateViewModeUI = function() {
+      const effectiveAdmin = isAdmin && adminViewActive;
+
+      // Gestion du mode de travaux
+      const normalContent = document.getElementById("normalContent");
+      const publicMaint = document.getElementById("publicMaintenanceScreen");
+      const adminBanner = document.getElementById("adminMaintenanceBanner");
+
+      if (isMaintMode) {
+        if (effectiveAdmin) {
+          if (normalContent) normalContent.style.display = "block";
+          if (publicMaint) publicMaint.classList.add("hidden");
+          if (adminBanner) adminBanner.classList.remove("hidden");
+        } else {
+          if (normalContent) normalContent.style.display = "none";
+          if (publicMaint) publicMaint.classList.remove("hidden");
+          if (adminBanner) adminBanner.classList.add("hidden");
+        }
+      } else {
+        if (normalContent) normalContent.style.display = "block";
+        if (publicMaint) publicMaint.classList.add("hidden");
+        if (adminBanner) adminBanner.classList.add("hidden");
+      }
+
+      // Applique la classe globale pour cacher les éléments '.admin-only'
+      if (effectiveAdmin) {
+        document.body.classList.remove("pilot-view-mode");
+      } else {
+        document.body.classList.add("pilot-view-mode");
+      }
+
+      window.showRestrictedFeatures();
+    };
+
     window.showRestrictedFeatures = function() {
+      const effectiveAdmin = isAdmin && adminViewActive;
+      
       if (navPresenceBtn) navPresenceBtn.style.display = "none";
       if (navReclamBtn) navReclamBtn.style.display = "none";
       if (navVoteBtn) navVoteBtn.style.display = "none";
@@ -1136,7 +1204,7 @@
       const paddockNav = document.getElementById("cat-paddock");
       let lockMsg = document.getElementById("paddockLockMsg");
 
-      if (isAdmin || isUserValidated) {
+      if (effectiveAdmin || isUserValidated) {
         if (navPresenceBtn) navPresenceBtn.style.display = "";
         if (navReclamBtn) navReclamBtn.style.display = "";
         if (navVoteBtn) navVoteBtn.style.display = "";
@@ -1200,31 +1268,29 @@
         console.error("Erreur de vérification de l'inscription:", e);
       }
 
+      // Initialisation du conteneur de switch admin
+      const toggleContainer = document.getElementById("adminViewToggleContainer");
+      if (isAdmin) {
+        if (toggleContainer) toggleContainer.classList.remove("hidden");
+      } else {
+        if (toggleContainer) toggleContainer.classList.add("hidden");
+      }
+
+      const adminViewToggle = document.getElementById("adminViewToggle");
+      if (adminViewToggle) {
+        adminViewToggle.addEventListener("change", (e) => {
+          adminViewActive = e.target.checked;
+          window.updateViewModeUI();
+        });
+      }
+
       window.showRestrictedFeatures();
       loadNextRacePresence();
 
       // ================= GESTION DU MODE TRAVAUX =================
       onSnapshot(doc(db, "config", "maintenance"), (snap) => {
-        const isMaint = snap.exists() && snap.data().s10_under_maintenance === true;
-        const normalContent = document.getElementById("normalContent");
-        const publicMaint = document.getElementById("publicMaintenanceScreen");
-        const adminBanner = document.getElementById("adminMaintenanceBanner");
-
-        if (isMaint) {
-          if (isAdmin) {
-            if (normalContent) normalContent.style.display = "block";
-            if (publicMaint) publicMaint.classList.add("hidden");
-            if (adminBanner) adminBanner.classList.remove("hidden");
-          } else {
-            if (normalContent) normalContent.style.display = "none";
-            if (publicMaint) publicMaint.classList.remove("hidden");
-            if (adminBanner) adminBanner.classList.add("hidden");
-          }
-        } else {
-          if (normalContent) normalContent.style.display = "block";
-          if (publicMaint) publicMaint.classList.add("hidden");
-          if (adminBanner) adminBanner.classList.add("hidden");
-        }
+        isMaintMode = snap.exists() && snap.data().s10_under_maintenance === true;
+        window.updateViewModeUI();
       });
       // =========================================================
 
@@ -1329,6 +1395,7 @@
 
       document.getElementById("prequalStatsContainer").style.display = "block";
       if (isAdmin && adminPrequalPanel) {
+        // Le panneau lui-même a la classe .admin-only donc il respectera le toggle
         adminPrequalPanel.style.display = "block";
       }
 
@@ -1525,7 +1592,7 @@
                 <tr>
                   <td>${item.name}</td>
                   <td><span style="color: ${item.avgTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${item.avgTime}</span></td>
-                  ${isAdmin ? `<td style="text-align: center;"><button onclick="window.deletePrequalSession('${nextRace.id}', '${item.docId}')" title="Supprimer" style="background: transparent; border: none; cursor: pointer; color: #f87171; font-size: 0.9rem;">❌</button></td>` : ''}
+                  ${isAdmin ? `<td class="admin-only" style="text-align: center;"><button onclick="window.deletePrequalSession('${nextRace.id}', '${item.docId}')" title="Supprimer" style="background: transparent; border: none; cursor: pointer; color: #f87171; font-size: 0.9rem;">❌</button></td>` : ''}
                 </tr>
               `).join('');
             }
@@ -1579,7 +1646,7 @@
     }
 
     window.deletePrequalSession = async function(raceId, docId) {
-      if (!isAdmin) return;
+      if (!isAdmin || !adminViewActive) return;
       if (await showConfirm("Voulez-vous vraiment supprimer ce temps de préqualification ?")) {
         try {
           await deleteDoc(doc(db, `prequals_${raceId}`, docId));
