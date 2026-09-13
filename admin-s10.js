@@ -13,6 +13,7 @@ import {
   addDoc,
   query,
   where,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------------- Firebase ---------------- */
@@ -143,6 +144,35 @@ onAuthStateChanged(auth, async (user) => {
     try { await loadReclamations(); } catch (e) { console.error("Erreur loadReclamations:", e); }
     
     setupResultsUI();
+
+    // ================= GESTION DU BOUTON MODE TRAVAUX =================
+    const btnMaint = document.getElementById("btnToggleMaintenance");
+    if (btnMaint) {
+      onSnapshot(doc(db, "config", "maintenance"), (snapMaint) => {
+        const isMaint = snapMaint.exists() && snapMaint.data().s10_under_maintenance === true;
+        if (isMaint) {
+          btnMaint.innerHTML = "🚧 Mode Travaux : ON";
+          btnMaint.style.background = "#ef4444";
+          btnMaint.style.borderColor = "#ef4444";
+        } else {
+          btnMaint.innerHTML = "🚧 Mode Travaux : OFF";
+          btnMaint.style.background = "#f59e0b";
+          btnMaint.style.borderColor = "#f59e0b";
+        }
+        btnMaint.onclick = async () => {
+          btnMaint.disabled = true;
+          btnMaint.textContent = "⏳...";
+          try {
+            await setDoc(doc(db, "config", "maintenance"), { s10_under_maintenance: !isMaint }, { merge: true });
+            if (typeof window.showToast === "function") window.showToast(isMaint ? "Mode travaux désactivé." : "Mode travaux activé.", "success");
+          } catch(e) {
+            console.error(e);
+            if (typeof window.showToast === "function") window.showToast("Erreur lors du changement de mode.", "error");
+          }
+          btnMaint.disabled = false;
+        };
+      });
+    }
     
   } catch (globalErr) {
     console.error("Erreur globale au chargement admin S10 :", globalErr);
@@ -160,7 +190,10 @@ function ensureDriversRoomButton() {
   btn.textContent = "Espace Pilote S10";
   btn.style.cssText = "background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;";
   btn.addEventListener("click", () => (window.location.href = "estacup-s10.html"));
-  menu.appendChild(btn);
+  // Insert before the mode travaux button
+  const maintBtn = document.getElementById("btnToggleMaintenance");
+  if(maintBtn) menu.insertBefore(btn, maintBtn);
+  else menu.appendChild(btn);
 }
 
 function ensureRedLogoutButton() {
