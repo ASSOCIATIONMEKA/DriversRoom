@@ -344,10 +344,36 @@
       color: #fde68a;
       font-size: 0.8rem;
     }
+    
+    /* --- CSS DU BOUTON TOGGLE VUE ADMIN --- */
+    .switch-vue-admin {
+      position: relative; display: inline-block; width: 40px; height: 20px; margin: 0;
+    }
+    .switch-vue-admin input { opacity: 0; width: 0; height: 0; }
+    .switch-vue-admin .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #64748b; transition: .4s; border-radius: 34px;
+    }
+    .switch-vue-admin .slider:before {
+      position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+      background-color: white; transition: .4s; border-radius: 50%;
+    }
+    .switch-vue-admin input:checked + .slider { background-color: #10b981; }
+    .switch-vue-admin input:focus + .slider { box-shadow: 0 0 1px #10b981; }
+    .switch-vue-admin input:checked + .slider:before { transform: translateX(20px); }
   </style>
 </head>
 <body>
   <div id="global-navbar"></div>
+
+  <!-- TOGGLE VUE ADMIN (Fixé en bas à gauche) -->
+  <div id="adminViewToggleWidget" class="hidden" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999; background: rgba(15,23,42,0.95); border: 1px solid #38bdf8; padding: 10px 15px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px;">
+    <span style="font-size: 0.9rem; font-weight: bold; color: #fff;">Vue Admin</span>
+    <label class="switch-vue-admin">
+      <input type="checkbox" id="adminViewToggle" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
 
   <div class="container" style="margin-top: 3rem;">
     <h2 style="margin-bottom: 2rem;">EstaCup Saison 10</h2>
@@ -1112,9 +1138,18 @@
 
     let currentUser = null;
     let currentUserName = "Pilote";
+    let realIsAdmin = false;
     let isAdmin = false;
     let isUserValidated = false;
     let userTeamName = "";
+    
+    // Variables pour éviter les fuites de mémoire (memory leak) dans les présences
+    let unsubAttend = null;
+    let unsubPrequal = null;
+    let attendancesData = [];
+    let prequalsData = [];
+    let isAttendanceLoaded = false;
+    let isPrequalLoaded = false;
 
     const navPresenceBtn = document.querySelector('[data-sub="presence"]');
     const navReclamBtn = document.querySelector('[data-sub="reclamations"]');
@@ -1167,6 +1202,30 @@
       }
     };
 
+    let isMaintActive = false;
+    
+    function applyMaintenanceLogic() {
+        const normalContent = document.getElementById("normalContent");
+        const publicMaint = document.getElementById("publicMaintenanceScreen");
+        const adminBanner = document.getElementById("adminMaintenanceBanner");
+
+        if (isMaintActive) {
+          if (isAdmin) {
+            if (normalContent) normalContent.style.display = "block";
+            if (publicMaint) publicMaint.classList.add("hidden");
+            if (adminBanner) adminBanner.classList.remove("hidden");
+          } else {
+            if (normalContent) normalContent.style.display = "none";
+            if (publicMaint) publicMaint.classList.remove("hidden");
+            if (adminBanner) adminBanner.classList.add("hidden");
+          }
+        } else {
+          if (normalContent) normalContent.style.display = "block";
+          if (publicMaint) publicMaint.classList.add("hidden");
+          if (adminBanner) adminBanner.classList.add("hidden");
+        }
+    }
+
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
       if (!user) return;
@@ -1176,14 +1235,21 @@
         if (userDoc.exists()) {
           const data = userDoc.data();
           currentUserName = data.name || (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) || data.pseudo || user.email;
-          isAdmin = data.admin === true;
+          realIsAdmin = data.admin === true;
         } else {
           currentUserName = user.email;
-          isAdmin = false;
+          realIsAdmin = false;
         }
       } catch(e) {
         currentUserName = user.email;
-        isAdmin = false;
+        realIsAdmin = false;
+      }
+      
+      isAdmin = realIsAdmin; // Par défaut, un admin voit la vue admin
+      
+      if (realIsAdmin) {
+          const toggleWidget = document.getElementById("adminViewToggleWidget");
+          if (toggleWidget) toggleWidget.classList.remove("hidden");
       }
 
       try {
@@ -1205,35 +1271,12 @@
 
       // ================= GESTION DU MODE TRAVAUX =================
       onSnapshot(doc(db, "config", "maintenance"), (snap) => {
-        const isMaint = snap.exists() && snap.data().s10_under_maintenance === true;
-        const normalContent = document.getElementById("normalContent");
-        const publicMaint = document.getElementById("publicMaintenanceScreen");
-        const adminBanner = document.getElementById("adminMaintenanceBanner");
-
-        if (isMaint) {
-          if (isAdmin) {
-            if (normalContent) normalContent.style.display = "block";
-            if (publicMaint) publicMaint.classList.add("hidden");
-            if (adminBanner) adminBanner.classList.remove("hidden");
-          } else {
-            if (normalContent) normalContent.style.display = "none";
-            if (publicMaint) publicMaint.classList.remove("hidden");
-            if (adminBanner) adminBanner.classList.add("hidden");
-          }
-        } else {
-          if (normalContent) normalContent.style.display = "block";
-          if (publicMaint) publicMaint.classList.add("hidden");
-          if (adminBanner) adminBanner.classList.add("hidden");
-        }
+        isMaintActive = snap.exists() && snap.data().s10_under_maintenance === true;
+        applyMaintenanceLogic();
       });
       // =========================================================
 
       // ================= GESTION DE L'EDITEUR DE REGLEMENT =================
-      if (isAdmin) {
-        const btnEdit = document.getElementById("btnEditReglement");
-        if (btnEdit) btnEdit.classList.remove("hidden");
-      }
-
       const btnEdit = document.getElementById("btnEditReglement");
       const btnCancel = document.getElementById("btnCancelReglement");
       const btnSave = document.getElementById("btnSaveReglement");
@@ -1241,6 +1284,10 @@
       const editMode = document.getElementById("reglementEditMode");
       const textarea = document.getElementById("reglementTextarea");
       const content = document.getElementById("reglementContent");
+
+      if (isAdmin && btnEdit) {
+        btnEdit.classList.remove("hidden");
+      }
 
       if (btnEdit) {
         btnEdit.addEventListener("click", () => {
@@ -1255,7 +1302,7 @@
         btnCancel.addEventListener("click", () => {
           editMode.classList.add("hidden");
           readMode.classList.remove("hidden");
-          btnEdit.classList.remove("hidden");
+          if (isAdmin) btnEdit.classList.remove("hidden");
         });
       }
 
@@ -1275,7 +1322,7 @@
             if (window.showToast) window.showToast("✅ Règlement mis à jour !", "success");
             editMode.classList.add("hidden");
             readMode.classList.remove("hidden");
-            btnEdit.classList.remove("hidden");
+            if (isAdmin) btnEdit.classList.remove("hidden");
           } catch(e) {
             console.error(e);
             if (window.showToast) window.showToast("❌ Erreur lors de la sauvegarde.", "error");
@@ -1285,6 +1332,47 @@
         });
       }
     });
+
+    // ================= TOGGLE VUE ADMIN =================
+    document.getElementById("adminViewToggle")?.addEventListener("change", (e) => {
+        isAdmin = e.target.checked;
+        
+        // 1. Update Maintenance Logic
+        applyMaintenanceLogic();
+
+        // 2. Update GoToAdmin button
+        const goToAdmin = document.getElementById("goToAdmin");
+        if (goToAdmin) {
+            if (isAdmin) goToAdmin.classList.remove("hidden");
+            else goToAdmin.classList.add("hidden");
+        }
+
+        // 3. Update Restricted Features
+        window.showRestrictedFeatures();
+
+        // 4. Update Reglement Edit Button
+        const btnEdit = document.getElementById("btnEditReglement");
+        const editMode = document.getElementById("reglementEditMode");
+        const readMode = document.getElementById("reglementReadMode");
+        if (btnEdit) {
+            if (isAdmin) btnEdit.classList.remove("hidden");
+            else {
+                btnEdit.classList.add("hidden");
+                if (editMode && !editMode.classList.contains("hidden")) {
+                    editMode.classList.add("hidden");
+                    if (readMode) readMode.classList.remove("hidden");
+                }
+            }
+        }
+
+        // 5. Reload Presences (unsubscribes and resubscribes to apply the `isAdmin` condition on UI)
+        loadNextRacePresence();
+        
+        if (window.showToast) {
+            window.showToast(isAdmin ? "Vue Administrateur activée." : "Vue Pilote (Standard) activée.", "info");
+        }
+    });
+    // ====================================================
 
     function timeToMs(tStr) {
       if (!tStr || tStr === "X" || tStr.includes("En attente")) return Infinity;
@@ -1296,6 +1384,173 @@
       }
       const num = parseFloat(tStr);
       return isNaN(num) ? Infinity : num;
+    }
+
+    function renderPresenceUI(nextRaceId) {
+      const container = document.getElementById("presenceRacesContainer");
+      if (!container) return;
+
+      const presentPilotsMap = new Map();
+      const presentListNames = [];
+      const absentListNames = [];
+      const tentativeListNames = [];
+      let userStatus = null;
+
+      attendancesData.forEach(data => {
+        if (currentUser && data.id === currentUser.uid) {
+          userStatus = data.status;
+        }
+        if (data.status === "present") {
+          presentPilotsMap.set(data.userName, data.userId);
+          presentListNames.push(data.userName);
+        } else if (data.status === "absent") {
+          absentListNames.push(data.userName);
+        } else if (data.status === "tentative") {
+          tentativeListNames.push(data.userName);
+        }
+      });
+
+      const pilotSelect = document.getElementById("adminPqPilot");
+      if (pilotSelect) {
+        const currentSelected = pilotSelect.value;
+        pilotSelect.innerHTML = `<option value="">-- Choisir un pilote --</option>`;
+        presentPilotsMap.forEach((uid, name) => {
+          pilotSelect.innerHTML += `<option value="${uid}_${name}">${name}</option>`;
+        });
+        pilotSelect.value = currentSelected;
+      }
+
+      document.getElementById(`count-present-${nextRaceId}`).textContent = `${presentListNames.length}/32`;
+      document.getElementById(`count-absent-${nextRaceId}`).textContent = absentListNames.length;
+      document.getElementById(`count-tentative-${nextRaceId}`).textContent = tentativeListNames.length;
+
+      document.getElementById(`list-present-${nextRaceId}`).innerHTML = presentListNames.length ? presentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+      document.getElementById(`list-absent-${nextRaceId}`).innerHTML = absentListNames.length ? absentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+      document.getElementById(`list-tentative-${nextRaceId}`).innerHTML = tentativeListNames.length ? tentativeListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+
+      const actionBox = container.querySelector(`.presence-actions[data-race="${nextRaceId}"]`);
+      if (actionBox) {
+        actionBox.querySelectorAll('.btn-presence').forEach(btn => {
+          btn.className = "btn-presence";
+          if (userStatus && btn.getAttribute('data-status') === userStatus) {
+            if (userStatus === 'present') btn.classList.add('active-present');
+            if (userStatus === 'absent') btn.classList.add('active-absent');
+            if (userStatus === 'tentative') btn.classList.add('active-tentative');
+          }
+        });
+      }
+
+      const prequalsByName = {};
+      prequalsData.forEach(d => {
+        const name = d.name;
+        if (!name) return;
+        if (!prequalsByName[name]) prequalsByName[name] = [];
+        prequalsByName[name].push({
+          docId: d.id,
+          day: d.day,
+          avgTime: d.avgTime || "X",
+          timestamp: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : new Date(0)
+        });
+      });
+
+      const thursdayData = [];
+      const fridayData = [];
+      const saturdayData = [];
+      const sundayData = [];
+
+      prequalsData.forEach(d => {
+        const name = d.name;
+        const avgTime = d.avgTime || "X";
+        const day = (d.day || "").toLowerCase();
+        const docId = d.id;
+        const item = { docId, name, avgTime };
+
+        if (day.includes("jeu")) thursdayData.push(item);
+        else if (day.includes("ven")) fridayData.push(item);
+        else if (day.includes("sam")) saturdayData.push(item);
+        else if (day.includes("dim")) sundayData.push(item);
+      });
+
+      const pqaData = [];
+      presentPilotsMap.forEach((uid, pilotName) => {
+        const sessions = prequalsByName[pilotName] || [];
+        const attempts = sessions.length;
+
+        if (attempts === 0) {
+          pqaData.push({
+            name: pilotName,
+            bestTime: "En attente (Pas de temps)",
+            sortVal: Infinity,
+            attempts: 0
+          });
+        } else {
+          sessions.sort((a, b) => a.timestamp - b.timestamp);
+          const validSessions = sessions.length >= 3 ? sessions.slice(0, 2) : sessions;
+
+          let bestTime = "X";
+          let bestMs = Infinity;
+
+          validSessions.forEach(s => {
+            const ms = timeToMs(s.avgTime);
+            if (ms < bestMs) {
+              bestMs = ms;
+              bestTime = s.avgTime;
+            }
+          });
+
+          pqaData.push({
+            name: pilotName,
+            bestTime: bestTime,
+            sortVal: bestMs,
+            attempts: attempts
+          });
+        }
+      });
+
+      pqaData.sort((a, b) => a.sortVal - b.sortVal);
+
+      const generalTbody = document.getElementById("pqaGeneralTableBody");
+      if (pqaData.length === 0) {
+        generalTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Aucun pilote présent</td></tr>`;
+      } else {
+        generalTbody.innerHTML = pqaData.map((p, idx) => `
+          <tr>
+            <td><strong>${idx + 1}</strong></td>
+            <td>${p.name}</td>
+            <td><span style="color: ${p.bestTime.includes('En attente') || p.bestTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${p.bestTime}</span></td>
+            <td>${p.attempts}</td>
+          </tr>
+        `).join('');
+      }
+
+      const fillDayTable = (tbodyId, thDelId, list) => {
+        const tb = document.getElementById(tbodyId);
+        const thDel = document.getElementById(thDelId);
+
+        if (isAdmin) {
+          if (thDel) thDel.style.display = "";
+        } else {
+          if (thDel) thDel.style.display = "none";
+        }
+
+        if (!list.length) {
+          tb.innerHTML = `<tr><td colspan="${isAdmin ? 3 : 2}" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
+        } else {
+          list.sort((a, b) => timeToMs(a.avgTime) - timeToMs(b.avgTime));
+          tb.innerHTML = list.map(item => `
+            <tr>
+              <td>${item.name}</td>
+              <td><span style="color: ${item.avgTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${item.avgTime}</span></td>
+              ${isAdmin ? `<td style="text-align: center;"><button onclick="window.deletePrequalSession('${nextRaceId}', '${item.docId}')" title="Supprimer" style="background: transparent; border: none; cursor: pointer; color: #f87171; font-size: 0.9rem;">❌</button></td>` : ''}
+            </tr>
+          `).join('');
+        }
+      };
+
+      fillDayTable("pqaThursdayBody", "thDelJeu", thursdayData);
+      fillDayTable("pqaFridayBody", "thDelVen", fridayData);
+      fillDayTable("pqaSaturdayBody", "thDelSam", saturdayData);
+      fillDayTable("pqaSundayBody", "thDelDim", sundayData);
     }
 
     function loadNextRacePresence() {
@@ -1330,6 +1585,8 @@
       document.getElementById("prequalStatsContainer").style.display = "block";
       if (isAdmin && adminPrequalPanel) {
         adminPrequalPanel.style.display = "block";
+      } else if (adminPrequalPanel) {
+        adminPrequalPanel.style.display = "none";
       }
 
       const parts = nextRace.title.split(" - ");
@@ -1370,172 +1627,25 @@
         </div>
       `;
 
-      onSnapshot(collection(db, `attendances_${nextRace.id}`), (attendanceSnap) => {
-        onSnapshot(collection(db, `prequals_${nextRace.id}`), (prequalSnap) => {
-          const presentPilotsMap = new Map();
-          const presentListNames = [];
-          const absentListNames = [];
-          const tentativeListNames = [];
-          let userStatus = null;
+      // Correction de la fuite de mémoire (memory leak) : on désabonne les anciens écouteurs
+      if (unsubAttend) { unsubAttend(); unsubAttend = null; }
+      if (unsubPrequal) { unsubPrequal(); unsubPrequal = null; }
+      
+      isAttendanceLoaded = false;
+      isPrequalLoaded = false;
+      attendancesData = [];
+      prequalsData = [];
 
-          attendanceSnap.forEach(docSnap => {
-            const data = docSnap.data();
-            if (currentUser && docSnap.id === currentUser.uid) {
-              userStatus = data.status;
-            }
-            if (data.status === "present") {
-              presentPilotsMap.set(data.userName, data.userId);
-              presentListNames.push(data.userName);
-            } else if (data.status === "absent") {
-              absentListNames.push(data.userName);
-            } else if (data.status === "tentative") {
-              tentativeListNames.push(data.userName);
-            }
-          });
+      unsubAttend = onSnapshot(collection(db, `attendances_${nextRace.id}`), (snap) => {
+        attendancesData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        isAttendanceLoaded = true;
+        if (isPrequalLoaded) renderPresenceUI(nextRace.id);
+      });
 
-          const pilotSelect = document.getElementById("adminPqPilot");
-          if (pilotSelect) {
-            const currentSelected = pilotSelect.value;
-            pilotSelect.innerHTML = `<option value="">-- Choisir un pilote --</option>`;
-            presentPilotsMap.forEach((uid, name) => {
-              pilotSelect.innerHTML += `<option value="${uid}_${name}">${name}</option>`;
-            });
-            pilotSelect.value = currentSelected;
-          }
-
-          document.getElementById(`count-present-${nextRace.id}`).textContent = `${presentListNames.length}/32`;
-          document.getElementById(`count-absent-${nextRace.id}`).textContent = absentListNames.length;
-          document.getElementById(`count-tentative-${nextRace.id}`).textContent = tentativeListNames.length;
-
-          document.getElementById(`list-present-${nextRace.id}`).innerHTML = presentListNames.length ? presentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-          document.getElementById(`list-absent-${nextRace.id}`).innerHTML = absentListNames.length ? absentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-          document.getElementById(`list-tentative-${nextRace.id}`).innerHTML = tentativeListNames.length ? tentativeListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-
-          const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
-          if (actionBox) {
-            actionBox.querySelectorAll('.btn-presence').forEach(btn => {
-              btn.className = "btn-presence";
-              if (userStatus && btn.getAttribute('data-status') === userStatus) {
-                if (userStatus === 'present') btn.classList.add('active-present');
-                if (userStatus === 'absent') btn.classList.add('active-absent');
-                if (userStatus === 'tentative') btn.classList.add('active-tentative');
-              }
-            });
-          }
-
-          const prequalsByName = {};
-          prequalSnap.forEach(docSnap => {
-            const d = docSnap.data();
-            const name = d.name;
-            if (!name) return;
-            if (!prequalsByName[name]) prequalsByName[name] = [];
-            
-            prequalsByName[name].push({
-              docId: docSnap.id,
-              day: d.day,
-              avgTime: d.avgTime || "X",
-              timestamp: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : new Date(0)
-            });
-          });
-
-          const thursdayData = [];
-          const fridayData = [];
-          const saturdayData = [];
-          const sundayData = [];
-
-          prequalSnap.forEach(docSnap => {
-            const d = docSnap.data();
-            const name = d.name;
-            const avgTime = d.avgTime || "X";
-            const day = (d.day || "").toLowerCase();
-            const docId = docSnap.id;
-            const item = { docId, name, avgTime };
-
-            if (day.includes("jeu")) thursdayData.push(item);
-            else if (day.includes("ven")) fridayData.push(item);
-            else if (day.includes("sam")) saturdayData.push(item);
-            else if (day.includes("dim")) sundayData.push(item);
-          });
-
-          const pqaData = [];
-          presentPilotsMap.forEach((uid, pilotName) => {
-            const sessions = prequalsByName[pilotName] || [];
-            const attempts = sessions.length;
-
-            if (attempts === 0) {
-              pqaData.push({
-                name: pilotName,
-                bestTime: "En attente (Pas de temps)",
-                sortVal: Infinity,
-                attempts: 0
-              });
-            } else {
-              sessions.sort((a, b) => a.timestamp - b.timestamp);
-              const validSessions = sessions.length >= 3 ? sessions.slice(0, 2) : sessions;
-
-              let bestTime = "X";
-              let bestMs = Infinity;
-
-              validSessions.forEach(s => {
-                const ms = timeToMs(s.avgTime);
-                if (ms < bestMs) {
-                  bestMs = ms;
-                  bestTime = s.avgTime;
-                }
-              });
-
-              pqaData.push({
-                name: pilotName,
-                bestTime: bestTime,
-                sortVal: bestMs,
-                attempts: attempts
-              });
-            }
-          });
-
-          pqaData.sort((a, b) => a.sortVal - b.sortVal);
-
-          const generalTbody = document.getElementById("pqaGeneralTableBody");
-          if (pqaData.length === 0) {
-            generalTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Aucun pilote présent</td></tr>`;
-          } else {
-            generalTbody.innerHTML = pqaData.map((p, idx) => `
-              <tr>
-                <td><strong>${idx + 1}</strong></td>
-                <td>${p.name}</td>
-                <td><span style="color: ${p.bestTime.includes('En attente') || p.bestTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${p.bestTime}</span></td>
-                <td>${p.attempts}</td>
-              </tr>
-            `).join('');
-          }
-
-          const fillDayTable = (tbodyId, thDelId, list) => {
-            const tb = document.getElementById(tbodyId);
-            const thDel = document.getElementById(thDelId);
-
-            if (isAdmin) {
-              if (thDel) thDel.style.display = "";
-            }
-
-            if (!list.length) {
-              tb.innerHTML = `<tr><td colspan="${isAdmin ? 3 : 2}" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
-            } else {
-              list.sort((a, b) => timeToMs(a.avgTime) - timeToMs(b.avgTime));
-              tb.innerHTML = list.map(item => `
-                <tr>
-                  <td>${item.name}</td>
-                  <td><span style="color: ${item.avgTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${item.avgTime}</span></td>
-                  ${isAdmin ? `<td style="text-align: center;"><button onclick="window.deletePrequalSession('${nextRace.id}', '${item.docId}')" title="Supprimer" style="background: transparent; border: none; cursor: pointer; color: #f87171; font-size: 0.9rem;">❌</button></td>` : ''}
-                </tr>
-              `).join('');
-            }
-          };
-
-          fillDayTable("pqaThursdayBody", "thDelJeu", thursdayData);
-          fillDayTable("pqaFridayBody", "thDelVen", fridayData);
-          fillDayTable("pqaSaturdayBody", "thDelSam", saturdayData);
-          fillDayTable("pqaSundayBody", "thDelDim", sundayData);
-        });
+      unsubPrequal = onSnapshot(collection(db, `prequals_${nextRace.id}`), (snap) => {
+        prequalsData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        isPrequalLoaded = true;
+        if (isAttendanceLoaded) renderPresenceUI(nextRace.id);
       });
 
       const submitBtn = document.getElementById("adminPqSubmitBtn");
