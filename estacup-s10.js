@@ -1741,15 +1741,15 @@ async function renderLiverySection() {
 let globeInitialized = false;
 
 const circuitsSaison10 = [
-  { round: "PROLOGUE", name: "Silverstone", country: "Royaume-Uni", flag: "gb", date: "15/09/2026", lat: 52.0786, lng: -1.0169, status: "confirm" },
-  { round: "Manche 1", name: "Portimão (Algarve)", country: "Portugal", flag: "pt", date: "29/09/2026", lat: 37.2270, lng: -8.6267, status: "confirm" },
+  { round: "PROLOGUE", name: "Silverstone", country: "Royaume-Uni", flag: "gb", date: "22/09/2026", lat: 52.0786, lng: -1.0169, status: "confirm" },
+  { round: "Manche 1", name: "Portimão (Algarve)", country: "Portugal", flag: "pt", date: "06/10/2026", lat: 37.2270, lng: -8.6267, status: "confirm" },
   { round: "Manche 2", name: "Brno", country: "République Tchèque", flag: "cz", date: "20/10/2026", lat: 49.2019, lng: 16.5456, status: "confirm" },
   { round: "Manche 3 (Vote)", name: "Road America", country: "USA", flag: "us", date: "24/11/2026", lat: 43.8003, lng: -87.9944, status: "vote" },
   { round: "Manche 3 (Vote)", name: "Virginia (VIR)", country: "USA", flag: "us", date: "24/11/2026", lat: 36.5658, lng: -79.2069, status: "vote" },
   { round: "Manche 4", name: "Fuji Speedway", country: "Japon", flag: "jp", date: "08/12/2026", lat: 35.3717, lng: 138.9261, status: "confirm" },
   { round: "Manche 5 (Vote)", name: "Magny-Cours", country: "France", flag: "fr", date: "19/01/2027", lat: 46.8622, lng: 3.1636, status: "vote" },
   { round: "Manche 5 (Vote)", name: "Dijon-Prenois", country: "France", flag: "fr", date: "19/01/2027", lat: 47.3625, lng: 4.8986, status: "vote" },
-  { round: "Manche 6", name: "Kyalami", country: "Afrique du Sud", flag: "za", date: "09/02/2027", lat: -25.9980, lng: 28.0700, status: "confirm" }
+  { round: "Manche 6", name: "Kyalami", country: "Afrique du Sud", flag: "za", date: "02/02/2027", lat: -25.9980, lng: 28.0700, status: "confirm" }
 ];
 
 function init3DGlobe() {
@@ -1833,7 +1833,7 @@ async function loadEstacupPilotStandings() {
       const data = d.data();
       pilots.set(data.uid || d.id, {
         uid: data.uid || d.id,
-        name: `${data.firstName}${data.lastName}`.trim(),
+        name: `${data.firstName} ${data.lastName}`.trim(),
         lastName: data.lastName || "",
         team: data.teamName || "Indépendant",
         number: data.raceNumber || "—",
