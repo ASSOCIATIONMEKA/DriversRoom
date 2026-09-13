@@ -41,13 +41,16 @@
       <h2>Interface administrateur S10</h2>
       <p>Bienvenue, <span id="adminName"></span></p>
 
-      <nav class="admin-menu" style="display:flex;gap:10px;margin-bottom:20px;">
+      <nav class="admin-menu" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
         <button data-section="results">Création Résultats</button>
         <button data-section="incidents">Gestion Incidents</button>
         <button data-section="courses">Liste des Courses</button>
         <button data-section="estacup">Gestion ESTACUP</button>
         <button data-section="votes">Votes</button>
         <button data-section="serveur">Statut Serveur</button>
+        
+        <!-- NOUVEAU BOUTON MODE TRAVAUX -->
+        <button id="btnToggleMaintenance" style="background: #f59e0b; color: #fff; border: 1px solid #f59e0b; font-weight: bold; margin-left: auto;">🚧 Mode Travaux : OFF</button>
       </nav>
 
       <section id="section-results" class="admin-section hidden">
@@ -190,7 +193,6 @@
         <div id="incidentHistory" style="margin-top:24px"></div>
       </section>
 
-      <!-- SEPARATION DES ARCHIVES ET DES COURSES S10 -->
       <section id="section-courses" class="admin-section hidden">
         <h3>Courses enregistrées</h3>
         <p class="muted-note" style="margin-bottom: 2rem;">Les courses sont triées automatiquement par saison en fonction de leur date d'enregistrement.</p>
@@ -317,7 +319,6 @@
         </div>
       </section>
 
-      <!-- SECTION CONTRÔLE SERVEUR LIVE -->
       <section id="section-serveur" class="admin-section hidden">
         <h3>Statut du Serveur (Live)</h3>
         <div class="course-box">
