@@ -34,28 +34,45 @@ const db = getFirestore(app);
 // 🛡️ CORRECTION DU BUG DE BOUCLE : Forcer la persistance locale
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-// 🗺️ Fonction utilitaire d'alias d'éléments
-const $ = (id) => document.getElementById(id);
+// 🗺️ Fonction utilitaire d'aiguillage
+function redirectUser(isAdmin) {
+  const redirectPage = localStorage.getItem("redirectAfterLogin");
+  
+  if (redirectPage) {
+    localStorage.removeItem("redirectAfterLogin");
+    window.location.replace(redirectPage);
+  } else {
+    if (isAdmin) {
+      window.location.replace("admin-s10.html");
+    } else {
+      window.location.replace("estacup-s10.html");
+    }
+  }
+}
 
+// Helpers UI
+const $ = (id) => document.getElementById(id);
 const loginSection = $("loginSection");
 const registerSection = $("registerSection");
-const btnShowRegister = $("btnShowRegister");
-const btnShowLogin = $("btnShowLogin");
+const btnShowRegister = $("showRegister");
+const btnShowLogin = $("showLogin");
 const formTitle = $("formTitle");
 
 const loginForm = $("loginForm");
 const registerForm = $("registerForm");
-const errorMsg = $("errorMsg");
-const successMsg = $("successMsg");
+const errorBox = $("error");
+const successBox = $("success");
 
-// Bascules entre Connexion / Inscription
+function setError(msg) { if(errorBox) errorBox.textContent = msg; }
+function setSuccess(msg) { if(successBox) successBox.textContent = msg; if(msg) setError(""); }
+
+// ================= GESTION DE L'AFFICHAGE =================
 if (btnShowRegister) {
   btnShowRegister.addEventListener("click", () => {
     loginSection.classList.add("hidden");
     registerSection.classList.remove("hidden");
-    formTitle.textContent = "Inscription";
-    setError("");
-    setSuccess("");
+    if(formTitle) formTitle.textContent = "Inscription";
+    setError(""); setSuccess("");
   });
 }
 
@@ -63,14 +80,10 @@ if (btnShowLogin) {
   btnShowLogin.addEventListener("click", () => {
     registerSection.classList.add("hidden");
     loginSection.classList.remove("hidden");
-    formTitle.textContent = "Connexion";
-    setError("");
-    setSuccess("");
+    if(formTitle) formTitle.textContent = "Connexion";
+    setError(""); setSuccess("");
   });
 }
-
-function setError(msg) { if(errorMsg) errorMsg.textContent = msg; }
-function setSuccess(msg) { if(successMsg) successMsg.textContent = msg; }
 
 // ================= CONNEXION =================
 if (loginForm) {
@@ -84,10 +97,11 @@ if (loginForm) {
     const btn = loginForm.querySelector("button[type='submit']");
     btn.disabled = true;
     btn.textContent = "Connexion...";
+    setError(""); setSuccess("");
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // La redirection est gérée par onAuthStateChanged
+      // La redirection est gérée plus bas par onAuthStateChanged
     } catch (err) {
       console.error(err);
       setError(normalizeAuthError(err));
@@ -101,50 +115,71 @@ if (loginForm) {
 if (registerForm) {
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const firstNameRaw = $("firstName").value;
-    const lastNameRaw = $("lastName").value;
+    const rawFirstName = $("firstName").value;
+    const rawLastName = $("lastName").value;
+    const dob = $("dob").value;
+    const role = $("registerRole").value;
     const email = $("registerEmail").value.trim();
     const password = $("registerPassword").value;
     const confirm = $("confirmPassword").value;
 
-    if (!firstNameRaw || !lastNameRaw || !email || !password || !confirm) {
+    if (!rawFirstName || !rawLastName || !email || !password || !confirm) {
       return setError("Veuillez remplir tous les champs.");
     }
     if (password !== confirm) {
       return setError("Les mots de passe ne correspondent pas.");
     }
 
-    const { firstName, lastName } = formatName(firstNameRaw, lastNameRaw);
-
+    const { firstName, lastName } = formatName(rawFirstName, rawLastName);
     const btn = registerForm.querySelector("button[type='submit']");
     btn.disabled = true;
     btn.textContent = "Création du compte...";
+    setError(""); setSuccess("");
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const firebaseUser = userCredential.user;
+      
+      localStorage.setItem("isLoggedIn", "true");
 
-      await setDoc(doc(db, "users", user.uid), {
-        firstName: firstName,
-        lastName: lastName,
-        email: email,
-        role: "visitor",
-        licenseClass: "Rookie",
-        irating: 0,
-        safetyRating: "N/A",
-        createdAt: new Date()
+      const allUsers = await getDocs(collection(db, "users"));
+      const existing = allUsers.docs.find(docu => {
+        const d = docu.data();
+        return d.firstName === firstName && d.lastName === lastName;
       });
 
-      setSuccess("Compte créé avec succès !");
-      setTimeout(() => {
-        window.location.replace("index.html");
-      }, 1500);
+      if (existing) {
+        await setDoc(doc(db, "authMap", firebaseUser.uid), { pilotUid: existing.id });
+        await setDoc(doc(db, "users", existing.id), { 
+          ...existing.data(), 
+          email, 
+          uid: existing.id,
+          role: role
+        });
+      } else {
+        await setDoc(doc(db, "users", firebaseUser.uid), {
+          uid: firebaseUser.uid,
+          email,
+          firstName,
+          lastName,
+          dob,
+          role: role,
+          licenseId: "PILOT-" + Math.random().toString(36).substring(2, 6).toUpperCase(),
+          eloRating: 1000,
+          licensePoints: 8,
+          raceCount: 0,
+          createdAt: new Date(),
+          admin: false
+        });
+      }
 
+      setSuccess("Compte créé avec succès !");
+      // La redirection est gérée plus bas
     } catch (err) {
       console.error(err);
       setError(normalizeAuthError(err));
       btn.disabled = false;
-      btn.textContent = "S'inscrire";
+      btn.textContent = "Valider l'inscription";
     }
   });
 }
@@ -155,11 +190,13 @@ const modalReset = $("forgotPasswordModal");
 const btnCancelReset = $("btnCancelReset");
 const btnConfirmReset = $("btnConfirmReset");
 const resetEmailInput = $("resetEmailInput");
+const resetMessage = $("resetMessage");
 
 if (forgotBtn && modalReset) {
   forgotBtn.addEventListener("click", () => {
     modalReset.classList.remove("hidden");
-    resetEmailInput.value = $("loginEmail").value;
+    resetEmailInput.value = $("loginEmail").value.trim();
+    if(resetMessage) resetMessage.textContent = "";
   });
 }
 if (btnCancelReset && modalReset) {
@@ -172,18 +209,30 @@ if (btnConfirmReset) {
   btnConfirmReset.addEventListener("click", async () => {
     const email = resetEmailInput.value.trim();
     if (!email) {
-      alert("Veuillez saisir une adresse email.");
+      if(resetMessage) {
+        resetMessage.style.color = "#f87171";
+        resetMessage.textContent = "Veuillez saisir une adresse email valide.";
+      }
       return;
     }
     btnConfirmReset.disabled = true;
     btnConfirmReset.textContent = "Envoi...";
     try {
       await sendPasswordResetEmail(auth, email);
-      alert("Un lien de réinitialisation a été envoyé à " + email);
-      modalReset.classList.add("hidden");
+      if(resetMessage) {
+        resetMessage.style.color = "#34d399";
+        resetMessage.textContent = "Lien envoyé ! Vérifiez votre boîte de réception.";
+      }
+      setTimeout(() => {
+        modalReset.classList.add("hidden");
+        btnConfirmReset.disabled = false;
+        btnConfirmReset.textContent = "Envoyer";
+      }, 4000);
     } catch (err) {
-      alert("Erreur : " + normalizeAuthError(err));
-    } finally {
+      if(resetMessage) {
+        resetMessage.style.color = "#f87171";
+        resetMessage.textContent = normalizeAuthError(err);
+      }
       btnConfirmReset.disabled = false;
       btnConfirmReset.textContent = "Envoyer";
     }
@@ -210,56 +259,48 @@ function formatName(firstName, lastName) {
 function normalizeAuthError(err) {
   const code = (err && err.code) ? String(err.code) : "";
   switch (code) {
-    case "auth/invalid-email":
-      return "Adresse email invalide.";
+    case "auth/invalid-email": return "Adresse email invalide.";
     case "auth/user-not-found":
-    case "auth/invalid-credential":
-      return "Email ou mot de passe incorrect.";
-    case "auth/wrong-password":
-      return "Mot de passe incorrect.";
-    case "auth/too-many-requests":
-      return "Trop de tentatives. Réessaie plus tard.";
-    case "auth/email-not-found":
-      return "Aucun compte avec cet email.";
-    case "auth/weak-password":
-      return "Le mot de passe doit faire au moins 6 caractères.";
-    case "auth/email-already-in-use":
-      return "Cet email est déjà utilisé.";
-    default:
-      return "Une erreur est survenue (" + code + ").";
+    case "auth/invalid-credential": return "Email ou mot de passe incorrect.";
+    case "auth/wrong-password": return "Mot de passe incorrect.";
+    case "auth/too-many-requests": return "Trop de tentatives. Réessaie plus tard.";
+    case "auth/email-not-found": return "Aucun compte avec cet email.";
+    case "auth/weak-password": return "Le mot de passe doit faire au moins 6 caractères.";
+    case "auth/email-already-in-use": return "Cet email est déjà utilisé.";
+    default: return "Une erreur est survenue (" + code + ").";
   }
 }
 
-// ================= GESTION DES REDIRECTIONS =================
+// ================= GESTION DES REDIRECTIONS AVEC DÉLAI ANTI-BOUCLE =================
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    console.log("Utilisateur connecté:", user.email);
+    localStorage.setItem("isLoggedIn", "true");
     try {
+      let isAdmin = false;
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const role = userData.role || "visitor";
-        
-        const currentPath = window.location.pathname;
-        if (currentPath.includes("login.html") || currentPath.endsWith("/")) {
-          
-          // ⏳ CORRECTION DU BUG DE BOUCLE : Délai de 800ms
-          // Cela permet à IndexedDB (la mémoire du tel) de terminer la sauvegarde avant de changer de page
-          setTimeout(() => {
-            if (role === "admin") {
-              window.location.replace("admin-s10.html");
-            } else if (role === "pilote") {
-               window.location.replace("estacup-s10.html");
-            } else {
-               window.location.replace("index.html");
-            }
-          }, 800);
+        isAdmin = userData.admin === true; // Bonne vérification Admin
+      } else {
+        // Au cas où authMap
+        const mapDoc = await getDoc(doc(db, "authMap", user.uid));
+        if (mapDoc.exists()) {
+          const mappedDoc = await getDoc(doc(db, "users", mapDoc.data().pilotUid));
+          if(mappedDoc.exists()) isAdmin = mappedDoc.data().admin === true;
         }
       }
+      
+      const currentPath = window.location.pathname;
+      if (currentPath.includes("login.html") || currentPath.endsWith("/")) {
+        // ⏳ CORRECTION DU BUG DE BOUCLE : Délai de 800ms
+        setTimeout(() => {
+          redirectUser(isAdmin);
+        }, 800);
+      }
     } catch(err) {
-      console.error("Erreur récupération rôle:", err);
+      console.error("Erreur récupération données:", err);
     }
   } else {
-      console.log("Aucun utilisateur connecté.");
+    localStorage.removeItem("isLoggedIn");
   }
 });
