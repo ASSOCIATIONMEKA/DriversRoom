@@ -311,31 +311,45 @@ async function loadReglement() {
   }
 }
 
-/* ======================== AUTHENTIFICATION ======================== */
+/* ======================== AUTH & INIT ======================== */
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { localStorage.setItem("redirectAfterLogin", "estacup-s10.html"); window.location.href = "login.html"; return; }
-  try {
-    let userSnap = await getDoc(doc(db, "users", user.uid));
-    if (!userSnap.exists()) {
-      const map = await getDoc(doc(db, "authMap", user.uid));
-      if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
+  if (user) {
+    currentUser = user;
+    try {
+      const docSnap = await getDoc(doc(db, "users", user.uid));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        currentUserName = `${data.firstName || ""} ${data.lastName || ""}`.trim() || user.email;
+        isAdmin = data.role === "admin";
+        
+        // ✅ VÉRIFICATION: SEULS LES ADMINS ET PILOTES ONT ACCÈS
+        if (data.role !== "admin" && data.role !== "pilote") {
+          showToast("⛔ Accès refusé. Vous devez être Pilote ou Admin.", "error");
+          setTimeout(() => {
+            window.location.replace("index.html");
+          }, 2000);
+          return;
+        }
+
+        setupAdminControls();
+        loadCarStats();
+        loadDriverLineup();
+        loadRaceHistory(); // Historique des courses depuis le Firestore
+        loadChampionship();
+      } else {
+        showToast("⚠️ Profil introuvable.", "error");
+      }
+    } catch (err) {
+      console.error("Erreur récupération données utilisateur:", err);
     }
-    if (!userSnap.exists()) { window.location.href = "login.html"; return; }
-
-    const data = userSnap.data(); currentUid = userSnap.id; lastUserData = data;
-
-    $("fullName").textContent      = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || "—";
-    $("licenseId").textContent     = data.licenseId || data.licenceId || "-";
-    $("licenseClass").textContent  = data.licenseClass || "Rookie";
-    $("dob").textContent           = formatDateFR(firstDefined(data.dob, data.birthDate, data.birthday, data.dateNaissance, data.naissance)) || "Non renseignée";
-    $("steamIdLine").textContent   = data.steamID64 || data.steamId || "—";
-
-    setupNavigation(data.admin === true);
-    await ensureSignupCache();
-    await loadPilotStats(currentUid);
-    await loadAdvancedMRatingAndSafety(currentUid, data.eloRating, data.licensePoints);
-    await loadMyIncidents(currentUid);
-  } catch (err) { console.error("Erreur sécurité S10:", err); }
+  } else {
+    // 🚨 CORRECTION DU BUG DE BOUCLE : Délai de vérification avant de renvoyer
+    setTimeout(() => {
+      if (!auth.currentUser) {
+        window.location.replace("login.html"); 
+      }
+    }, 1000);
+  }
 });
 
 /* === Parse des temps === */
