@@ -311,44 +311,53 @@ async function loadReglement() {
   }
 }
 
-/* ======================== AUTH & INIT ======================== */
+/* ======================== AUTHENTIFICATION ======================== */
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    try {
-      const docSnap = await getDoc(doc(db, "users", user.uid));
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        currentUserName = `${data.firstName || ""} ${data.lastName || ""}`.trim() || user.email;
-        isAdmin = data.role === "admin";
-        
-        // ✅ VÉRIFICATION: SEULS LES ADMINS ET PILOTES ONT ACCÈS
-        if (data.role !== "admin" && data.role !== "pilote") {
-          showToast("⛔ Accès refusé. Vous devez être Pilote ou Admin.", "error");
-          setTimeout(() => {
-            window.location.replace("index.html");
-          }, 2000);
-          return;
-        }
-
-        setupAdminControls();
-        loadCarStats();
-        loadDriverLineup();
-        loadRaceHistory(); // Historique des courses depuis le Firestore
-        loadChampionship();
-      } else {
-        showToast("⚠️ Profil introuvable.", "error");
-      }
-    } catch (err) {
-      console.error("Erreur récupération données utilisateur:", err);
-    }
-  } else {
-    // 🚨 CORRECTION DU BUG DE BOUCLE : Délai de vérification avant de renvoyer
+  if (!user) { 
+    // CORRECTION BOUCLE: Délai de sécurité pour laisser IndexedDB se charger 
     setTimeout(() => {
       if (!auth.currentUser) {
+        localStorage.setItem("redirectAfterLogin", "estacup-s10.html"); 
         window.location.replace("login.html"); 
       }
     }, 1000);
+    return; 
+  }
+  
+  try {
+    let userSnap = await getDoc(doc(db, "users", user.uid));
+    if (!userSnap.exists()) {
+      const map = await getDoc(doc(db, "authMap", user.uid));
+      if (map.exists()) userSnap = await getDoc(doc(db, "users", map.data().pilotUid));
+    }
+    
+    if (!userSnap.exists()) { 
+      window.location.replace("login.html"); 
+      return; 
+    }
+
+    const data = userSnap.data(); 
+    currentUid = userSnap.id; 
+    lastUserData = data;
+
+    // ✅ VRAIE VÉRIFICATION ADMIN SÉCURISÉE
+    const isAdmin = data.admin === true;
+
+    if ($("fullName")) $("fullName").textContent = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || "—";
+    if ($("licenseId")) $("licenseId").textContent = data.licenseId || data.licenceId || "-";
+    if ($("licenseClass")) $("licenseClass").textContent = data.licenseClass || "Rookie";
+    if ($("dob")) $("dob").textContent = formatDateFR(firstDefined(data.dob, data.birthDate, data.birthday, data.dateNaissance, data.naissance)) || "Non renseignée";
+    if ($("steamIdLine")) $("steamIdLine").textContent = data.steamID64 || data.steamId || "—";
+
+    // ✅ ON RESTAURE LES APPELS DOM QUI FONCTIONNENT VRAIMENT SUR TA PAGE
+    setupNavigation(isAdmin);
+    await ensureSignupCache();
+    await loadPilotStats(currentUid);
+    await loadAdvancedMRatingAndSafety(currentUid, data.eloRating, data.licensePoints);
+    await loadMyIncidents(currentUid);
+    
+  } catch (err) { 
+    console.error("Erreur sécurité S10:", err); 
   }
 });
 
