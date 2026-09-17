@@ -435,3 +435,16 @@ ul li:hover::before{transform:scaleY(1)}
 .btn-cancel { background: transparent; border: 1px solid var(--border-secondary); color: var(--text-secondary); }
 .btn-cancel:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: var(--text-muted); }
 .btn-ok { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); border: none; }
+
+/* =========================================
+   EN-TÊTES DE TABLEAUX FIXES (STICKY)
+========================================= */
+.table-standings th, .reglement-table th, .race-table th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(51, 65, 85, 0.95);
+  backdrop-filter: blur(5px);
+  /* Ajoute une petite bordure en bas pour bien délimiter quand on scrolle */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
