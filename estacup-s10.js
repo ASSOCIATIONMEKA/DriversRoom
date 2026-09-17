@@ -280,6 +280,7 @@ function showChampionshipSub(subKey) {
   if (subKey === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
   if (subKey === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
   if (subKey === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
+  if (typeof renderAllBadges === "function") renderAllBadges();
 }
 
 /* ======================== CHARGEMENT DYNAMIQUE DU RÈGLEMENT (AVEC MARKDOWN) ======================== */
