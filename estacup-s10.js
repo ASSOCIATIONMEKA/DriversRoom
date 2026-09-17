@@ -936,6 +936,47 @@ window.loadMyTeamSection = loadMyTeamSection;
 window.refreshTeamDashboard = refreshTeamDashboard;
 
 /* ======================== FORMULAIRE D'INSCRIPTION ======================== */
+function setupMekaQuestionnaire(userData) {
+  const select = $("mekaPaid"); 
+  const nextStep = $("mekaNextStep"); 
+  const formContainer = $("estacupFormContainer");
+  
+  if (!select) return;
+
+  const docRef = doc(db, "estacup_s10_signups", currentUid);
+  getDoc(docRef).then((docSnap) => {
+    const hasSignedUp = docSnap.exists();
+    const parentQuestionBlock = select.closest("div") || select.parentElement.parentElement;
+
+    if (hasSignedUp) {
+      if (parentQuestionBlock) parentQuestionBlock.style.display = "none";
+      if (formContainer) formContainer.classList.remove("hidden");
+      loadEstacupForm(userData);
+    } else {
+      if (parentQuestionBlock) parentQuestionBlock.style.display = "block";
+      nextStep.innerHTML = ""; 
+      if (formContainer) { 
+        formContainer.classList.add("hidden"); 
+        formContainer.innerHTML = ""; 
+      }
+
+      select.onchange = () => {
+        nextStep.innerHTML = ""; 
+        if (formContainer) { 
+          formContainer.classList.add("hidden"); 
+          formContainer.innerHTML = ""; 
+        }
+        if (select.value === "yes") {
+          if (formContainer) formContainer.classList.remove("hidden"); 
+          loadEstacupForm(userData);
+        } else if (select.value === "no") {
+          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
+        }
+      };
+    }
+  });
+}
+
 async function loadEstacupForm(userData) {
   const container = $("estacupFormContainer");
   if (!container) return;
@@ -1116,7 +1157,7 @@ async function loadEstacupForm(userData) {
       return;
     }
 
-    // --- LE RESTE DE LA FONCTION RESTE IDENTIQUE (AFFICHAGE DE L'INSCRIPTION VALIDÉE) ---
+    // --- AFFICHAGE DE L'INSCRIPTION VALIDÉE ---
     const data = docSnap.data();
     const isValidated = data.isValidated === true;
     
