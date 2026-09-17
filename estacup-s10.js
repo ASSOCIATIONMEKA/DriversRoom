@@ -936,47 +936,6 @@ window.loadMyTeamSection = loadMyTeamSection;
 window.refreshTeamDashboard = refreshTeamDashboard;
 
 /* ======================== FORMULAIRE D'INSCRIPTION ======================== */
-function setupMekaQuestionnaire(userData) {
-  const select = $("mekaPaid"); 
-  const nextStep = $("mekaNextStep"); 
-  const formContainer = $("estacupFormContainer");
-  
-  if (!select) return;
-
-  const docRef = doc(db, "estacup_s10_signups", currentUid);
-  getDoc(docRef).then((docSnap) => {
-    const hasSignedUp = docSnap.exists();
-    const parentQuestionBlock = select.closest("div") || select.parentElement.parentElement;
-
-    if (hasSignedUp) {
-      if (parentQuestionBlock) parentQuestionBlock.style.display = "none";
-      if (formContainer) formContainer.classList.remove("hidden");
-      loadEstacupForm(userData);
-    } else {
-      if (parentQuestionBlock) parentQuestionBlock.style.display = "block";
-      nextStep.innerHTML = ""; 
-      if (formContainer) { 
-        formContainer.classList.add("hidden"); 
-        formContainer.innerHTML = ""; 
-      }
-
-      select.onchange = () => {
-        nextStep.innerHTML = ""; 
-        if (formContainer) { 
-          formContainer.classList.add("hidden"); 
-          formContainer.innerHTML = ""; 
-        }
-        if (select.value === "yes") {
-          if (formContainer) formContainer.classList.remove("hidden"); 
-          loadEstacupForm(userData);
-        } else if (select.value === "no") {
-          nextStep.innerHTML = `<p style="margin-top:10px;">Vous devez choisir une option pour participer à l’ESTACUP :<br><br><a href="https://www.helloasso.com/associations/meka/adhesions/inscription-meka-2026-2027-1" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;margin-bottom:6px;">👉 Payer la cotisation MEKA (l’inscription ESTACUP sera gratuite)</a><a href="https://www.helloasso.com/associations/meka/evenements/inscription-estacup-saison-10" target="_blank" style="color:#38bdf8;text-decoration:underline;display:block;">👉 Payer 5 € pour participer uniquement à l’ESTACUP</a></p>`;
-        }
-      };
-    }
-  });
-}
-
 async function loadEstacupForm(userData) {
   const container = $("estacupFormContainer");
   if (!container) return;
@@ -997,17 +956,24 @@ async function loadEstacupForm(userData) {
       takenNumbers.sort((a, b) => a - b);
       const takenStr = takenNumbers.length > 0 ? takenNumbers.join(", ") : "Aucun";
 
+      // Comptage des équipes pour le menu déroulant
       const teamCounts = {};
       signupCache.forEach((data) => {
         const tName = data.teamName?.trim();
-        if (tName) teamCounts[tName] = (teamCounts[tName] || 0) + 1;
+        // On exclut "Indépendant" du comptage
+        if (tName && tName.toLowerCase() !== "indépendant" && tName.toLowerCase() !== "sans équipe") {
+          teamCounts[tName] = (teamCounts[tName] || 0) + 1;
+        }
       });
 
-      let datalistOptions = "";
-      for (const [t, count] of Object.entries(teamCounts)) {
-        if (count < 3) datalistOptions += `<option value="${escapeHtml(t)}">`;
+      // Construction des options du menu déroulant
+      let selectOptions = `<option value="" selected>🐺 Indépendant (Sans équipe)</option>`;
+      for (const [t, count] of Object.entries(teamCounts).sort()) {
+        if (count < 3) {
+          selectOptions += `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${count}/3 pilotes)</option>`;
+        }
       }
-      const datalistHtml = `<datalist id="teamSuggestions">${datalistOptions}</datalist>`;
+      selectOptions += `<option value="__NEW__">➕ Créer une nouvelle équipe...</option>`;
 
       container.innerHTML = `
         <div class="course-box" style="margin-top: 20px;">
@@ -1026,9 +992,12 @@ async function loadEstacupForm(userData) {
             <option value="paye_5e">J'ai payé les 5€ d'inscription</option>
           </select>
 
-          <label for="regTeam">Nom de l'équipe (Laissez vide si vous roulez en indépendant) :</label>
-          <input type="text" id="regTeam" list="teamSuggestions" placeholder="Ex: MEKA eSport">
-          ${datalistHtml}
+          <!-- NOUVEAU SYSTÈME DE SÉLECTION D'ÉQUIPE -->
+          <label for="regTeamSelect">Choix de l'équipe :</label>
+          <select id="regTeamSelect" style="margin-bottom: 10px;">
+            ${selectOptions}
+          </select>
+          <input type="text" id="regTeam" placeholder="Nom de votre nouvelle équipe" style="display: none; margin-bottom: 1.5rem;">
 
           <label for="regNumber">Numéro de course souhaité (Ex: 42) :</label>
           <input type="number" id="regNumber" placeholder="Entre 2 et 999" min="2" max="999" required>
@@ -1051,11 +1020,34 @@ async function loadEstacupForm(userData) {
         </div>
       `;
 
+      // Gestion de l'affichage du champ "Nouvelle équipe"
+      $("regTeamSelect").addEventListener("change", (e) => {
+        if (e.target.value === "__NEW__") {
+          $("regTeam").style.display = "block";
+          $("regTeam").focus();
+        } else {
+          $("regTeam").style.display = "none";
+          $("regTeam").value = "";
+        }
+      });
+
       $("btnSubmitSignup").onclick = async () => {
         const fName = $("regFirstName").value.trim();
         const lName = $("regLastName").value.trim();
         const status = $("regStatus").value;
-        const team = $("regTeam").value.trim();
+        
+        // Récupération intelligente du nom d'équipe
+        let team = $("regTeamSelect").value;
+        if (team === "__NEW__") {
+          team = $("regTeam").value.trim();
+          if (!team) {
+            if (window.showToast) window.showToast("⚠️ Veuillez saisir le nom de votre nouvelle équipe.", "warning");
+            return;
+          }
+        } else {
+          team = team.trim();
+        }
+
         const num = parseInt($("regNumber").value, 10);
         const steam = $("regSteam").value.trim();
         const liveryChoice = $("regLiveryChoice").value;
@@ -1124,6 +1116,7 @@ async function loadEstacupForm(userData) {
       return;
     }
 
+    // --- LE RESTE DE LA FONCTION RESTE IDENTIQUE (AFFICHAGE DE L'INSCRIPTION VALIDÉE) ---
     const data = docSnap.data();
     const isValidated = data.isValidated === true;
     
