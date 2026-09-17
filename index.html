@@ -418,13 +418,41 @@
       <!-- BANNIÈRE COMPTE À REBOURS -->
       <div class="countdown-banner">
         <div class="countdown-header">
-          <span class="pulse-dot"></span> Prochaine Manche : Prologue (Silverstone)
+          <span class="pulse-dot"></span> Prochaine Manche : <span id="cd-race-name">Recherche en cours...</span>
         </div>
         <div class="countdown-timer" id="silverstone-countdown-container">
           <div class="time-box">
             <span class="time-val" id="cd-days">--</span>
             <span class="time-label">Jours</span>
           </div>
+          <!-- BLOC DYNAMIQUE PRÉSENCE COURSE (Géré par JS) -->
+      <div id="next-race-registration-block" class="course-box" style="display: none; border-color: #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(15, 23, 42, 0.8)); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15); margin-bottom: 2rem;">
+        <h2 style="color: #10b981; border-bottom: 2px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.5rem;">🟢</span> Inscriptions Ouvertes : <span id="nr-title">...</span>
+        </h2>
+        
+        <p style="font-size: 1.1rem; color: #f8fafc; font-weight: 600;">La billetterie pour la prochaine bataille est ouverte ! Ne tardez pas à confirmer votre participation pour sécuriser votre monoplace sur la grille de départ.</p>
+        
+        <div style="background: rgba(2, 6, 23, 0.5); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 1.5rem 0;">
+          <ul style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; color: #cbd5e1;">
+            <li>📍 <strong>Circuit :</strong> <span id="nr-track" style="color: #fff;">...</span></li>
+            <li>🏎️ <strong>Véhicule :</strong> <span style="color: #fff;">FIA F3 (Gén. 2026)</span></li>
+            <li>📅 <strong>Date :</strong> <span id="nr-date" style="color: #fff;">...</span></li>
+            <li>⏱️ <strong>Briefing :</strong> <span id="nr-time" style="color: #fff;">...</span></li>
+            <li style="grid-column: 1 / -1; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+              👥 <strong>Pilotes confirmés :</strong> <span id="nr-count" style="color: #34d399; font-weight: bold; font-size: 1.2rem;">0</span> <span style="color: #94a3b8;">/ 32 places en Split 1</span>
+            </li>
+          </ul>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.5rem;">
+          <strong>Où s'inscrire ?</strong> Connectez-vous, ouvrez votre <strong>Driver's Room</strong>, puis rendez-vous dans l'onglet <strong>Le Championnat > Administratif > Présences Courses</strong>.
+        </p>
+
+        <div style="text-align: center;">
+          <a href="estacup-s10.html" class="hero-btn" style="background: linear-gradient(135deg, #10b981, #059669); padding: 0.8rem 2rem;">Confirmer ma présence</a>
+        </div>
+      </div>
           <span class="time-sep">:</span>
           <div class="time-box">
             <span class="time-val" id="cd-hours">--</span>
