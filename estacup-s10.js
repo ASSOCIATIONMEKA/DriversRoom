@@ -1922,7 +1922,11 @@ function listenServerStatus() {
         box.style.borderColor = "#34d399";
         box.style.background = "rgba(16, 185, 129, 0.05)";
         title.innerHTML = `Statut du Serveur : <span style="color: #34d399;">🟢 OUVERT</span>`;
-        pwd.textContent = data.password || "Aucun";
+        
+        // NOUVEAU CODE : Bouton copier
+        const pass = data.password || "Aucun";
+        pwd.innerHTML = `<span>${pass}</span> <span style="cursor:pointer; font-size:1.1rem; margin-left:8px;" title="Copier le mot de passe" onclick="navigator.clipboard.writeText('${pass}').then(()=>window.showToast('✅ Mot de passe copié !', 'success'))">📋</span>`;
+        
         pwd.style.color = "#34d399";
         
         btn.disabled = false;
