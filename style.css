@@ -577,3 +577,23 @@ button.btn-notify-orange,
 .password-toggle-icon:hover {
   opacity: 1;
 }
+
+/* =========================================
+   AFFINAGE DU BOUTON "VUE ADMIN" (BAS GAUCHE)
+========================================= */
+.admin-toggle-container, 
+#adminToggleContainer, 
+.floating-admin-switch,
+div:has(> #adminViewToggle),
+.admin-view-floating {
+  padding: 6px 14px !important;
+  min-height: unset !important;
+  height: auto !important;
+  border-radius: 30px !important;
+}
+
+/* Ajustement spécifique de l'élément de switch/bouton bas gauche */
+#adminViewToggle {
+  transform: scale(0.85); /* Réduit légèrement la taille globale de l'interrupteur s'il est trop gros */
+  margin: 0 !important;
+}
