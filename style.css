@@ -25,7 +25,9 @@
 */
 html {
   min-height: 100vh;
-  background-color: #0A0E1A; /* Couleur de fond de sécurité */
+  background-color: #0A0E1A;
+  max-width: 100%;
+  overflow-x: hidden; /* Force l'iPad à bloquer le défilement horizontal */
 }
 
 /* Calque 1 : Le diaporama en arrière-plan fixe optimisé */
