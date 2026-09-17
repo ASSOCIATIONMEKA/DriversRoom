@@ -1951,6 +1951,12 @@ function listenServerStatus() {
 document.addEventListener("DOMContentLoaded", listenServerStatus);
 
 /* ======================== CLASSEMENT PILOTES ======================== */
+window.activeRankTab = window.activeRankTab || "general";
+window.switchRankTab = function(tab) {
+  window.activeRankTab = tab;
+  if(typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
+};
+
 async function loadEstacupPilotStandings() {
   const container = $("estacupPilotStandings");
   if (!container) return;
@@ -1959,17 +1965,34 @@ async function loadEstacupPilotStandings() {
   const useJoker = $("jokerTogglePilots")?.checked || false;
 
   try {
-    // 1. Récupérer les pilotes validés
-    const signupsSnap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
+    // 1. Récupérer les pilotes validés ET leurs licences (via la collection users)
+    const [signupsSnap, usersSnap] = await Promise.all([
+      getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true))),
+      getDocs(collection(db, "users"))
+    ]);
+
+    const usersMap = new Map();
+    usersSnap.forEach(u => usersMap.set(u.id, u.data()));
+
     const pilots = new Map();
     signupsSnap.forEach(d => {
       const data = d.data();
-      pilots.set(data.uid || d.id, {
-        uid: data.uid || d.id,
+      const uid = data.uid || d.id;
+      const uData = usersMap.get(uid) || {};
+      
+      const licence = (uData.licenseClass || uData.licenceClass || uData.license || "Rookie").trim();
+      let licColor = "#10b981"; // Rookie
+      if (licence.toLowerCase() === "pro") licColor = "#ef4444"; 
+      if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; 
+
+      pilots.set(uid, {
+        uid: uid,
         name: `${data.firstName} ${data.lastName}`.trim(),
         lastName: data.lastName || "",
         team: data.teamName || "Indépendant",
         number: data.raceNumber || "—",
+        licence: licence,
+        licColor: licColor,
         scores: {}, 
         totalPoints: 0,
         droppedRound: null
@@ -2027,7 +2050,6 @@ async function loadEstacupPilotStandings() {
         const pts = p.scores[rnd] || 0;
         total += pts;
         
-        // La course joker s'applique uniquement sur les manches jouées
         if (roundsSet.has(rnd)) {
           if (pts < minScore) {
             minScore = pts;
@@ -2043,72 +2065,99 @@ async function loadEstacupPilotStandings() {
       p.totalPoints = total;
     });
 
-    // 6. Tri
+    // 6. Tri et répartition des listes
     if (!hasAnyRaces) {
       pilotList.sort((a, b) => a.lastName.localeCompare(b.lastName));
     } else {
       pilotList.sort((a, b) => b.totalPoints - a.totalPoints || a.lastName.localeCompare(b.lastName));
     }
 
-    // 7. Génération de l'interface
-    let html = `
-      <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); margin-top: 1rem;">
-        <table class="table-standings" style="width: 100%; min-width: 800px; margin: 0; border: none;">
-          <thead>
-            <tr>
-              <th style="width: 50px;">Pos</th>
-              <th>Pilote</th>
-              <th>Équipe</th>
-              <th style="text-align: center;">N°</th>
-    `;
-    
-    standardRounds.forEach(rnd => {
-      let shortRnd = rnd.replace("Manche ", "M");
-      html += `<th style="text-align: center; width: 60px;">${escapeHtml(shortRnd)}</th>`;
-    });
+    const listGeneral = pilotList;
+    const listChallenger = pilotList.filter(p => p.licence.toLowerCase() === "challenger");
+    const listRookie = pilotList.filter(p => p.licence.toLowerCase() === "rookie");
 
-    html += `
-              <th style="text-align: right; width: 80px; color: #38bdf8; font-size: 1.05rem;">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (pilotList.length === 0) {
-      html += `<tr><td colspan="${4 + standardRounds.length + 1}" style="text-align:center; padding: 2rem; color: var(--text-muted);">Aucun pilote validé pour le moment.</td></tr>`;
-    } else {
-      pilotList.forEach((p, idx) => {
-        const pos = hasAnyRaces ? (idx + 1) : "-";
-        html += `
-          <tr style="transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-            <td style="font-size: 1.1rem; color: var(--text-primary);"><strong>${pos}</strong></td>
-            <td style="font-size: 1.05rem; font-weight: 700;">${escapeHtml(p.name)}</td>
-            <td style="color: var(--text-secondary); font-size: 0.9rem;">${escapeHtml(p.team)}</td>
-            <td style="text-align: center; font-weight: bold; color: var(--accent-primary);">#${p.number}</td>
-        `;
-
-        standardRounds.forEach(rnd => {
-          const pts = p.scores[rnd] || 0;
-          let displayPts = roundsSet.has(rnd) ? pts : "-";
-          
-          if (useJoker && p.droppedRound === rnd) {
-            displayPts = `<span style="color: #f87171; text-decoration: line-through; font-weight: bold;" title="Résultat Joker (Retiré)">${pts}</span>`;
-          } else if (roundsSet.has(rnd)) {
-            displayPts = `<span style="color: #cbd5e1; font-weight: 500;">${pts}</span>`;
-          }
-
-          html += `<td style="text-align: center;">${displayPts}</td>`;
-        });
-
-        html += `
-            <td style="text-align: right; font-weight: 900; font-size: 1.2rem; color: #38bdf8;">${p.totalPoints}</td>
-          </tr>
-        `;
+    // 7. Fonction de génération du tableau HTML
+    const generateTable = (list) => {
+      let html = `
+        <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); margin-top: 1rem;">
+          <table class="table-standings" style="width: 100%; min-width: 800px; margin: 0; border: none;">
+            <thead>
+              <tr>
+                <th style="width: 50px;">Pos</th>
+                <th>Pilote</th>
+                <th>Licence</th>
+                <th>Équipe</th>
+                <th style="text-align: center;">N°</th>
+      `;
+      
+      standardRounds.forEach(rnd => {
+        let shortRnd = rnd.replace("Manche ", "M");
+        html += `<th style="text-align: center; width: 60px;">${escapeHtml(shortRnd)}</th>`;
       });
-    }
 
-    html += `</tbody></table></div>`;
-    container.innerHTML = html;
+      html += `
+                <th style="text-align: right; width: 80px; color: #38bdf8; font-size: 1.05rem;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      if (list.length === 0) {
+        html += `<tr><td colspan="${5 + standardRounds.length + 1}" style="text-align:center; padding: 2rem; color: var(--text-muted);">Aucun pilote dans cette catégorie.</td></tr>`;
+      } else {
+        list.forEach((p, idx) => {
+          const pos = hasAnyRaces ? (idx + 1) : "-";
+          html += `
+            <tr style="transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+              <td style="font-size: 1.1rem; color: var(--text-primary);"><strong>${pos}</strong></td>
+              <td style="font-size: 1.05rem; font-weight: 700;">${escapeHtml(p.name)}</td>
+              <td><span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; border: 1px solid ${p.licColor}; color: ${p.licColor}; text-transform: uppercase; font-weight: bold;">${escapeHtml(p.licence)}</span></td>
+              <td style="color: var(--text-secondary); font-size: 0.9rem;">${escapeHtml(p.team)}</td>
+              <td style="text-align: center; font-weight: bold; color: var(--accent-primary);">#${p.number}</td>
+          `;
+
+          standardRounds.forEach(rnd => {
+            const pts = p.scores[rnd] || 0;
+            let displayPts = roundsSet.has(rnd) ? pts : "-";
+            
+            if (useJoker && p.droppedRound === rnd) {
+              displayPts = `<span style="color: #f87171; text-decoration: line-through; font-weight: bold;" title="Résultat Joker (Retiré)">${pts}</span>`;
+            } else if (roundsSet.has(rnd)) {
+              displayPts = `<span style="color: #cbd5e1; font-weight: 500;">${pts}</span>`;
+            }
+
+            html += `<td style="text-align: center;">${displayPts}</td>`;
+          });
+
+          html += `
+              <td style="text-align: right; font-weight: 900; font-size: 1.2rem; color: #38bdf8;">${p.totalPoints}</td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `</tbody></table></div>`;
+      return html;
+    };
+
+    // 8. Rendu de l'interface (Onglets + Tableau sélectionné)
+    const activeTab = window.activeRankTab;
+
+    let finalHtml = `
+      <div style="display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <button onclick="window.switchRankTab('general')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'general' ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'general' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'general' ? '#38bdf8' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Global</button>
+        
+        <button onclick="window.switchRankTab('challenger')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'challenger' ? '#f59e0b' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'challenger' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'challenger' ? '#f59e0b' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Catégorie Challenger</button>
+        
+        <button onclick="window.switchRankTab('rookie')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'rookie' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'rookie' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'rookie' ? '#10b981' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Catégorie Rookie</button>
+      </div>
+    `;
+
+    if (activeTab === "general") finalHtml += generateTable(listGeneral);
+    if (activeTab === "challenger") finalHtml += generateTable(listChallenger);
+    if (activeTab === "rookie") finalHtml += generateTable(listRookie);
+
+    container.innerHTML = finalHtml;
 
   } catch (err) {
     console.error("Erreur loadEstacupPilotStandings:", err);
