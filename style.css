@@ -135,6 +135,55 @@ textarea{min-height:8rem;resize:vertical;font-family:inherit}
   padding: 0 !important; 
 }
 
+/* Outil de comparaison (Checkboxes stylisées) */
+.compare-pilot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 transparent;
+}
+.compare-pilot-list::-webkit-scrollbar { width: 6px; }
+.compare-pilot-list::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
+
+.compare-pilot-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #cbd5e1;
+  border: 1px solid transparent;
+  margin: 0;
+}
+.compare-pilot-option:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.compare-pilot-option input[type="checkbox"] {
+  width: 18px !important; 
+  height: 18px !important; 
+  margin: 0 !important; 
+  padding: 0 !important;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+/* Stylise toute la ligne quand la case est cochée */
+.compare-pilot-option:has(input:checked) {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), transparent);
+  border-left: 3px solid #38bdf8;
+  color: #fff;
+  font-weight: 600;
+}
+
 /* Buttons */
 button{
   position:relative;background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary));
