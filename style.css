@@ -254,14 +254,34 @@ ul li:hover::before{transform:scaleY(1)}
 .nav-auth-zone { display: inline-block; margin-left: 1rem; }
 
 /* =========================================
-   ADAPTATION MOBILE & TABLETTE
+   ADAPTATION TABLETTES (iPad paysage : 901px à 1250px)
+========================================= */
+@media (max-width: 1250px) and (min-width: 901px) {
+  .top-navbar { padding: 0.8rem 1rem; }
+  .nav-logo { height: 30px; }
+  
+  /* On réduit les espaces et la taille du texte */
+  .nav-links { gap: 0.8rem; margin-right: 0; }
+  .nav-links a { font-size: 0.8rem; letter-spacing: -0.2px; }
+  
+  /* On compacte les logos des réseaux sociaux */
+  .nav-socials { padding-left: 0.8rem; gap: 0.8rem; margin-left: 0; }
+  .nav-social-link img { height: 20px; }
+  
+  /* On ajuste le bouton/menu utilisateur */
+  .nav-auth-zone { margin-left: 0.5rem; }
+  .nav-btn-login { padding: 0.4rem 1rem; font-size: 0.8rem; }
+}
+
+/* =========================================
+   ADAPTATION MOBILE & PETITES TABLETTES (jusqu'à 900px)
 ========================================= */
 @media (max-width: 900px) {
-  /* Navbar ultra-compacte */
+  /* Navbar ultra-compacte en colonne */
   .top-navbar { flex-direction: column; gap: 0.6rem; padding: 0.75rem 0.5rem; text-align: center; }
   .nav-logo { height: 32px; }
   
-  /* Liens compressés */
+  /* Liens compressés avec retour à la ligne automatique */
   .nav-links { flex-wrap: wrap; justify-content: center; gap: 0.6rem; width: 100%; margin: 0; }
   .nav-links a { font-size: 0.85rem; }
   
@@ -276,52 +296,6 @@ ul li:hover::before{transform:scaleY(1)}
   
   .dropdown-content { right: auto; left: 50%; transform: translateX(-50%); }
 }
-
-@media (max-width: 768px) {
-  .container { margin: 1rem 0.5rem; padding: 1.5rem; width: calc(100% - 1rem); box-sizing: border-box; }
-  h2 { font-size: 1.8rem; }
-  .profile-grid, .vote-grid { grid-template-columns: 1fr !important; gap: 1.5rem; }
-  .menu, .admin-menu { gap: 0.5rem; padding: 0.5rem; }
-  .menu button, .admin-menu button { padding: 0.6rem 1rem; font-size: 0.8rem; flex: 1 1 calc(50% - 0.5rem); }
-  .car-thumb { width: 100%; max-width: 100%; }
-  .engage-row { flex-direction: column; align-items: flex-start; gap: 1rem; }
-}
-
-/* Nouvel ajustement pour les petits smartphones (ex: iPhone SE / 12 Mini) */
-@media (max-width: 480px) {
-  .top-navbar { padding: 0.5rem; }
-  .nav-logo { height: 28px; }
-  .nav-links { gap: 0.5rem; }
-  .nav-links a { font-size: 0.75rem; }
-  .nav-social-link img { height: 20px; }
-  .nav-btn-login { padding: 0.4rem 1rem; font-size: 0.8rem; }
-  .hero-section h1 { font-size: 1.8rem !important; }
-  .stat-number { font-size: 1.8rem; }
-  .container { padding: 1rem; }
-  h2 { font-size: 1.5rem; }
-  .site-logo { max-width: 120px; }
-  button { width: 100%; padding: 0.875rem 1rem; font-size: 0.9rem; }
-  .stat-badge-grid { grid-template-columns: 1fr 1fr !important; }
-}
-
-.admin-table { table-layout: fixed; width: 100%; }
-.admin-table th { white-space: nowrap; }
-.admin-table td { height: 60px; }
-.admin-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
-.admin-table td { vertical-align: middle; }
-
-.dropdown-content .dropdown-user-name { user-select: none; cursor: default; background: rgba(255, 255, 255, 0.02); }
-.dropdown-content a[href="admin-users.html"] { border-top: 1px dashed var(--border-primary); }
-
-.scrolling-banner {
-  position: fixed; bottom: 0; left: 0; width: 100vw; background: rgba(10, 14, 26, 0.95);
-  border-top: 2px solid var(--accent-primary); overflow: hidden; z-index: 1000; padding: 8px 0; box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
-}
-.scrolling-banner-track { display: flex; width: max-content; animation: scrollBanner 15s linear infinite; }
-.banner-items { display: flex; align-items: center; flex-shrink: 0; }
-.banner-items span { display: flex; align-items: center; gap: 12px; margin: 0 40px; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
-.banner-items img { height: 24px; width: auto; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
-@keyframes scrollBanner { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
 
 /* =======================================================================
    🔥 TOASTS & CUSTOM CONFIRM (Remplacement alert / confirm)
