@@ -2279,3 +2279,121 @@ async function loadEstacupTeamStandings() {
   }
 }
 window.loadEstacupTeamStandings = loadEstacupTeamStandings;
+
+/* ======================== OUTIL DE COMPARAISON PILOTES ======================== */
+async function setupCompareTool() {
+  const select = $("compareSelect");
+  if (!select) return;
+
+  try {
+    // 1. Récupérer tous les pilotes validés pour la Saison 10
+    const signupsSnap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
+    const pilots = [];
+    
+    signupsSnap.forEach(d => {
+      // On ne met pas l'utilisateur actuel dans la liste (il est la base de comparaison)
+      if (d.id !== currentUid) {
+        pilots.push({ uid: d.id, name: `${d.data().firstName} ${d.data().lastName}` });
+      }
+    });
+
+    // 2. Trier par ordre alphabétique
+    pilots.sort((a,b) => a.name.localeCompare(b.name));
+
+    // 3. Remplir le select
+    select.innerHTML = pilots.map(p => `<option value="${p.uid}">${escapeHtml(p.name)}</option>`).join("");
+
+    // 4. Écouter les changements de sélection
+    select.addEventListener("change", renderCompareTable);
+  } catch (e) {
+    console.error("Erreur setupCompareTool:", e);
+  }
+}
+
+async function renderCompareTable() {
+  const select = $("compareSelect");
+  const resultsDiv = $("compareResults");
+  if (!select || !resultsDiv) return;
+
+  const selectedOptions = Array.from(select.selectedOptions);
+  if (selectedOptions.length === 0) {
+    resultsDiv.innerHTML = "";
+    return;
+  }
+
+  resultsDiv.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Calcul en cours...</div>`;
+
+  const uidsToCompare = [currentUid, ...selectedOptions.map(o => o.value)];
+  const names = ["Moi", ...selectedOptions.map(o => o.text)];
+
+  try {
+    // Récupérer les stats de course
+    const statsArray = await Promise.all(uidsToCompare.map(uid => computePilotStats(uid)));
+    
+    // Récupérer les données utilisateurs (pour le M-Rating et M-Safety)
+    const usersData = await Promise.all(uidsToCompare.map(async uid => {
+       const snap = await getDoc(doc(db, "users", uid));
+       return snap.exists() ? snap.data() : {};
+    }));
+
+    // Fusionner les données
+    statsArray.forEach((s, i) => {
+       s.eloRating = usersData[i].eloRating ?? 1000;
+       s.licensePoints = usersData[i].licensePoints ?? 8;
+    });
+
+    let html = `<div style="overflow-x:auto; margin-top: 15px;">
+      <table class="reglement-table compare-table" style="width:100%; border: 1px solid var(--border-primary);">
+        <thead>
+          <tr>
+            <th style="background: rgba(15,23,42,0.8);">Statistique</th>
+            ${names.map((n, i) => `<th class="${i===0 ? 'compare-self' : ''}" style="text-align:center;">${escapeHtml(n)}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>`;
+
+    const rowsToBuild = [
+      { label: "📈 M-Rating", key: "eloRating", higherIsBetter: true },
+      { label: "🛡️ M-Safety", key: "licensePoints", higherIsBetter: true },
+      { label: "🏁 Départs", key: "starts", higherIsBetter: true },
+      { label: "🏆 Victoires", key: "wins", higherIsBetter: true },
+      { label: "🍾 Podiums (Top 3)", key: "top3", higherIsBetter: true },
+      { label: "⭐ Top 5", key: "top5", higherIsBetter: true },
+      { label: "👍 Top 10", key: "top10", higherIsBetter: true },
+      { label: "🥇 Meilleur résultat", key: "bestPos", higherIsBetter: false, format: v => v ? `${v}ᵉ` : "-" },
+      { label: "📊 Position moyenne", key: "avgPos", higherIsBetter: false, format: v => v ? `${v.toFixed(1)}ᵉ` : "-" }
+    ];
+
+    rowsToBuild.forEach(row => {
+      html += `<tr><td style="font-weight:600; color:var(--text-secondary);">${row.label}</td>`;
+
+      let validVals = statsArray.map(s => s[row.key]).filter(v => v !== null && v !== undefined && !isNaN(v));
+      let bestVal = null, worstVal = null;
+      if (validVals.length > 1) { // Il faut au moins 2 valeurs pour comparer
+          bestVal = row.higherIsBetter ? Math.max(...validVals) : Math.min(...validVals);
+          worstVal = row.higherIsBetter ? Math.min(...validVals) : Math.max(...validVals);
+      }
+
+      statsArray.forEach((stats, i) => {
+         let val = stats[row.key];
+         let displayVal = row.format ? row.format(val) : (val !== null ? val : "0");
+         let cssClass = (i === 0) ? "compare-self " : "";
+
+         if (val !== null && validVals.length > 1 && bestVal !== worstVal) {
+             if (val === bestVal) cssClass += "compare-best";
+             else if (val === worstVal) cssClass += "compare-worst";
+         }
+
+         html += `<td class="${cssClass.trim()}" style="text-align:center;">${displayVal}</td>`;
+      });
+      html += `</tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    resultsDiv.innerHTML = html;
+
+  } catch (e) {
+    console.error("Erreur comparateur:", e);
+    resultsDiv.innerHTML = `<p class="impact-bad">Erreur lors de la comparaison.</p>`;
+  }
+}
