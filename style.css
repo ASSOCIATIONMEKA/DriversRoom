@@ -64,6 +64,7 @@ body {
   color:var(--text-primary);
   font-size:16px;
   line-height:1.6;
+  overflow-x:hidden;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -127,6 +128,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent-primary);box-s
 input:hover,select:hover,textarea:hover{border-color:var(--border-secondary)}
 input[type="color"]{height:3rem;width:5rem;padding:.25rem;cursor:pointer;border-radius:var(--radius-md);margin-right:.75rem}
 textarea{min-height:8rem;resize:vertical;font-family:inherit}
+
+/* Correction alignement checkbox joker */
+.joker-toggle input[type="checkbox"] { 
+  margin: 0 !important; 
+  padding: 0 !important; 
+}
 
 /* Buttons */
 button{
