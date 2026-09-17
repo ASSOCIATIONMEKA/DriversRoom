@@ -2283,61 +2283,64 @@ window.loadEstacupTeamStandings = loadEstacupTeamStandings;
 
 /* ======================== OUTIL DE COMPARAISON PILOTES ======================== */
 async function setupCompareTool() {
-  const select = $("compareSelect");
-  if (!select) return;
+  const container = $("compareSelectContainer");
+  if (!container) return;
 
   try {
-    // 1. Récupérer tous les pilotes validés pour la Saison 10
     const signupsSnap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
     const pilots = [];
     
     signupsSnap.forEach(d => {
-      // On ne met pas l'utilisateur actuel dans la liste (il est la base de comparaison)
       if (d.id !== currentUid) {
         pilots.push({ uid: d.id, name: `${d.data().firstName} ${d.data().lastName}` });
       }
     });
 
-    // 2. Trier par ordre alphabétique
     pilots.sort((a,b) => a.name.localeCompare(b.name));
 
-    // 3. Remplir le select
-    select.innerHTML = pilots.map(p => `<option value="${p.uid}">${escapeHtml(p.name)}</option>`).join("");
+    // Création des cases à cocher stylisées
+    container.innerHTML = pilots.map(p => `
+      <label class="compare-pilot-option">
+        <input type="checkbox" value="${p.uid}" data-name="${escapeHtml(p.name)}" class="compare-chk">
+        <span>${escapeHtml(p.name)}</span>
+      </label>
+    `).join("");
 
-    // 4. Écouter les changements de sélection
-    select.addEventListener("change", renderCompareTable);
+    // Écouteur sur chaque case à cocher
+    container.querySelectorAll(".compare-chk").forEach(chk => {
+      chk.addEventListener("change", renderCompareTable);
+    });
   } catch (e) {
     console.error("Erreur setupCompareTool:", e);
   }
 }
 
 async function renderCompareTable() {
-  const select = $("compareSelect");
+  const container = $("compareSelectContainer");
   const resultsDiv = $("compareResults");
-  if (!select || !resultsDiv) return;
+  if (!container || !resultsDiv) return;
 
-  const selectedOptions = Array.from(select.selectedOptions);
-  if (selectedOptions.length === 0) {
+  // Récupérer uniquement les cases qui sont cochées
+  const checkedBoxes = Array.from(container.querySelectorAll(".compare-chk:checked"));
+  
+  if (checkedBoxes.length === 0) {
     resultsDiv.innerHTML = "";
     return;
   }
 
   resultsDiv.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Calcul en cours...</div>`;
 
-  const uidsToCompare = [currentUid, ...selectedOptions.map(o => o.value)];
-  const names = ["Moi", ...selectedOptions.map(o => o.text)];
+  const uidsToCompare = [currentUid, ...checkedBoxes.map(chk => chk.value)];
+  const names = ["Moi", ...checkedBoxes.map(chk => chk.getAttribute("data-name"))];
 
   try {
-    // Récupérer les stats de course
     const statsArray = await Promise.all(uidsToCompare.map(uid => computePilotStats(uid)));
     
-    // Récupérer les données utilisateurs (pour le M-Rating et M-Safety)
     const usersData = await Promise.all(uidsToCompare.map(async uid => {
        const snap = await getDoc(doc(db, "users", uid));
        return snap.exists() ? snap.data() : {};
     }));
 
-    // Fusionner les données
     statsArray.forEach((s, i) => {
        s.eloRating = usersData[i].eloRating ?? 1000;
        s.licensePoints = usersData[i].licensePoints ?? 8;
@@ -2370,7 +2373,7 @@ async function renderCompareTable() {
 
       let validVals = statsArray.map(s => s[row.key]).filter(v => v !== null && v !== undefined && !isNaN(v));
       let bestVal = null, worstVal = null;
-      if (validVals.length > 1) { // Il faut au moins 2 valeurs pour comparer
+      if (validVals.length > 1) {
           bestVal = row.higherIsBetter ? Math.max(...validVals) : Math.min(...validVals);
           worstVal = row.higherIsBetter ? Math.min(...validVals) : Math.max(...validVals);
       }
