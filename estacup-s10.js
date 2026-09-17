@@ -2456,26 +2456,64 @@ async function renderCompareTable() {
   }
 }
 /* ======================== SYSTÈME DE NOTIFICATIONS ======================== */
+
+// --- 1. Gestion des Toasts (Push-ups) d'alerte persistants ---
+window.dismissedAlerts = window.dismissedAlerts || new Set();
+
+function showPersistentAlert(message, alertId, type = "warning") {
+  if (window.dismissedAlerts.has(alertId)) return;
+
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    document.body.appendChild(container);
+  }
+
+  if (document.getElementById("alert-" + alertId)) return;
+
+  const toast = document.createElement("div");
+  toast.id = "alert-" + alertId;
+  toast.className = `toast toast-${type}`;
+  toast.style.position = "relative";
+  toast.style.paddingRight = "40px"; 
+
+  toast.innerHTML = `
+    <span style="display: block; padding-right: 10px; line-height: 1.4;">${message}</span>
+    <button onclick="
+      window.dismissedAlerts.add('${alertId}');
+      this.parentElement.classList.add('fade-out');
+      setTimeout(() => this.parentElement.remove(), 300);
+    " style="
+      position: absolute; top: 8px; right: 10px;
+      background: none; border: none; color: var(--text-muted);
+      font-size: 1.5rem; cursor: pointer; padding: 0;
+      line-height: 1; box-shadow: none; transition: color 0.2s;
+    " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+  `;
+
+  container.appendChild(toast);
+}
+
+// --- 2. Gestion des Bordures Clignotantes sur les boutons ---
 function updateNavBadge(selector, type) {
   const btn = document.querySelector(selector);
   if (!btn) return;
   
-  // Nettoyer l'ancienne pastille s'il y en a une
-  const existing = btn.querySelector('.notify-dot');
-  if (existing) existing.remove();
+  // On nettoie les anciens états clignotants
+  btn.classList.remove('btn-notify-red', 'btn-notify-orange');
   
-  if (type) {
-    btn.classList.add('btn-has-notification');
-    const dot = document.createElement('span');
-    dot.className = `notify-dot notify-${type}`;
-    btn.appendChild(dot);
-  } else {
-    btn.classList.remove('btn-has-notification');
+  // On applique la nouvelle animation selon l'urgence
+  if (type === 'red') {
+    btn.classList.add('btn-notify-red');
+  } else if (type === 'orange') {
+    btn.classList.add('btn-notify-orange');
   }
 }
 
+// --- 3. Logique d'analyse en temps réel ---
 async function initNotifications(uid, isAdmin) {
-  // 1. Inscriptions & Livrées (Géré en temps réel)
+  // A. Inscriptions & Livrées
   onSnapshot(collection(db, "estacup_s10_signups"), (snap) => {
     let pendingAdminValidation = 0;
     let pendingAdminLivery = 0;
@@ -2496,32 +2534,50 @@ async function initNotifications(uid, isAdmin) {
     });
 
     if (isAdmin && window.adminViewActive) {
-      // VUE ADMIN : On alerte l'admin s'il y a des pilotes à valider ou des livrées à vérifier
-      if (pendingAdminValidation > 0) updateNavBadge('button[data-sub="inscription"]', 'red');
-      else if (pendingAdminLivery > 0) updateNavBadge('button[data-sub="inscription"]', 'orange');
-      else updateNavBadge('button[data-sub="inscription"]', null);
+      // VUE ADMIN
+      if (pendingAdminValidation > 0) {
+        updateNavBadge('button[data-sub="inscription"]', 'red');
+        showPersistentAlert(`🔴 <strong>Action Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente de validation.`, "admin-validation", "error");
+      } else if (pendingAdminLivery > 0) {
+        updateNavBadge('button[data-sub="inscription"]', 'orange');
+      } else {
+        updateNavBadge('button[data-sub="inscription"]', null);
+      }
     } else {
-      // VUE PILOTE : Statut de l'inscription
-      if (!isUserSignedUp) updateNavBadge('button[data-sub="inscription"]', 'red');
-      else if (!isUserValidated) updateNavBadge('button[data-sub="inscription"]', 'orange');
-      else updateNavBadge('button[data-sub="inscription"]', null);
-
-      // VUE PILOTE : Statut de la livrée (Seulement s'il est validé)
-      if (isUserValidated && !userLiveryDone) updateNavBadge('button[data-sub="livree"]', 'orange');
-      else updateNavBadge('button[data-sub="livree"]', null);
+      // VUE PILOTE
+      if (!isUserSignedUp) {
+        updateNavBadge('button[data-sub="inscription"]', 'red');
+        showPersistentAlert("⚠️ <strong>Inscription requise :</strong> N'oubliez pas de remplir votre formulaire d'engagement à l'ESTACUP !", "user-signup", "warning");
+      } else if (!isUserValidated) {
+        updateNavBadge('button[data-sub="inscription"]', 'orange');
+      } else {
+        updateNavBadge('button[data-sub="inscription"]', null);
+        
+        // La livrée n'est demandée QUE si le pilote est validé
+        if (!userLiveryDone) {
+          updateNavBadge('button[data-sub="livree"]', 'orange');
+          showPersistentAlert("🎨 <strong>Livrée :</strong> N'oubliez pas de déposer votre fichier .zip sur le OneDrive !", "user-livery", "warning");
+        } else {
+          updateNavBadge('button[data-sub="livree"]', null);
+        }
+      }
     }
   });
 
-  // 2. Votes Circuits (Pour le pilote uniquement)
+  // B. Votes Circuits (Pilote uniquement)
   if (!isAdmin || !window.adminViewActive) {
     onSnapshot(doc(db, "estacup_s10_circuit_votes", uid), (docSnap) => {
       const data = docSnap.exists() ? docSnap.data() : {};
-      if (!data.round3 || !data.round5) updateNavBadge('button[data-sub="votecircuit"]', 'orange');
-      else updateNavBadge('button[data-sub="votecircuit"]', null);
+      if (!data.round3 || !data.round5) {
+        updateNavBadge('button[data-sub="votecircuit"]', 'orange');
+        showPersistentAlert("🗳️ <strong>Votes :</strong> Votre avis compte ! Choisissez les circuits des manches 3 et 5.", "user-votes", "warning");
+      } else {
+        updateNavBadge('button[data-sub="votecircuit"]', null);
+      }
     });
   }
 
-  // 3. Présence Course (Pilote) - Alerte rouge si la course est dans - de 7 jours et non répondu
+  // C. Présence Course (Pilote) - Alerte si la course est dans - de 7 jours
   const racesList = [
     { id: "prologue", dateObj: new Date("2026-09-22T20:00:00") },
     { id: "manche1", dateObj: new Date("2026-10-06T20:00:00") },
@@ -2539,9 +2595,12 @@ async function initNotifications(uid, isAdmin) {
     const diffDays = (nextRace.dateObj - now) / (1000 * 60 * 60 * 24);
     if (diffDays <= 7) {
       onSnapshot(doc(db, `attendances_${nextRace.id}`, uid), (docSnap) => {
-        // S'il n'a pas répondu (ni présent, ni absent, ni incertain), on met le point rouge
-        if (!docSnap.exists()) updateNavBadge('button[data-sub="presence"]', 'red');
-        else updateNavBadge('button[data-sub="presence"]', null);
+        if (!docSnap.exists()) {
+          updateNavBadge('button[data-sub="presence"]', 'red');
+          showPersistentAlert(`📅 <strong>Course imminente :</strong> Pensez à indiquer votre présence pour la course à venir !`, "user-presence", "error");
+        } else {
+          updateNavBadge('button[data-sub="presence"]', null);
+        }
       });
     } else {
       updateNavBadge('button[data-sub="presence"]', null);
