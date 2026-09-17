@@ -486,3 +486,35 @@ ul li:hover::before{transform:scaleY(1)}
   /* Ajoute une petite bordure en bas pour bien délimiter quand on scrolle */
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
+
+/* =========================================
+   NOTIFICATIONS (Pastilles Rouges / Oranges)
+========================================= */
+.btn-has-notification {
+  position: relative !important;
+}
+.notify-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+  z-index: 10;
+  animation: pulse-dot 2s infinite;
+}
+.notify-red { 
+  background-color: #ef4444; 
+  box-shadow: 0 0 8px #ef4444; 
+}
+.notify-orange { 
+  background-color: #f59e0b; 
+  box-shadow: 0 0 8px #f59e0b; 
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
