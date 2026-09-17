@@ -30,24 +30,39 @@ function injectNavbar() {
           <img src="meka.svg" alt="Logo MEKA" class="nav-logo" />
         </a>
         
-        <div class="nav-links">
+        <!-- Bouton Burger (Visible uniquement sur Mobile) -->
+        <div class="mobile-menu-btn" id="mobileMenuBtn">
+            <svg viewBox="0 0 24 24" width="32" height="32" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </div>
+
+        <!-- Overlay sombre (Fond cliquable) -->
+        <div class="nav-overlay" id="navOverlay"></div>
+
+        <!-- Liens de navigation (Menu latéral sur mobile) -->
+        <div class="nav-links" id="navLinks">
+          
+          <!-- En-tête du menu mobile -->
+          <div class="mobile-menu-header">
+             <img src="meka.svg" alt="Logo MEKA" class="nav-logo" style="height: 25px;" />
+             <span class="close-menu-btn" id="closeMenuBtn">✕</span>
+          </div>
+
           <a href="index.html">ACCUEIL</a>
           <a href="https://www.helloasso.com/associations/meka" target="_blank" rel="noopener noreferrer">L'ASSOCIATION</a>
           
           <div class="dropdown">
-            <!-- Le bouton principal ne recharge pas la page, il sert juste de survol -->
             <a href="#" class="dropbtn" onclick="return false;">NOS COMPÉTITIONS ▾</a>
             <div class="dropdown-content">
-            <a href="estacup-s10.html">🟢 EstaCup S10</a>
-            <a href="estacup-s9.html">⚪ EstaCup S9</a>
+              <a href="estacup-s10.html">🟢 EstaCup S10</a>
+              <a href="estacup-s9.html">⚪ EstaCup S9</a>
+            </div>
           </div>
-        </div>
           
           <a href="esport.html">ÉQUIPE ESPORT</a>
           <a href="partenaires.html">NOS PARTENAIRES</a>
           <a href="contact.html">NOUS CONTACTER</a>
           
-          <!-- 🔴 RÉSEAUX SOCIAUX EN LOGOS -->
+          <!-- 🔴 RÉSEAUX SOCIAUX -->
           <div class="nav-socials">
               <a href="https://discord.gg/jB6yDhQFyw" target="_blank" title="Discord" class="nav-social-link">
                 <img src="logos/discord-logo.png" alt="Discord" />
@@ -60,6 +75,7 @@ function injectNavbar() {
               </a>
           </div>
           
+          <!-- 🔴 ZONE DE CONNEXION -->
           <div id="nav-auth-zone" class="nav-auth-zone">
              ${fastCheckLoggedIn 
                ? `<span style="color: #10B981; font-weight: 600; font-size: 0.9rem;">⏳ CHARGEMENT...</span>` 
@@ -74,6 +90,24 @@ function injectNavbar() {
         targetDiv.outerHTML = navbarHTML;
     } else {
         document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+    }
+
+    // === NOUVEAU : Logique d'ouverture/fermeture du Menu Burger ===
+    const mobileBtn = document.getElementById("mobileMenuBtn");
+    const closeBtn = document.getElementById("closeMenuBtn");
+    const navLinks = document.getElementById("navLinks");
+    const overlay = document.getElementById("navOverlay");
+
+    function toggleMenu() {
+        navLinks.classList.toggle("open");
+        overlay.classList.toggle("open");
+        document.body.style.overflow = navLinks.classList.contains("open") ? "hidden" : "";
+    }
+
+    if (mobileBtn && closeBtn && overlay) {
+        mobileBtn.addEventListener("click", toggleMenu);
+        closeBtn.addEventListener("click", toggleMenu);
+        overlay.addEventListener("click", toggleMenu);
     }
 
     const authZone = document.getElementById("nav-auth-zone");
