@@ -550,3 +550,30 @@ button.btn-notify-orange,
     background: rgba(245, 158, 11, 0.7) !important; /* Fond orange intense */
   }
 }
+
+/* =========================================
+   ŒIL POUR AFFICHER/MASQUER LE MOT DE PASSE
+========================================= */
+.password-field-container {
+  position: relative;
+  width: 100%;
+}
+.password-field-container input {
+  margin-bottom: 0 !important; /* Pour éviter de doubler les marges */
+  padding-right: 45px !important; /* Laisse de la place pour l'icône */
+}
+.password-toggle-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1.2rem;
+  user-select: none;
+  z-index: 10;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.password-toggle-icon:hover {
+  opacity: 1;
+}
