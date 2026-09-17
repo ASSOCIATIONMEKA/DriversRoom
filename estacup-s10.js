@@ -356,6 +356,7 @@ onAuthStateChanged(auth, async (user) => {
     await loadAdvancedMRatingAndSafety(currentUid, data.eloRating, data.licensePoints);
     await loadMyIncidents(currentUid);
     setupCompareTool();
+    initNotifications(currentUid, isAdmin); // 🔔 Lancement des notifications !
     
   } catch (err) { 
     console.error("Erreur sécurité S10:", err); 
@@ -2452,5 +2453,98 @@ async function renderCompareTable() {
   } catch (e) {
     console.error("Erreur comparateur:", e);
     resultsDiv.innerHTML = `<p class="impact-bad">Erreur lors de la comparaison.</p>`;
+  }
+}
+/* ======================== SYSTÈME DE NOTIFICATIONS ======================== */
+function updateNavBadge(selector, type) {
+  const btn = document.querySelector(selector);
+  if (!btn) return;
+  
+  // Nettoyer l'ancienne pastille s'il y en a une
+  const existing = btn.querySelector('.notify-dot');
+  if (existing) existing.remove();
+  
+  if (type) {
+    btn.classList.add('btn-has-notification');
+    const dot = document.createElement('span');
+    dot.className = `notify-dot notify-${type}`;
+    btn.appendChild(dot);
+  } else {
+    btn.classList.remove('btn-has-notification');
+  }
+}
+
+async function initNotifications(uid, isAdmin) {
+  // 1. Inscriptions & Livrées (Géré en temps réel)
+  onSnapshot(collection(db, "estacup_s10_signups"), (snap) => {
+    let pendingAdminValidation = 0;
+    let pendingAdminLivery = 0;
+    let isUserSignedUp = false;
+    let isUserValidated = false;
+    let userLiveryDone = false;
+
+    snap.forEach(d => {
+      const data = d.data();
+      if (!data.isValidated) pendingAdminValidation++;
+      if (data.isValidated && !data.liveryImplemented) pendingAdminLivery++;
+      
+      if (d.id === uid) {
+        isUserSignedUp = true;
+        isUserValidated = data.isValidated === true;
+        userLiveryDone = data.liveryImplemented === true;
+      }
+    });
+
+    if (isAdmin && window.adminViewActive) {
+      // VUE ADMIN : On alerte l'admin s'il y a des pilotes à valider ou des livrées à vérifier
+      if (pendingAdminValidation > 0) updateNavBadge('button[data-sub="inscription"]', 'red');
+      else if (pendingAdminLivery > 0) updateNavBadge('button[data-sub="inscription"]', 'orange');
+      else updateNavBadge('button[data-sub="inscription"]', null);
+    } else {
+      // VUE PILOTE : Statut de l'inscription
+      if (!isUserSignedUp) updateNavBadge('button[data-sub="inscription"]', 'red');
+      else if (!isUserValidated) updateNavBadge('button[data-sub="inscription"]', 'orange');
+      else updateNavBadge('button[data-sub="inscription"]', null);
+
+      // VUE PILOTE : Statut de la livrée (Seulement s'il est validé)
+      if (isUserValidated && !userLiveryDone) updateNavBadge('button[data-sub="livree"]', 'orange');
+      else updateNavBadge('button[data-sub="livree"]', null);
+    }
+  });
+
+  // 2. Votes Circuits (Pour le pilote uniquement)
+  if (!isAdmin || !window.adminViewActive) {
+    onSnapshot(doc(db, "estacup_s10_circuit_votes", uid), (docSnap) => {
+      const data = docSnap.exists() ? docSnap.data() : {};
+      if (!data.round3 || !data.round5) updateNavBadge('button[data-sub="votecircuit"]', 'orange');
+      else updateNavBadge('button[data-sub="votecircuit"]', null);
+    });
+  }
+
+  // 3. Présence Course (Pilote) - Alerte rouge si la course est dans - de 7 jours et non répondu
+  const racesList = [
+    { id: "prologue", dateObj: new Date("2026-09-22T20:00:00") },
+    { id: "manche1", dateObj: new Date("2026-10-06T20:00:00") },
+    { id: "manche2", dateObj: new Date("2026-10-20T20:00:00") },
+    { id: "manche3", dateObj: new Date("2026-11-24T20:00:00") },
+    { id: "manche4", dateObj: new Date("2026-12-08T20:00:00") },
+    { id: "manche5", dateObj: new Date("2027-01-19T20:00:00") },
+    { id: "manche6", dateObj: new Date("2027-02-02T20:00:00") }
+  ];
+  
+  const now = new Date();
+  const nextRace = racesList.find(r => r.dateObj >= now);
+  
+  if ((!isAdmin || !window.adminViewActive) && nextRace) {
+    const diffDays = (nextRace.dateObj - now) / (1000 * 60 * 60 * 24);
+    if (diffDays <= 7) {
+      onSnapshot(doc(db, `attendances_${nextRace.id}`, uid), (docSnap) => {
+        // S'il n'a pas répondu (ni présent, ni absent, ni incertain), on met le point rouge
+        if (!docSnap.exists()) updateNavBadge('button[data-sub="presence"]', 'red');
+        else updateNavBadge('button[data-sub="presence"]', null);
+      });
+    } else {
+      updateNavBadge('button[data-sub="presence"]', null);
+    }
   }
 }
