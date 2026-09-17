@@ -2513,16 +2513,20 @@ function setAlertState(key, type, message, alertId) {
 function renderAllBadges() {
   // 1. Boutons d'action finale (Bordure clignotante)
   const applyBlink = (selector, type) => {
-    const btn = document.querySelector(selector);
-    if (!btn) return;
-    btn.classList.remove('btn-notify-red', 'btn-notify-orange');
-    if (type) btn.classList.add(`btn-notify-${type}`);
+    // querySelectorAll permet de cibler plusieurs orthographes possibles
+    const btns = document.querySelectorAll(selector);
+    btns.forEach(btn => {
+      btn.classList.remove('btn-notify-red', 'btn-notify-orange');
+      if (type) btn.classList.add(`btn-notify-${type}`);
+    });
   };
 
   applyBlink('button[data-sub="inscription"]', window.appAlerts.inscription);
   applyBlink('button[data-sub="livree"]', window.appAlerts.livree);
   applyBlink('button[data-sub="votecircuit"]', window.appAlerts.votecircuit);
-  applyBlink('button[data-sub="presence"]', window.appAlerts.presence);
+  
+  // Correction ici : On cible "presence" ET "presences" pour être sûr de l'allumer !
+  applyBlink('button[data-sub="presence"], button[data-sub="presences"]', window.appAlerts.presence);
 
   // 2. Boutons parents de navigation (Petite puce rouge)
   const applyDot = (selector, hasAlert) => {
