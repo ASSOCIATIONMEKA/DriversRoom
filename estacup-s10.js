@@ -1437,14 +1437,17 @@ async function loadEstacupEquipes() {
   const targetArea = document.getElementById("estacupEquipes");
   if (!targetArea) return;
   
-  targetArea.innerHTML = `<div class="loading-inline" style="padding: 2rem; text-align: center; justify-content: center;"><div class="spinner"></div> Chargement des écuries...</div>`;
+  targetArea.innerHTML = `<div class="loading-inline" style="padding: 2rem; text-align: center; justify-content: center;"><div class="spinner"></div> Chargement des écuries et alliances...</div>`;
   
   try {
     const signupsRef = collection(db, "estacup_s10_signups");
     const q = query(signupsRef, where("isValidated", "==", true));
-    const [snap, usersSnap] = await Promise.all([
+    
+    // On ajoute la récupération de la configuration des équipes (pour les alliances)
+    const [snap, usersSnap, configSnap] = await Promise.all([
       getDocs(q),
-      getDocs(collection(db, "users"))
+      getDocs(collection(db, "users")),
+      getDocs(collection(db, "estacup_s10_teams_config"))
     ]);
 
     const usersMap = new Map();
@@ -1452,6 +1455,7 @@ async function loadEstacupEquipes() {
 
     const teamsMap = new Map();
 
+    // 1. Groupement des pilotes par équipe
     snap.forEach(docSnap => {
       const data = docSnap.data();
       const uid = data.uid || docSnap.id;
@@ -1480,6 +1484,23 @@ async function loadEstacupEquipes() {
       teamsMap.get(teamName).push(driver);
     });
 
+    // 2. Création des liens d'alliance bidirectionnels
+    const alliancesMap = new Map();
+    configSnap.forEach(c => {
+      const teamA = c.id.trim();
+      const data = c.data();
+      if (data.sisterTeams && Array.isArray(data.sisterTeams)) {
+        data.sisterTeams.forEach(teamB => {
+          const tB = teamB.trim();
+          if (!alliancesMap.has(teamA)) alliancesMap.set(teamA, new Set());
+          alliancesMap.get(teamA).add(tB);
+          
+          if (!alliancesMap.has(tB)) alliancesMap.set(tB, new Set());
+          alliancesMap.get(tB).add(teamA);
+        });
+      }
+    });
+
     const sortedTeams = Array.from(teamsMap.keys()).sort();
 
     if (sortedTeams.length === 0) {
@@ -1487,15 +1508,33 @@ async function loadEstacupEquipes() {
       return;
     }
 
-    // NOUVEAU DESIGN : Une vraie liste verticale au lieu d'une grille de cartes
     let html = `<div style="display: flex; flex-direction: column; gap: 1.5rem;">`;
 
     sortedTeams.forEach(teamName => {
       const drivers = teamsMap.get(teamName);
-      drivers.sort((a, b) => b.mRating - a.mRating); // Tri des pilotes par ELO
+      drivers.sort((a, b) => b.mRating - a.mRating); // Tri par M-Rating interne
 
-      // Calcul de la moyenne ELO de l'équipe
       const avgRating = Math.round(drivers.reduce((acc, d) => acc + d.mRating, 0) / drivers.length);
+
+      // 3. Construction du badge d'alliance
+      let alliancesHtml = "";
+      if (alliancesMap.has(teamName) && alliancesMap.get(teamName).size > 0) {
+        // On ne liste que les équipes sœurs qui participent réellement (présentes dans teamsMap)
+        const sisters = Array.from(alliancesMap.get(teamName))
+          .filter(t => teamsMap.has(t))
+          .map(t => `<span style="color: #fde68a; font-weight: 600;">${escapeHtml(t)}</span>`)
+          .sort()
+          .join('<span style="color:#475569; margin: 0 4px;">•</span>');
+
+        if (sisters.length > 0) {
+          alliancesHtml = `
+            <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.5px; line-height: 1;">🤝 Alliance</span>
+              <div style="font-size: 0.8rem;">${sisters}</div>
+            </div>
+          `;
+        }
+      }
 
       html += `
         <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.borderColor='rgba(56,189,248,0.4)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'">
@@ -1503,8 +1542,11 @@ async function loadEstacupEquipes() {
           <!-- En-tête de l'équipe -->
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.2rem 1.5rem; background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); border-bottom: 1px solid rgba(255,255,255,0.05);">
             <div style="display: flex; align-items: center; gap: 15px;">
-              <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🛡️</div>
-              <h4 style="margin: 0; color: #f8fafc; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px;">${escapeHtml(teamName)}</h4>
+              <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">🛡️</div>
+              <div style="display: flex; flex-direction: column; justify-content: center;">
+                <h4 style="margin: 0; color: #f8fafc; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px; line-height: 1.2;">${escapeHtml(teamName)}</h4>
+                ${alliancesHtml}
+              </div>
             </div>
             
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -1513,7 +1555,7 @@ async function loadEstacupEquipes() {
             </div>
           </div>
 
-          <!-- Liste des pilotes (Format Tableau clair) -->
+          <!-- Liste des pilotes -->
           <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
               <tbody>
