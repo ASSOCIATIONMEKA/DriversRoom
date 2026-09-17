@@ -85,6 +85,22 @@ if (btnShowLogin) {
   });
 }
 
+// ================= NOUVEAU : GESTION DE L'ŒIL (AFFICHER/MASQUER MDP) =================
+window.togglePasswordVisibility = function(fieldId, iconElement) {
+  const inputField = document.getElementById(fieldId);
+  if (!inputField) return;
+
+  if (inputField.type === "password") {
+    inputField.type = "text";
+    iconElement.textContent = "👁️‍🗨️";
+    iconElement.title = "Masquer le mot de passe";
+  } else {
+    inputField.type = "password";
+    iconElement.textContent = "👁️";
+    iconElement.title = "Afficher le mot de passe";
+  }
+};
+
 // ================= CONNEXION =================
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
@@ -280,9 +296,8 @@ onAuthStateChanged(auth, async (user) => {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        isAdmin = userData.admin === true; // Bonne vérification Admin
+        isAdmin = userData.admin === true;
       } else {
-        // Au cas où authMap
         const mapDoc = await getDoc(doc(db, "authMap", user.uid));
         if (mapDoc.exists()) {
           const mappedDoc = await getDoc(doc(db, "users", mapDoc.data().pilotUid));
@@ -292,7 +307,6 @@ onAuthStateChanged(auth, async (user) => {
       
       const currentPath = window.location.pathname;
       if (currentPath.includes("login.html") || currentPath.endsWith("/")) {
-        // ⏳ CORRECTION DU BUG DE BOUCLE : Délai de 800ms
         setTimeout(() => {
           redirectUser(isAdmin);
         }, 800);
