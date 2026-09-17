@@ -1831,31 +1831,49 @@ async function renderLiverySection() {
   host.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement...</div>`;
 
   try {
-    const docSnap = await getDoc(doc(db, "estacup_s10_signups", currentUid));
+    const docRef = doc(db, "estacup_s10_signups", currentUid);
+    const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists() || docSnap.data().isValidated !== true) {
       host.innerHTML = `
         <div class="course-box" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
           <h4 style="color: #f59e0b; margin-bottom: 10px;">⚠️ Inscription requise</h4>
-          <p>Vous devez être inscrit et votre inscription doit être validée par le staff pour pouvoir envoyer votre livrée personnalisée.</p>
+          <p>Vous devez être inscrit et votre inscription doit être validée par le staff pour pouvoir gérer votre livrée.</p>
         </div>`;
       return;
     }
 
+    const data = docSnap.data();
+    const liveryChoice = data.liveryChoice || "personnelle";
+    const isImplemented = data.liveryImplemented === true;
+
+    // 1. Si le pilote a choisi "neutre" ou "licence" (pas besoin de déposer de fichier)
+    if (liveryChoice === "neutre" || liveryChoice === "licence") {
+      host.innerHTML = `
+        <div class="course-box" style="border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05); text-align: center; padding: 2.5rem;">
+          <h4 style="color: var(--accent-success); margin-bottom: 10px;">🛡️ Aucune action requise</h4>
+          <p style="font-size: 1.05rem; color: var(--text-primary); max-width: 600px; margin: 0 auto;">
+            Lors de votre inscription, vous avez choisi de rouler avec une <strong>livrée officielle / neutre</strong> de l'ESTACUP. Votre véhicule sera configuré automatiquement par l'organisation.
+          </p>
+        </div>`;
+      return;
+    }
+
+    // 2. Si le pilote a choisi une livrée PERSONNELLE
     const oneDriveLink = "https://estaca-my.sharepoint.com/:f:/g/personal/meka_estaca_eu/IgCF2GbO4jLTTpORWbPSETEVAcRha7yQfBo-45BFVAUlZEU?e=hJ4aAa";
 
     host.innerHTML = `
       <div class="course-box">
         <p class="muted-note" style="margin-bottom: 1.5rem; line-height: 1.6;">
-          Le dépôt des livrées s'effectue désormais sur l'espace OneDrive officiel de l'association. Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).<br><br>
-          <span style="color: #f59e0b;">⚠️ <strong>TRÈS IMPORTANT :</strong></span> Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format pour que le staff puisse l'attribuer à votre voiture :<br>
+          Le dépôt des livrées s'effectue sur l'espace OneDrive officiel de l'association. Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).<br><br>
+          <span style="color: #f59e0b;">⚠️ <strong>TRÈS IMPORTANT :</strong></span> Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format :<br>
           <code style="display: inline-block; margin-top: 8px; font-size: 1.1rem; color: #38bdf8; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">### - NOM_Prénom.zip</code><br>
-          <em>(Où ### est votre numéro de course entre 2 et 999. Exemple : <strong>96 - TOMCZYK_Marin.zip</strong>)</em>
+          <em>(Où ### est votre numéro de course. Exemple : <strong>96 - TOMCZYK_Marin.zip</strong>)</em>
         </p>
 
-        <div style="display: flex; flex-direction: column; gap: 15px; background: rgba(15,23,42,0.6); padding: 20px; border-radius: 10px; border: 1px dashed var(--border-secondary); text-align: center;">
+        <div style="display: flex; flex-direction: column; gap: 15px; background: rgba(15,23,42,0.6); padding: 20px; border-radius: 10px; border: 1px dashed var(--border-secondary); text-align: center; margin-bottom: 2rem;">
           <h4 style="color: var(--accent-primary); margin-bottom: 0;">Dépôt OneDrive</h4>
-          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Cliquez sur le bouton ci-dessous pour ouvrir le dossier partagé et y glisser/déposer votre fichier .ZIP.</p>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Cliquez sur le bouton pour ouvrir le dossier partagé et y glisser/déposer votre fichier .ZIP.</p>
           
           <a href="${oneDriveLink}" target="_blank" style="text-decoration: none;">
             <button class="btn-validate" style="width: auto; padding: 12px 24px; font-size: 1.1rem;">
@@ -1863,8 +1881,38 @@ async function renderLiverySection() {
             </button>
           </a>
         </div>
+
+        <!-- ZONE DE CONFIRMATION / CASE À COCHER -->
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid ${isImplemented ? 'var(--accent-success)' : 'var(--border-primary)'}; padding: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div>
+            <h5 style="margin: 0 0 5px 0; color: #fff; font-size: 1.1rem;">Confirmation de dépôt</h5>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Cochez cette case une fois que votre fichier .zip est correctement mis en ligne sur le OneDrive.</p>
+          </div>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+            <input type="checkbox" id="chkLiveryDone" ${isImplemented ? 'checked' : ''} style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: #10b981;">
+            <span style="font-weight: 600; color: ${isImplemented ? 'var(--accent-success)' : '#fff'};">J'ai déposé ma livrée</span>
+          </label>
+        </div>
       </div>
     `;
+
+    // Écouteur pour enregistrer l'état dans Firebase instantanément
+    const checkbox = $("chkLiveryDone");
+    if (checkbox) {
+      checkbox.addEventListener("change", async (e) => {
+        const checked = e.target.checked;
+        try {
+          await updateDoc(docRef, { liveryImplemented: checked });
+          if (window.showToast) {
+            window.showToast(checked ? "✅ Livrée marquée comme déposée !" : "🔄 Statut mis à jour.", "success");
+          }
+          renderLiverySection(); // Actualise l'encadré
+        } catch (err) {
+          console.error("Erreur mise à jour livrée:", err);
+          if (window.showToast) window.showToast("❌ Erreur lors de l'enregistrement.", "error");
+        }
+      });
+    }
 
   } catch (e) {
     console.error("Erreur chargement section livrée:", e);
