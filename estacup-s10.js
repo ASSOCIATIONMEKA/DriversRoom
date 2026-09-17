@@ -1450,7 +1450,7 @@ async function loadEstacupEquipes() {
     const usersMap = new Map();
     usersSnap.forEach(u => usersMap.set(u.id, u.data()));
 
-    const teamsMap = new Map(); // Va stocker teamName -> Tableau de pilotes
+    const teamsMap = new Map();
 
     snap.forEach(docSnap => {
       const data = docSnap.data();
@@ -1458,7 +1458,6 @@ async function loadEstacupEquipes() {
       const uData = usersMap.get(uid) || {};
 
       let teamName = (data.teamName || "").trim();
-      // On exclut les indépendants pour ne lister que les vraies équipes
       if (!teamName || teamName.toLowerCase() === "indépendant" || teamName.toLowerCase() === "sans équipe") {
         return; 
       }
@@ -1474,14 +1473,13 @@ async function loadEstacupEquipes() {
         licence: licence,
         licColor: licColor,
         mRating: uData.eloRating ?? 1000,
-        safety: uData.licensePoints ?? 8 // Changement 10 -> 8
+        safety: uData.licensePoints ?? 8
       };
 
       if (!teamsMap.has(teamName)) teamsMap.set(teamName, []);
       teamsMap.get(teamName).push(driver);
     });
 
-    // Tri alphabétique des noms d'équipe
     const sortedTeams = Array.from(teamsMap.keys()).sort();
 
     if (sortedTeams.length === 0) {
@@ -1489,46 +1487,68 @@ async function loadEstacupEquipes() {
       return;
     }
 
-    let html = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">`;
+    // NOUVEAU DESIGN : Une vraie liste verticale au lieu d'une grille de cartes
+    let html = `<div style="display: flex; flex-direction: column; gap: 1.5rem;">`;
 
     sortedTeams.forEach(teamName => {
       const drivers = teamsMap.get(teamName);
-      // Tri des pilotes de l'équipe par M-Rating décroissant
-      drivers.sort((a, b) => b.mRating - a.mRating);
+      drivers.sort((a, b) => b.mRating - a.mRating); // Tri des pilotes par ELO
+
+      // Calcul de la moyenne ELO de l'équipe
+      const avgRating = Math.round(drivers.reduce((acc, d) => acc + d.mRating, 0) / drivers.length);
 
       html += `
-        <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 10px 25px rgba(56,189,248,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
-          <div style="background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(56,189,248,0.15)); padding: 1.2rem 1.5rem; border-bottom: 2px solid rgba(56,189,248,0.3);">
-            <h4 style="margin: 0; color: #fde68a; font-size: 1.3rem; display: flex; align-items: center; justify-content: space-between; text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);">
-              <span>${escapeHtml(teamName)}</span>
-              <span style="font-size: 0.8rem; color: #cbd5e1; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); font-weight: normal;">${drivers.length} Pilote(s)</span>
-            </h4>
+        <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.borderColor='rgba(56,189,248,0.4)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'">
+          
+          <!-- En-tête de l'équipe -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.2rem 1.5rem; background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🛡️</div>
+              <h4 style="margin: 0; color: #f8fafc; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px;">${escapeHtml(teamName)}</h4>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span style="font-size: 0.85rem; color: #94a3b8; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">📈 Moyenne M-Rating : <strong style="color: #38bdf8; font-size: 0.95rem;">${avgRating}</strong></span>
+              <span style="font-size: 0.85rem; color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">👥 <strong>${drivers.length} / 3</strong> Pilote(s)</span>
+            </div>
           </div>
-          <div style="padding: 1rem 1.5rem;">
+
+          <!-- Liste des pilotes (Format Tableau clair) -->
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
+              <tbody>
       `;
 
       drivers.forEach((d, i) => {
         const isLast = i === drivers.length - 1;
+        const borderBottom = !isLast ? 'border-bottom: 1px solid rgba(255,255,255,0.03);' : '';
+        
         html += `
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 0; ${!isLast ? 'border-bottom: 1px dashed rgba(255,255,255,0.1);' : ''}">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="font-size: 1.15rem; font-weight: 900; color: var(--accent-primary); background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); padding: 6px 10px; border-radius: 8px; min-width: 50px; text-align: center;">#${d.number}</div>
-              <div>
-                <div style="font-weight: 700; color: #f8fafc; font-size: 1.05rem;">${escapeHtml(d.name)}</div>
-                <div style="font-size: 0.75rem; margin-top: 5px;">
-                  <span style="padding: 3px 8px; border-radius: 6px; border: 1px solid ${d.licColor}; color: ${d.licColor}; text-transform: uppercase; font-weight: bold; background: rgba(0,0,0,0.2);">${escapeHtml(d.licence)}</span>
-                </div>
-              </div>
-            </div>
-            <div style="text-align: right; font-size: 0.9rem; color: #94a3b8; font-weight: 600;">
-              <div>📈 <span style="color:#38bdf8;">${d.mRating}</span></div>
-              <div style="margin-top: 4px;">🛡️ <span style="color:#34d399;">${d.safety}</span></div>
-            </div>
-          </div>
+                <tr style="${borderBottom} transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                  <td style="padding: 12px 1.5rem; width: 80px;">
+                    <span style="font-size: 1.15rem; font-weight: 900; color: var(--accent-primary);">#${d.number}</span>
+                  </td>
+                  <td style="padding: 12px 1rem; font-weight: 600; color: #e2e8f0; font-size: 1.05rem;">
+                    ${escapeHtml(d.name)}
+                  </td>
+                  <td style="padding: 12px 1rem; width: 140px;">
+                    <span style="font-size: 0.7rem; padding: 4px 10px; border-radius: 6px; border: 1px solid ${d.licColor}; color: ${d.licColor}; text-transform: uppercase; font-weight: bold; background: rgba(0,0,0,0.2);">
+                      ${escapeHtml(d.licence)}
+                    </span>
+                  </td>
+                  <td style="padding: 12px 1rem; text-align: right; width: 140px; font-size: 0.95rem; color: #94a3b8;">
+                    M-Rating: <strong style="color: #38bdf8;">${d.mRating}</strong>
+                  </td>
+                  <td style="padding: 12px 1.5rem; text-align: right; width: 140px; font-size: 0.95rem; color: #94a3b8;">
+                    M-Safety: <strong style="color: #34d399;">${d.safety}</strong>
+                  </td>
+                </tr>
         `;
       });
 
       html += `
+              </tbody>
+            </table>
           </div>
         </div>
       `;
