@@ -26,8 +26,6 @@
 html {
   min-height: 100vh;
   background-color: #0A0E1A;
-  max-width: 100%;
-  overflow-x: hidden; /* Force l'iPad à bloquer le défilement horizontal */
 }
 
 /* Calque 1 : Le diaporama en arrière-plan fixe optimisé */
@@ -66,7 +64,6 @@ body {
   color:var(--text-primary);
   font-size:16px;
   line-height:1.6;
-  overflow-x:hidden;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -298,6 +295,29 @@ ul li:hover::before{transform:scaleY(1)}
   
   .dropdown-content { right: auto; left: 50%; transform: translateX(-50%); }
 }
+
+/* =========================================
+   RESTAURATION DES STYLES EFFACÉS (Bandeau, Admin, Toasts)
+========================================= */
+
+.admin-table { table-layout: fixed; width: 100%; }
+.admin-table th { white-space: nowrap; }
+.admin-table td { height: 60px; }
+.admin-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.admin-table td { vertical-align: middle; }
+
+.dropdown-content .dropdown-user-name { user-select: none; cursor: default; background: rgba(255, 255, 255, 0.02); }
+.dropdown-content a[href="admin-users.html"] { border-top: 1px dashed var(--border-primary); }
+
+.scrolling-banner {
+  position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 14, 26, 0.95);
+  border-top: 2px solid var(--accent-primary); overflow: hidden; z-index: 1000; padding: 8px 0; box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
+}
+.scrolling-banner-track { display: flex; width: max-content; animation: scrollBanner 15s linear infinite; }
+.banner-items { display: flex; align-items: center; flex-shrink: 0; }
+.banner-items span { display: flex; align-items: center; gap: 12px; margin: 0 40px; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
+.banner-items img { height: 24px; width: auto; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
+@keyframes scrollBanner { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
 
 /* =======================================================================
    🔥 TOASTS & CUSTOM CONFIRM (Remplacement alert / confirm)
