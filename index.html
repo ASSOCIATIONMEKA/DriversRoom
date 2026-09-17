@@ -230,9 +230,9 @@
       text-align: center;
     }
 
-   .social-grid {
+    .social-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Réduit de 180 à 140px */
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 1.2rem;
       margin-bottom: 2.5rem;
     }
@@ -245,7 +245,7 @@
     .social-card {
       display: flex;
       align-items: center;
-      padding: 1.2rem 1rem; /* Padding ajusté pour les petits écrans */
+      padding: 1.2rem 1rem;
       background: rgba(15, 23, 42, 0.6);
       border-radius: 1rem;
       border: 1px solid rgba(255,255,255,0.1);
@@ -287,7 +287,7 @@
     .sc-tiktok::before { background: radial-gradient(circle at right bottom, rgba(0, 242, 254, 0.15), rgba(254, 44, 85, 0.15)); }
 
     .sc-icon {
-      width: 40px; /* Légèrement réduit pour faire de la place */
+      width: 40px;
       height: 40px;
       margin-right: 0.8rem;
       display: flex;
@@ -303,12 +303,12 @@
     .sc-text h3 {
       margin: 0 0 0.2rem 0;
       color: #f8fafc;
-      font-size: 1rem; /* Ajusté */
+      font-size: 1rem;
     }
     .sc-text p {
       margin: 0;
       color: #94a3b8;
-      font-size: 0.75rem; /* Ajusté */
+      font-size: 0.75rem;
       line-height: 1.3;
     }
 
@@ -425,7 +425,25 @@
             <span class="time-val" id="cd-days">--</span>
             <span class="time-label">Jours</span>
           </div>
-          <!-- BLOC DYNAMIQUE PRÉSENCE COURSE (Géré par JS) -->
+          <span class="time-sep">:</span>
+          <div class="time-box">
+            <span class="time-val" id="cd-hours">--</span>
+            <span class="time-label">Heures</span>
+          </div>
+          <span class="time-sep">:</span>
+          <div class="time-box">
+            <span class="time-val" id="cd-mins">--</span>
+            <span class="time-label">Minutes</span>
+          </div>
+          <span class="time-sep">:</span>
+          <div class="time-box">
+            <span class="time-val" id="cd-secs">--</span>
+            <span class="time-label">Secondes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLOC DYNAMIQUE PRÉSENCE COURSE (Géré par JS) -->
       <div id="next-race-registration-block" class="course-box" style="display: none; border-color: #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(15, 23, 42, 0.8)); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15); margin-bottom: 2rem;">
         <h2 style="color: #10b981; border-bottom: 2px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 10px;">
           <span style="font-size: 1.5rem;">🟢</span> Inscriptions Ouvertes : <span id="nr-title">...</span>
@@ -451,23 +469,6 @@
 
         <div style="text-align: center;">
           <a href="estacup-s10.html" class="hero-btn" style="background: linear-gradient(135deg, #10b981, #059669); padding: 0.8rem 2rem;">Confirmer ma présence</a>
-        </div>
-      </div>
-          <span class="time-sep">:</span>
-          <div class="time-box">
-            <span class="time-val" id="cd-hours">--</span>
-            <span class="time-label">Heures</span>
-          </div>
-          <span class="time-sep">:</span>
-          <div class="time-box">
-            <span class="time-val" id="cd-mins">--</span>
-            <span class="time-label">Minutes</span>
-          </div>
-          <span class="time-sep">:</span>
-          <div class="time-box">
-            <span class="time-val" id="cd-secs">--</span>
-            <span class="time-label">Secondes</span>
-          </div>
         </div>
       </div>
 
@@ -676,3 +677,5 @@
       initNextRaceLogic();
     });
   </script>
+</body>
+</html>
