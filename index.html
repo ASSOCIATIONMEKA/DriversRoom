@@ -230,12 +230,16 @@
       text-align: center;
     }
 
-    .social-grid {
+   .social-grid {
       display: grid;
-      /* On réduit le minmax pour forcer les 5 éléments sur la même ligne */
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Réduit de 180 à 140px */
       gap: 1.2rem;
       margin-bottom: 2.5rem;
+    }
+
+    /* Ajustement spécial iPad pour ne pas déborder */
+    @media (max-width: 1150px) {
+      .hero-section h1 { font-size: 3.2rem; }
     }
 
     .social-card {
