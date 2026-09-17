@@ -2562,7 +2562,6 @@ function setAlertState(key, type, message, alertId) {
 function renderAllBadges() {
   // 1. Boutons d'action finale (Bordure clignotante)
   const applyBlink = (selector, type) => {
-    // querySelectorAll permet de cibler plusieurs orthographes possibles
     const btns = document.querySelectorAll(selector);
     btns.forEach(btn => {
       btn.classList.remove('btn-notify-red', 'btn-notify-orange');
@@ -2574,7 +2573,7 @@ function renderAllBadges() {
   applyBlink('button[data-sub="livree"]', window.appAlerts.livree);
   applyBlink('button[data-sub="votecircuit"]', window.appAlerts.votecircuit);
   
-  // Correction ici : On cible "presence" ET "presences" pour être sûr de l'allumer !
+  // On cible "presence" ET "presences" pour être sûr de l'allumer !
   applyBlink('button[data-sub="presence"], button[data-sub="presences"]', window.appAlerts.presence);
 
   // 2. Boutons parents de navigation (Petite puce rouge)
@@ -2620,16 +2619,18 @@ async function initNotifications(uid, isAdmin) {
     let isUserSignedUp = false;
     let isUserValidated = false;
     let userLiveryDone = false;
+    let userLiveryChoice = "personnelle";
 
     snap.forEach(d => {
       const data = d.data();
       if (!data.isValidated) pendingAdminValidation++;
-      if (data.isValidated && !data.liveryImplemented) pendingAdminLivery++;
+      if (data.isValidated && data.liveryChoice === "personnelle" && !data.liveryImplemented) pendingAdminLivery++;
       
       if (d.id === uid) {
         isUserSignedUp = true;
         isUserValidated = data.isValidated === true;
         userLiveryDone = data.liveryImplemented === true;
+        userLiveryChoice = data.liveryChoice || "personnelle";
       }
     });
 
@@ -2648,7 +2649,9 @@ async function initNotifications(uid, isAdmin) {
         setAlertState('inscription', 'orange', null, null);
       } else {
         setAlertState('inscription', null, null, null);
-        if (!userLiveryDone) {
+        
+        // La livrée n'est demandée QUE si le pilote est validé ET qu'il a choisi une livrée personnelle
+        if (userLiveryChoice === "personnelle" && !userLiveryDone) {
           setAlertState('livree', 'orange', "🎨 <strong>Livrée :</strong> N'oubliez pas de déposer votre fichier .zip sur le OneDrive !", "user-livery");
         } else {
           setAlertState('livree', null, null, null);
