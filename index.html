@@ -567,10 +567,10 @@
     });
   </script>
 
-  <!-- Script pour dynamiser les statistiques de l'accueil -->
+<!-- Script Unifié : Stats, Compte à rebours dynamique & Inscriptions -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDJ7uhvc31nyRB4bh9bVtkagaUksXG1fOo",
@@ -583,6 +583,17 @@
 
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     const db = getFirestore(app);
+
+    // Calendrier officiel - Permet au site de s'actualiser tout seul
+    const racesList = [
+      { id: "prologue", title: "Prologue", track: "Silverstone", dateStr: "22/09/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-09-22T20:00:00") },
+      { id: "manche1", title: "Manche 1", track: "Portimão", dateStr: "06/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-06T20:00:00") },
+      { id: "manche2", title: "Manche 2", track: "Brno", dateStr: "20/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-20T20:00:00") },
+      { id: "manche3", title: "Manche 3", track: "VIR / Road America", dateStr: "24/11/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-11-24T20:00:00") },
+      { id: "manche4", title: "Manche 4", track: "Fuji Speedway", dateStr: "08/12/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-12-08T20:00:00") },
+      { id: "manche5", title: "Manche 5", track: "Magny-Cours / Dijon", dateStr: "19/01/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-01-19T20:00:00") },
+      { id: "manche6", title: "Manche 6", track: "Kyalami", dateStr: "02/02/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-02-02T20:00:00") }
+    ];
 
     async function loadHomeStats() {
       try {
@@ -609,54 +620,59 @@
         
       } catch (err) {
         console.error("Erreur de chargement des stats de l'accueil :", err);
-        document.getElementById("home-pilots-count").textContent = "--";
-        document.getElementById("home-teams-count").textContent = "--";
-        document.getElementById("home-users-count").textContent = "--";
       }
     }
 
-    document.addEventListener("DOMContentLoaded", loadHomeStats);
-  </script>
-
-  <!-- Script pour le compte à rebours de Silverstone -->
-  <script>
-    function startCountdown() {
-      const targetDate = new Date("2026-09-22T21:00:00").getTime();
+    function initNextRaceLogic() {
+      const now = new Date();
+      // Cherche la première course dont la date n'est pas encore passée
+      const nextRace = racesList.find(r => r.dateObj >= now);
       
-      const elDays = document.getElementById("cd-days");
-      const elHours = document.getElementById("cd-hours");
-      const elMins = document.getElementById("cd-mins");
-      const elSecs = document.getElementById("cd-secs");
-      
-      if (!elDays) return;
-
-      function update() {
-        const now = new Date().getTime();
-        const diff = targetDate - now;
-
-        if (diff <= 0) {
-          document.getElementById("silverstone-countdown-container").innerHTML = 
-            "<h3 style='color:#10b981; margin:0; font-size:1.8rem; text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);'>Session en cours !</h3>";
+      if (!nextRace) {
+          document.getElementById("cd-race-name").textContent = "Saison Terminée";
+          document.getElementById("cd-days").textContent = "0";
           return;
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-        elDays.textContent = days;
-        elHours.textContent = String(hours).padStart(2, "0");
-        elMins.textContent = String(mins).padStart(2, "0");
-        elSecs.textContent = String(secs).padStart(2, "0");
       }
 
-      update();
-      setInterval(update, 1000);
+      // --- 1. COMPTE A REBOURS DYNAMIQUE ---
+      document.getElementById("cd-race-name").textContent = `${nextRace.title} (${nextRace.track})`;
+      const targetTime = nextRace.dateObj.getTime();
+      
+      setInterval(() => {
+        const diff = targetTime - new Date().getTime();
+        if (diff <= 0) return;
+        document.getElementById("cd-days").textContent = Math.floor(diff / (1000 * 60 * 60 * 24));
+        document.getElementById("cd-hours").textContent = String(Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, "0");
+        document.getElementById("cd-mins").textContent = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, "0");
+        document.getElementById("cd-secs").textContent = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, "0");
+      }, 1000);
+
+      // --- 2. GESTION DU BLOC D'INSCRIPTION ---
+      const diffDays = (nextRace.dateObj - now) / (1000 * 60 * 60 * 24);
+      const block = document.getElementById("next-race-registration-block");
+      
+      // Affiche le bloc uniquement si la course est dans 7 jours ou moins
+      if (block && diffDays <= 7) {
+        document.getElementById("nr-title").textContent = nextRace.title;
+        document.getElementById("nr-track").textContent = nextRace.track;
+        document.getElementById("nr-date").textContent = nextRace.dateStr;
+        document.getElementById("nr-time").textContent = nextRace.time;
+        
+        block.style.display = "block";
+
+        // Écoute en temps réel les présences Firebase pour cette course
+        onSnapshot(collection(db, `attendances_${nextRace.id}`), (snap) => {
+          let count = 0;
+          snap.forEach(doc => { if (doc.data().status === "present") count++; });
+          const countEl = document.getElementById("nr-count");
+          countEl.textContent = count;
+          if (count >= 32) countEl.style.color = "#f87171"; // Passe en rouge si le Split 1 est plein
+        });
+      }
     }
 
-    document.addEventListener("DOMContentLoaded", startCountdown);
+    document.addEventListener("DOMContentLoaded", () => {
+      loadHomeStats();
+      initNextRaceLogic();
+    });
   </script>
-
-</body>
-</html>
