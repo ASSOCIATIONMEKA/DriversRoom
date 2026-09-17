@@ -1192,6 +1192,18 @@ async function loadEstacupForm(userData) {
 
 /* ======================== LISTE DES ENGAGÉS (PUBLIQUE) ======================== */
 let engagesDataCache = [];
+let engagesSortCol = "number";
+let engagesSortDir = "asc";
+
+window.handleEngagesSort = function(col) {
+  if (engagesSortCol === col) {
+    engagesSortDir = engagesSortDir === "asc" ? "desc" : "asc";
+  } else {
+    engagesSortCol = col;
+    engagesSortDir = "asc";
+  }
+  updateEngagesTable();
+};
 
 async function loadEstacupEngages() {
   const targetArea = document.getElementById("champ-sub-engages");
@@ -1267,12 +1279,6 @@ function renderEstacupEngagesUI() {
       
       <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
         <input type="text" id="engagesSearch" placeholder="Rechercher (Nom, N°, Équipe...)" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
-        <select id="engagesSort" style="padding: 0.6rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white;">
-          <option value="number_asc">Tri : N° (Croissant)</option>
-          <option value="name_asc">Tri : Prénom/Nom (A-Z)</option>
-          <option value="rating_desc">Tri : M-Rating (Décroissant)</option>
-          <option value="team_asc">Tri : Équipe (A-Z)</option>
-        </select>
       </div>
 
       <div id="engagesTableContainer" style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); padding: 1rem;">
@@ -1280,7 +1286,6 @@ function renderEstacupEngagesUI() {
     `;
 
     document.getElementById("engagesSearch").addEventListener("input", updateEngagesTable);
-    document.getElementById("engagesSort").addEventListener("change", updateEngagesTable);
   }
 
   updateEngagesTable();
@@ -1288,7 +1293,6 @@ function renderEstacupEngagesUI() {
 
 function updateEngagesTable() {
   const searchVal = (document.getElementById("engagesSearch").value || "").toLowerCase();
-  const sortVal = document.getElementById("engagesSort").value || "number_asc";
   const container = document.getElementById("engagesTableContainer");
   const countEl = document.getElementById("engagesCount");
 
@@ -1298,11 +1302,15 @@ function updateEngagesTable() {
   });
 
   filtered.sort((a, b) => {
-    if (sortVal === "number_asc") return a.number - b.number;
-    if (sortVal === "name_asc") return a.name.localeCompare(b.name);
-    if (sortVal === "rating_desc") return b.mRating - a.mRating;
-    if (sortVal === "team_asc") return a.team.localeCompare(b.team);
-    return 0;
+    let res = 0;
+    if (engagesSortCol === "number") res = a.number - b.number;
+    else if (engagesSortCol === "name") res = a.name.localeCompare(b.name);
+    else if (engagesSortCol === "rating") res = a.mRating - b.mRating;
+    else if (engagesSortCol === "team") res = a.team.localeCompare(b.team);
+    else if (engagesSortCol === "licence") res = a.licence.localeCompare(b.licence);
+    else if (engagesSortCol === "livery") res = a.liveryChoice.localeCompare(b.liveryChoice);
+
+    return engagesSortDir === "asc" ? res : -res;
   });
 
   if (countEl) countEl.textContent = filtered.length;
@@ -1312,16 +1320,21 @@ function updateEngagesTable() {
     return;
   }
 
+  const getIcon = (col) => engagesSortCol === col ? (engagesSortDir === "asc" ? " ▴" : " ▾") : "";
+  const thStyle = "padding: 12px 15px; color: var(--text-muted); font-weight: 600; cursor: pointer; user-select: none; transition: color 0.2s;";
+  const hoverIn = "this.style.color='#fff'";
+  const hoverOut = "this.style.color='var(--text-muted)'";
+
   let html = `
     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; min-width: 900px;">
       <thead>
         <tr style="border-bottom: 1px solid var(--border-primary); background: rgba(255,255,255,0.02);">
-          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 70px;">N°</th>
-          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Pilote</th>
-          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Licence</th>
-          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">M-Rating</th>
-          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600; width: 180px; text-align: center;">Livrée</th>
-          <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Équipe</th>
+          <th style="${thStyle} width: 70px;" onclick="handleEngagesSort('number')" onmouseover="${hoverIn}" onmouseout="${hoverOut}">N°<span style="color:#38bdf8">${getIcon('number')}</span></th>
+          <th style="${thStyle}" onclick="handleEngagesSort('name')" onmouseover="${hoverIn}" onmouseout="${hoverOut}">Pilote<span style="color:#38bdf8">${getIcon('name')}</span></th>
+          <th style="${thStyle}" onclick="handleEngagesSort('licence')" onmouseover="${hoverIn}" onmouseout="${hoverOut}">Licence<span style="color:#38bdf8">${getIcon('licence')}</span></th>
+          <th style="${thStyle}" onclick="handleEngagesSort('rating')" onmouseover="${hoverIn}" onmouseout="${hoverOut}">M-Rating<span style="color:#38bdf8">${getIcon('rating')}</span></th>
+          <th style="${thStyle} width: 180px; text-align: center;" onclick="handleEngagesSort('livery')" onmouseover="${hoverIn}" onmouseout="${hoverOut}">Livrée<span style="color:#38bdf8">${getIcon('livery')}</span></th>
+          <th style="${thStyle}" onclick="handleEngagesSort('team')" onmouseover="${hoverIn}" onmouseout="${hoverOut}">Équipe<span style="color:#38bdf8">${getIcon('team')}</span></th>
           <th style="padding: 12px 15px; color: var(--text-muted); font-weight: 600;">Véhicule</th>
         </tr>
       </thead>
