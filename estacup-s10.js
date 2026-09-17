@@ -355,6 +355,7 @@ onAuthStateChanged(auth, async (user) => {
     await loadPilotStats(currentUid);
     await loadAdvancedMRatingAndSafety(currentUid, data.eloRating, data.licensePoints);
     await loadMyIncidents(currentUid);
+    setupCompareTool();
     
   } catch (err) { 
     console.error("Erreur sécurité S10:", err); 
