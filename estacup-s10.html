@@ -386,9 +386,10 @@
 
       <!-- MENU PRINCIPAL ÉPURÉ (Niveau 0) -->
       <nav class="menu" id="mainNav">
-        <button data-section="infos">Mes informations</button>
+        <button data-section="">Mes informations</button>
         <button data-section="championship">🏆 Le Championnat</button>
         <button data-section="serveurs">📡 Serveurs & Accès</button>
+        <button id="navMediaBtn" data-section="media" class="hidden" style="background: linear-gradient(135deg, #a855f7, #7e22ce); color: white; border: none; box-shadow: var(--shadow-md);">🎥 Espace Média</button>
         <button id="goToAdmin" class="hidden admin-only" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; box-shadow: var(--shadow-md);">Espace Admin S10</button>
       </nav>
 
@@ -531,6 +532,34 @@
 
         </div>
 
+        <!-- SECTION : 🎥 ESPACE MÉDIA & DIFFUSION -->
+      <section id="section-media" class="section hidden">
+        <h2 class="section-main-title">Espace Média & Diffusion</h2>
+        
+        <div class="course-box" style="border-color: #a855f7; background: rgba(168, 85, 247, 0.05);">
+          <h3 style="color: #a855f7; margin-bottom: 15px;">Ressources Broadcasters</h3>
+          <p style="color: #cbd5e1; font-size: 1.05rem; margin-bottom: 20px;">
+            Cet espace est exclusivement réservé au <strong>Staff</strong> et aux <strong>Streamers / Commentateurs</strong>. Vous y trouverez tous les éléments nécessaires pour la diffusion du championnat.
+          </p>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <!-- Exemple de carte de ressource -->
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px;">
+              <h4 style="margin-top: 0; color: #fff;">📦 Pack Graphique (Overlays)</h4>
+              <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">Logos officiels, transitions vidéo et overlays dynamiques pour OBS/vMix.</p>
+              <button class="btn-validate" style="width: 100%; padding: 10px; font-size: 0.95rem; background: linear-gradient(135deg, #a855f7, #7e22ce);">Télécharger</button>
+            </div>
+
+            <!-- Exemple de carte de ressource -->
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px;">
+              <h4 style="margin-top: 0; color: #fff;">📄 Dossier de Presse (Entry List)</h4>
+              <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">Liste des pilotes validés, équipes, numéros et informations sur les tracés.</p>
+              <button class="btn-validate" style="width: 100%; padding: 10px; font-size: 0.95rem; background: linear-gradient(135deg, #38bdf8, #2563eb);">Consulter</button>
+            </div>
+          </div>
+        </div>
+      </section>
+        
         <!-- ================= CONTENUS DES SOUS-SECTIONS ================= -->
 
         <!-- RÈGLEMENT OFFICIEL INTÉGRAL (AVEC MODE ÉDITION ADMIN MARKDOWN) -->
