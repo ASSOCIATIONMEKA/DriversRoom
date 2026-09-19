@@ -2527,6 +2527,7 @@ async function renderCompareTable() {
     resultsDiv.innerHTML = `<p class="impact-bad">Erreur lors de la comparaison.</p>`;
   }
 }
+
 /* ======================== SYSTÈME DE NOTIFICATIONS ======================== */
 
 window.dismissedAlerts = window.dismissedAlerts || new Set();
@@ -2536,7 +2537,8 @@ window.appAlerts = {
   inscription: null,
   livree: null,
   votecircuit: null,
-  presence: null
+  presence: null,
+  adminValidation: null // Nouvelle clé pour les admins
 };
 
 // Affiche un Toast pop-up
@@ -2577,7 +2579,11 @@ function setAlertState(key, type, message, alertId) {
   window.appAlerts[key] = type;
   
   if (type && message && alertId) {
-    showPersistentAlert(message, alertId, type === 'red' ? 'error' : 'warning');
+    let toastType = 'warning';
+    if (type === 'red') toastType = 'error';
+    if (type === 'admin') toastType = 'admin'; // Attribution du nouveau style CSS violet
+    
+    showPersistentAlert(message, alertId, toastType);
   } else if (!type && alertId) {
     // Si l'alerte n'est plus valide, on la supprime visuellement de l'écran
     const existingToast = document.getElementById("alert-" + alertId);
@@ -2591,9 +2597,7 @@ function setAlertState(key, type, message, alertId) {
 }
 
 // Applique visuellement les bordures (enfants) et les puces (parents)
-// Applique visuellement les bordures (enfants) et les puces (parents)
 function renderAllBadges() {
-  // Fonction universelle pour appliquer la petite puce rouge (dot) clignotante
   const applyDot = (selector, hasAlert) => {
     const btns = document.querySelectorAll(selector);
     btns.forEach(btn => {
@@ -2601,7 +2605,6 @@ function renderAllBadges() {
       if (hasAlert) {
         if (!dot) {
           btn.classList.add('btn-has-notification');
-          // On force la position relative pour que le point rouge s'accroche bien au coin du bouton
           btn.style.position = "relative"; 
           dot = document.createElement('span');
           dot.className = 'notify-dot-parent';
@@ -2614,46 +2617,41 @@ function renderAllBadges() {
     });
   };
 
-  // 1. Boutons de sous-catégories (Bordure clignotante ET Puce rouge)
   const applyAlert = (selector, type) => {
     const btns = document.querySelectorAll(selector);
     btns.forEach(btn => {
       btn.classList.remove('btn-notify-red', 'btn-notify-orange');
       if (type) btn.classList.add(`btn-notify-${type}`);
     });
-    // On applique le point rouge directement sur le bouton de sous-catégorie pour le rendre évident
     applyDot(selector, type != null);
   };
 
-  // Application des alertes sur les actions requises
+  // 1. Boutons de sous-catégories
   applyAlert('button[data-sub="inscription"]', window.appAlerts.inscription);
   applyAlert('button[data-sub="livree"]', window.appAlerts.livree);
   applyAlert('button[data-sub="votecircuit"]', window.appAlerts.votecircuit);
   applyAlert('button[data-sub="presence"], button[data-sub="presences"]', window.appAlerts.presence);
 
-  // 2. Boutons parents de navigation (Petite puce rouge uniquement)
+  // 2. Boutons parents de navigation Pilote
   const adminAlert = window.appAlerts.inscription || window.appAlerts.presence;
   const paddockAlert = window.appAlerts.livree;
   const pisteAlert = window.appAlerts.votecircuit;
 
-  // On remonte l'alerte sur les gros onglets du milieu
   applyDot('button[data-cat="admin"]', adminAlert);
   applyDot('button[data-cat="paddock"]', paddockAlert);
   applyDot('button[data-cat="piste"]', pisteAlert);
+  applyDot('button[data-section="championship"]', adminAlert || paddockAlert || pisteAlert);
 
-  // 3. On remonte l'alerte jusqu'au bouton principal "Le Championnat"
-  const champAlert = adminAlert || paddockAlert || pisteAlert;
-  applyDot('button[data-section="championship"]', champAlert);
+  // 3. Bouton Espace Admin (Exclusif aux administrateurs)
+  applyDot('#goToAdmin', window.appAlerts.adminValidation);
 }
 
 // --- 3. Logique d'analyse Firebase en temps réel ---
 async function initNotifications(uid, isAdmin) {
-  // Variables locales pour stocker l'état
   let currentUserIsValidated = false;
   let userVotesData = null;
   let userPresenceData = null;
 
-  // C. Définition de la course imminente
   const racesList = [
     { id: "prologue", dateObj: new Date("2026-09-22T20:00:00") },
     { id: "manche1", dateObj: new Date("2026-10-06T20:00:00") },
@@ -2663,33 +2661,27 @@ async function initNotifications(uid, isAdmin) {
     { id: "manche5", dateObj: new Date("2027-01-19T20:00:00") },
     { id: "manche6", dateObj: new Date("2027-02-02T20:00:00") }
   ];
-  
   const nextRace = racesList.find(r => r.dateObj >= new Date());
 
-  // Fonction d'évaluation centralisée des alertes secondaires (Votes & Présence)
   const evaluateSecondaryAlerts = () => {
-    // Si on est en vue Admin, on cache les alertes liées à la piste
     if (isAdmin && window.adminViewActive) {
       setAlertState('votecircuit', null, null, "user-votes");
       setAlertState('presence', null, null, "user-presence");
       return;
     }
 
-    // CONDITION CLÉ : Si le joueur n'est pas validé, on annule les alertes de piste
     if (!currentUserIsValidated) {
       setAlertState('votecircuit', null, null, "user-votes");
       setAlertState('presence', null, null, "user-presence");
       return;
     }
 
-    // Évaluation Votes
     if (!userVotesData || !userVotesData.round3 || !userVotesData.round5) {
       setAlertState('votecircuit', 'orange', "🗳️ <strong>Votes :</strong> Votre avis compte ! Choisissez les circuits des manches 3 et 5.", "user-votes");
     } else {
       setAlertState('votecircuit', null, null, "user-votes");
     }
 
-    // Évaluation Présence (Alerte rouge à J-7)
     if (nextRace) {
       const diffDays = (nextRace.dateObj - new Date()) / (1000 * 60 * 60 * 24);
       if (diffDays <= 7 && !userPresenceData) {
@@ -2703,7 +2695,6 @@ async function initNotifications(uid, isAdmin) {
   // A. Écoute globale : Inscriptions & Livrées
   onSnapshot(collection(db, "estacup_s10_signups"), (snap) => {
     let pendingAdminValidation = 0;
-    let pendingAdminLivery = 0;
     let isUserSignedUp = false;
     currentUserIsValidated = false;
     let userLiveryDone = false;
@@ -2712,7 +2703,6 @@ async function initNotifications(uid, isAdmin) {
     snap.forEach(d => {
       const data = d.data();
       if (!data.isValidated) pendingAdminValidation++;
-      if (data.isValidated && data.liveryChoice === "personnelle" && !data.liveryImplemented) pendingAdminLivery++;
       
       if (d.id === uid) {
         isUserSignedUp = true;
@@ -2722,22 +2712,20 @@ async function initNotifications(uid, isAdmin) {
       }
     });
 
+    // 🔴 NOTIFICATIONS ADMIN (Indépendantes de la vue active Pilote/Admin)
+    if (isAdmin) {
+      if (pendingAdminValidation > 0) {
+        setAlertState('adminValidation', 'admin', `🛡️ <strong>Espace Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente de validation.`, "admin-val-popup");
+      } else {
+        setAlertState('adminValidation', null, null, "admin-val-popup");
+      }
+    }
+
+    // 🟢 NOTIFICATIONS PILOTE
     if (isAdmin && window.adminViewActive) {
-      // Nettoyage des alertes pilote
       setAlertState('inscription', null, null, "user-signup");
       setAlertState('livree', null, null, "user-livery");
-
-      if (pendingAdminValidation > 0) {
-        setAlertState('inscription', 'red', `🔴 <strong>Action Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente.`, "admin-validation");
-      } else if (pendingAdminLivery > 0) {
-        setAlertState('inscription', 'orange', null, "admin-validation");
-      } else {
-        setAlertState('inscription', null, null, "admin-validation");
-      }
     } else {
-      // Nettoyage des alertes admin
-      setAlertState('inscription', null, null, "admin-validation");
-
       if (!isUserSignedUp) {
         setAlertState('inscription', 'red', "⚠️ <strong>Inscription requise :</strong> Remplissez votre formulaire d'engagement à l'ESTACUP !", "user-signup");
         setAlertState('livree', null, null, "user-livery");
@@ -2747,7 +2735,6 @@ async function initNotifications(uid, isAdmin) {
       } else {
         setAlertState('inscription', null, null, "user-signup");
         
-        // La livrée n'est demandée QUE si le pilote est validé ET qu'il a choisi une livrée personnelle
         if (userLiveryChoice === "personnelle" && !userLiveryDone) {
           setAlertState('livree', 'orange', "🎨 <strong>Livrée :</strong> N'oubliez pas de déposer votre fichier .zip sur le OneDrive !", "user-livery");
         } else {
@@ -2756,7 +2743,6 @@ async function initNotifications(uid, isAdmin) {
       }
     }
 
-    // À chaque modification du statut d'inscription, on réévalue les autres alertes
     evaluateSecondaryAlerts();
   });
 
