@@ -2799,7 +2799,7 @@ async function initNotifications(uid, isAdmin) {
       return;
     }
 
-    if (!userVotesData || !userVotesData.round3 || !userVotesData.round5) {
+    if (!userVotesData || !userVotesData.round2 || !userVotesData.round5) {
       setAlertState('votecircuit', 'orange', "🗳️ <strong>Votes :</strong> Votre avis compte ! Choisissez les circuits des manches 3 et 5.", "user-votes");
     } else {
       setAlertState('votecircuit', null, null, "user-votes");
