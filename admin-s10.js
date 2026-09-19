@@ -346,38 +346,88 @@ function computeEloUpdates(rankingArr, ratingsMap, K = 32) {
   return out;
 }
 
-/* ---------------- Incidents ---------------- */
-document.getElementById("addIncidentPilot")?.addEventListener("click", async () => {
+/* ---------------- Incidents & Pénalités ---------------- */
+
+// Changement du texte du bouton pour plus de clarté
+const btnAddIncident = document.getElementById("addIncidentPilot");
+if (btnAddIncident) btnAddIncident.textContent = "➕ Ajouter un pilote impacté";
+
+btnAddIncident?.addEventListener("click", async () => {
   const select = document.getElementById("incidentPilotSelect");
-  const uid = select?.value; if (!uid) return;
-  const snap = await getDoc(doc(db, "users", uid)); if (!snap.exists()) return;
-  const d = snap.data(); const name = `${d.firstName || ""} ${d.lastName || ""}`.trim() || uid;
-  const before = d.licensePoints ?? 10; const after = before - 1;
-  selectedPilots.push({ uid, name, before, after }); updateIncidentList();
+  const uid = select?.value; 
+  if (!uid) return;
+  
+  // Évite d'ajouter deux fois le même pilote
+  if (selectedPilots.some(p => p.uid === uid)) {
+    if (typeof window.showToast === "function") window.showToast("Pilote déjà ajouté.", "warning");
+    return;
+  }
+
+  const snap = await getDoc(doc(db, "users", uid)); 
+  if (!snap.exists()) return;
+  
+  const d = snap.data(); 
+  const name = `${d.firstName || ""} ${d.lastName || ""}`.trim() || uid;
+  const before = d.licensePoints ?? 10; 
+  const after = before - 1; // Pénalité de -1 par défaut
+  
+  selectedPilots.push({ uid, name, before, after }); 
+  updateIncidentList();
 });
 
 function updateIncidentList() {
-  const list = document.getElementById("incidentList"); if (!list) return;
+  const list = document.getElementById("incidentList"); 
+  if (!list) return;
   list.innerHTML = "";
+  
   selectedPilots.forEach((p, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong>${p.name}</strong> — Avant : ${p.before} → <input type="number" value="${p.after}" data-i="${i}" style="width:100px;text-align:center;font-size:1.1em;padding:4px;" /> pts
-      <button type="button" class="remove" data-i="${i}" title="Retirer">✖</button>`;
+    li.style.cssText = "background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05);";
+    
+    const diff = p.after - p.before;
+    const diffColor = diff < 0 ? '#ef4444' : '#10b981';
+
+    li.innerHTML = `
+      <div>
+        <strong style="color: #38bdf8; font-size: 1.05rem;">${escapeHtml(p.name)}</strong>
+        <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 4px;">
+          M-Safety : ${p.before} → <input type="number" value="${p.after}" data-i="${i}" style="width: 60px; text-align: center; font-size: 1rem; padding: 4px; border-radius: 4px; background: #020617; color: ${diffColor}; border: 1px solid #334155; margin: 0 5px;" /> pts
+        </div>
+      </div>
+      <button type="button" class="remove" data-i="${i}" title="Retirer ce pilote" style="background: rgba(239, 68, 68, 0.15); border: none; color: #ef4444; border-radius: 6px; cursor: pointer; padding: 8px 12px; font-size: 1.1rem; transition: 0.2s;">✖</button>
+    `;
     list.appendChild(li);
   });
+
   list.querySelectorAll("input").forEach(inp => inp.addEventListener("input", (e) => {
-    const idx = parseInt(e.target.dataset.i, 10); const val = parseInt(e.target.value, 10);
-    if (!isNaN(val)) selectedPilots[idx].after = val;
+    const idx = parseInt(e.target.dataset.i, 10); 
+    const val = parseInt(e.target.value, 10);
+    if (!isNaN(val)) {
+      selectedPilots[idx].after = val;
+      const diff = val - selectedPilots[idx].before;
+      e.target.style.color = diff < 0 ? '#ef4444' : '#10b981';
+    }
   }));
+
   list.querySelectorAll(".remove").forEach(btn => btn.addEventListener("click", () => {
-    const idx = parseInt(btn.dataset.i, 10); selectedPilots.splice(idx, 1); updateIncidentList();
+    const idx = parseInt(btn.dataset.i, 10); 
+    selectedPilots.splice(idx, 1); 
+    updateIncidentList();
   }));
 }
 
 document.getElementById("submitIncident")?.addEventListener("click", async () => {
   const description = document.getElementById("incidentDescription")?.value.trim();
   const raceId = document.getElementById("incidentRaceSelect")?.value || null;
-  if (!description || selectedPilots.length === 0) { showToast("⚠️ Description et au moins un pilote requis.", "warning"); return; }
+  const btn = document.getElementById("submitIncident");
+
+  if (!description || selectedPilots.length === 0) { 
+    if (typeof window.showToast === "function") window.showToast("⚠️ Description et au moins un pilote impacté requis.", "warning"); 
+    return; 
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Enregistrement en cours...";
 
   const adminName = (document.getElementById("adminName")?.textContent || "").trim();
   const payload = {
@@ -389,18 +439,150 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
     createdByName: adminName || null,
   };
 
-  await addDoc(collection(db, "incidents"), payload);
+  try {
+    await addDoc(collection(db, "incidents"), payload);
 
-  for (const p of selectedPilots) {
-    await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
+    for (const p of selectedPilots) {
+      await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
+    }
+
+    selectedPilots = [];
+    updateIncidentList();
+    document.getElementById("incidentDescription").value = "";
+    if (typeof window.showToast === "function") window.showToast("✅ Incident enregistré et pénalités appliquées.", "success");
+    await loadIncidentHistory();
+  } catch (err) {
+    console.error("Erreur enregistrement incident:", err);
+    if (typeof window.showToast === "function") window.showToast("❌ Erreur lors de l'enregistrement.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "✅ Enregistrer l'incident";
   }
-
-  selectedPilots = [];
-  updateIncidentList();
-  document.getElementById("incidentDescription").value = "";
-  showToast("✅ Incident enregistré.", "success");
-  await loadIncidentHistory();
 });
+
+/* ======================== HISTORIQUE DES INCIDENTS ======================== */
+async function loadIncidentHistory() {
+  const box = document.getElementById("incidentHistory");
+  if (!box) return;
+
+  box.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement de l'historique...</div>`;
+
+  try {
+    const snap = await getDocs(collection(db, "incidents"));
+    if (snap.empty) {
+      box.innerHTML = `<p class="muted-note" style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px;">Aucun incident n'a été enregistré pour le moment.</p>`;
+      return;
+    }
+
+    const incidents = [];
+    snap.forEach(d => incidents.push({ id: d.id, ...d.data() }));
+
+    // Tri par date décroissante
+    incidents.sort((a, b) => {
+      const ta = a.date?.toDate ? a.date.toDate().getTime() : 0;
+      const tb = b.date?.toDate ? b.date.toDate().getTime() : 0;
+      return tb - ta;
+    });
+
+    let html = `
+      <h4 style="margin-top: 2rem; color: #38bdf8; border-bottom: 2px solid rgba(56, 189, 248, 0.2); padding-bottom: 10px;">Vos incidents enregistrés</h4>
+      <details style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-primary); border-radius: 8px; margin-bottom: 2rem;" open>
+        <summary style="padding: 15px; font-weight: bold; cursor: pointer; user-select: none; outline: none; list-style: none; display: flex; align-items: center; gap: 10px; color: #e2e8f0;">
+          🔽 Afficher l'historique complet
+        </summary>
+        <div style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
+    `;
+
+    incidents.forEach(inc => {
+      const dateObj = inc.date?.toDate ? inc.date.toDate() : new Date(inc.date);
+      const dateStr = dateObj.toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit'});
+      const author = inc.createdByName || "Admin";
+
+      let pilotsHtml = "";
+      (inc.pilotes || []).forEach(p => {
+        const diff = p.after - p.before;
+        const diffColor = diff < 0 ? '#ef4444' : '#10b981';
+        pilotsHtml += `
+          <div style="background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 6px; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid rgba(255,255,255,0.05);">
+            <strong style="color: #fff;">👤 ${escapeHtml(p.name)}</strong>
+            <span style="color: #94a3b8; font-size: 0.95rem;">
+              avant: ${p.before} → après: <strong style="color: ${diffColor}; padding: 2px 6px; background: rgba(255,255,255,0.05); border-radius: 4px;">${p.after}</strong> 
+              <span style="color: ${diffColor}; margin-left: 5px;">(${diff > 0 ? '+'+diff : diff})</span>
+            </span>
+          </div>
+        `;
+      });
+
+      html += `
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid #334155; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+            <strong style="color: #fde68a; font-size: 1.1rem;">📅 ${dateStr}</strong>
+            <span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">par ${escapeHtml(author)}</span>
+          </div>
+          
+          <p style="color: #38bdf8; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;">Course</p>
+          <p style="color: #fff; margin-bottom: 15px; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); padding: 8px 12px; border-radius: 6px;">${escapeHtml(inc.courseId || "Non spécifiée")}</p>
+
+          <p style="color: #38bdf8; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;">Description</p>
+          <p style="color: #fff; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(inc.description)}</p>
+
+          <p style="color: #38bdf8; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;">Pilotes impactés</p>
+          <div style="margin-bottom: 20px;">${pilotsHtml}</div>
+
+          <div style="text-align: right; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+            <button class="btn-delete-incident" data-id="${inc.id}" data-pilotes='${JSON.stringify(inc.pilotes || [])}' style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'; this.style.color='#ef4444';">
+              🗑️ SUPPRIMER ET RESTAURER LES POINTS
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div></details>`;
+    box.innerHTML = html;
+
+    // Événement pour supprimer un incident et recréditer les points
+    document.querySelectorAll(".btn-delete-incident").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        if(!(await showConfirm("Êtes-vous sûr de vouloir supprimer cet incident ?\n\nLes points de M-Safety retirés ou ajoutés seront automatiquement restaurés pour tous les pilotes impactés."))) return;
+        
+        const btnEl = e.currentTarget;
+        const id = btnEl.getAttribute("data-id");
+        const pilotes = JSON.parse(btnEl.getAttribute("data-pilotes") || "[]");
+
+        btnEl.disabled = true;
+        btnEl.textContent = "Suppression en cours...";
+
+        try {
+          // 1. Supprimer l'incident de la base
+          await deleteDoc(doc(db, "incidents", id));
+          
+          // 2. Restaurer les points pour chaque pilote
+          for(const p of pilotes) {
+            const userRef = doc(db, "users", p.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const curPts = userSnap.data().licensePoints ?? 10;
+              const pointsPris = p.before - p.after; // ex: 8 - 7 = 1 (on lui a pris 1 point)
+              await updateDoc(userRef, { licensePoints: curPts + pointsPris });
+            }
+          }
+          if(typeof window.showToast === "function") window.showToast("✅ Incident supprimé et M-Safety restauré.", "success");
+          loadIncidentHistory();
+        } catch(err) {
+          console.error("Erreur suppression incident:", err);
+          if(typeof window.showToast === "function") window.showToast("❌ Erreur lors de la suppression.", "error");
+          btnEl.disabled = false;
+          btnEl.textContent = "🗑️ SUPPRIMER ET RESTAURER LES POINTS";
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = "<p class='impact-bad'>Erreur de chargement de l'historique.</p>";
+  }
+}
 
 
 /* ---------------- Pilotes (liste pour Résultats/Incidents) ---------------- */
@@ -1110,7 +1292,6 @@ async function loadReclamations() {
   try {
     const snap = await getDocs(collection(db, "estacup_s10_reclamations"));
     if (snap.empty) {
-      // CORRECTION ICI : Utilisation des backticks ( ` ) au lieu des guillemets doubles ( " )
       box.innerHTML = `<p class='muted-note' style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px;">Aucune réclamation n'a été soumise pour le moment.</p>`;
       return;
     }
@@ -1118,90 +1299,135 @@ async function loadReclamations() {
     const reclamations = [];
     snap.forEach(docSnap => reclamations.push({ id: docSnap.id, ...docSnap.data() }));
 
-    // Tri : on met les non traitées en premier, puis on trie par date de soumission (récentes en haut)
-    reclamations.sort((a, b) => {
-      const aTreated = a.status === "traité" || a.isTreated;
-      const bTreated = b.status === "traité" || b.isTreated;
+    // Grouper les réclamations par Course (Date + Split)
+    const groupedReclamations = {};
+    reclamations.forEach(r => {
+      const dCourse = r.dateCourse ? new Date(r.dateCourse).toLocaleDateString("fr-FR") : "Date inconnue";
+      const split = r.split || "?";
+      const folderKey = `Course du ${dCourse} (Split ${split})`;
       
-      if (aTreated !== bTreated) return aTreated ? 1 : -1;
-      
-      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-      return timeB - timeA;
+      if (!groupedReclamations[folderKey]) groupedReclamations[folderKey] = [];
+      groupedReclamations[folderKey].push(r);
+    });
+
+    // Trier les dossiers (clés) pour avoir les courses les plus récentes en haut
+    const sortedFolders = Object.keys(groupedReclamations).sort((a, b) => {
+      return b.localeCompare(a); // Tri alphabétique inverse (suffisant vu le format "Course du JJ/MM/AAAA")
     });
 
     let html = `<div style="display: flex; flex-direction: column; gap: 15px;">`;
 
-    reclamations.forEach(r => {
-      const isTreated = r.status === "traité" || r.isTreated;
-      const dateCourse = r.dateCourse ? new Date(r.dateCourse).toLocaleDateString("fr-FR") : "Date inconnue";
-      const dateSoumission = r.createdAt ? new Date(r.createdAt.toDate ? r.createdAt.toDate() : r.createdAt).toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) : "Inconnue";
+    sortedFolders.forEach(folderName => {
+      const recs = groupedReclamations[folderName];
       
-      const borderColor = isTreated ? "#10b981" : "#f59e0b";
-      const bgColor = isTreated ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)";
+      // Compter combien sont en attente dans ce dossier
+      const untreatedCount = recs.filter(r => r.status !== "traité" && !r.isTreated).length;
+      const isOpen = untreatedCount > 0 ? "open" : ""; // Ouvre automatiquement le dossier s'il y a du boulot
+      
+      const badgeHtml = untreatedCount > 0 
+        ? `<span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 10px;">${untreatedCount} en attente</span>` 
+        : `<span style="color: #10b981; font-size: 0.85rem; margin-left: 10px; font-weight: normal;">(Toutes traitées ✅)</span>`;
 
       html += `
-        <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-left: 4px solid ${borderColor}; border-radius: 8px; padding: 15px; transition: all 0.2s ease;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-            <div>
-              <strong style="color: #fff; font-size: 1.15rem; display: block; margin-bottom: 4px;">${escapeHtml(r.piloteName)}</strong>
-              <span style="color: #94a3b8; font-size: 0.9rem;">Course du ${dateCourse} (Split ${escapeHtml(String(r.split))})</span>
-            </div>
-            <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${borderColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${borderColor};">
-              ${isTreated ? '✅ Traitée' : '⏳ En attente'}
-            </span>
-          </div>
-          
-          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-            <p style="color: #e2e8f0; font-size: 0.95rem; margin: 0; white-space: pre-wrap;">${escapeHtml(r.description)}</p>
-          </div>
-          
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <a href="${escapeHtml(r.videoUrl)}" target="_blank" style="background: #ef4444; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-              ▶️ Voir la vidéo
-            </a>
-            
-            <div style="display: flex; align-items: center; gap: 15px;">
-              <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">Soumise le ${dateSoumission}</span>
-              ${!isTreated ? `
-                <button class="btn-treat-reclam" data-id="${r.id}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='#fff';" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'; this.style.color='#10b981';">
-                  ✔️ Marquer comme traitée
-                </button>
-              ` : ''}
-            </div>
-          </div>
-        </div>
+        <details style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-primary); border-radius: 10px; overflow: hidden; transition: all 0.3s ease;" ${isOpen}>
+          <summary style="padding: 15px 20px; font-weight: bold; cursor: pointer; color: #fde68a; user-select: none; display: flex; align-items: center; list-style: none; background: rgba(255,255,255,0.02); outline: none;">
+            📁 ${folderName} ${badgeHtml}
+          </summary>
+          <div style="padding: 15px 20px 20px 20px; display: flex; flex-direction: column; gap: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
       `;
+
+      // Trier à l'intérieur du dossier : non traitées en haut, puis par date d'envoi
+      recs.sort((a, b) => {
+        const aTreated = a.status === "traité" || a.isTreated;
+        const bTreated = b.status === "traité" || b.isTreated;
+        if (aTreated !== bTreated) return aTreated ? 1 : -1;
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+
+      recs.forEach(r => {
+        const isTreated = r.status === "traité" || r.isTreated;
+        const dateSoumission = r.createdAt ? new Date(r.createdAt.toDate ? r.createdAt.toDate() : r.createdAt).toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) : "Inconnue";
+        
+        const borderColor = isTreated ? "#10b981" : "#f59e0b";
+        const bgColor = isTreated ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)";
+
+        html += `
+          <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-left: 4px solid ${borderColor}; border-radius: 8px; padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+              <div>
+                <strong style="color: #fff; font-size: 1.15rem; display: block; margin-bottom: 4px;">👤 ${escapeHtml(r.piloteName)}</strong>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${borderColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${borderColor};">
+                  ${isTreated ? '✅ Traitée' : '⏳ En attente'}
+                </span>
+                <button class="btn-delete-reclam" data-id="${r.id}" title="Supprimer définitivement" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; padding: 4px 8px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444';">🗑️</button>
+              </div>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+              <p style="color: #e2e8f0; font-size: 0.95rem; margin: 0; white-space: pre-wrap;">${escapeHtml(r.description)}</p>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+              <a href="${escapeHtml(r.videoUrl)}" target="_blank" style="background: #ef4444; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                ▶️ Voir la vidéo
+              </a>
+              
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">Soumise le ${dateSoumission}</span>
+                ${!isTreated ? `
+                  <button class="btn-treat-reclam" data-id="${r.id}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='#fff';" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'; this.style.color='#10b981';">
+                    ✔️ Marquer comme traitée
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></details>`;
     });
 
     html += `</div>`;
     box.innerHTML = html;
 
-    // Ajout de l'événement de clic pour valider une réclamation
+    // Événement : Valider une réclamation
     document.querySelectorAll(".btn-treat-reclam").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const id = e.target.getAttribute("data-id");
-        e.target.disabled = true;
-        e.target.textContent = "Mise à jour...";
+        e.target.disabled = true; e.target.textContent = "Mise à jour...";
         try {
-          await updateDoc(doc(db, "estacup_s10_reclamations", id), {
-            isTreated: true,
-            status: "traité"
-          });
+          await updateDoc(doc(db, "estacup_s10_reclamations", id), { isTreated: true, status: "traité" });
           if (typeof window.showToast === "function") window.showToast("✅ Réclamation marquée comme traitée.", "success");
-          
           loadReclamations(); 
         } catch (error) {
-          console.error("Erreur lors de la mise à jour de la réclamation :", error);
-          if (typeof window.showToast === "function") window.showToast("❌ Erreur lors de la mise à jour.", "error");
-          e.target.disabled = false;
-          e.target.textContent = "✔️ Marquer comme traitée";
+          if (typeof window.showToast === "function") window.showToast("❌ Erreur.", "error");
+          e.target.disabled = false; e.target.textContent = "✔️ Marquer comme traitée";
+        }
+      });
+    });
+
+    // Événement : Supprimer une réclamation
+    document.querySelectorAll(".btn-delete-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        if (!(await showConfirm("Êtes-vous sûr de vouloir supprimer définitivement cette réclamation de la base de données ?"))) return;
+        const id = e.currentTarget.getAttribute("data-id");
+        try {
+          await deleteDoc(doc(db, "estacup_s10_reclamations", id));
+          if (typeof window.showToast === "function") window.showToast("🗑️ Réclamation supprimée.", "info");
+          loadReclamations();
+        } catch (error) {
+          if (typeof window.showToast === "function") window.showToast("❌ Erreur de suppression.", "error");
         }
       });
     });
 
   } catch (error) {
-    console.error("Erreur lors du chargement des réclamations:", error);
+    console.error(error);
     box.innerHTML = "<p class='impact-bad'>Erreur de chargement de la base de données.</p>";
   }
 }
