@@ -61,7 +61,16 @@ async function loadUserProfile() {
       
       // Chargement du Rôle
       if ($("profRole")) {
-        $("profRole").value = data.role || "Pilote"; // "Pilote" par défaut si vide
+        const userRole = data.role || "Pilote"; // "Pilote" par défaut si vide
+        
+        // Si le joueur possède déjà un rôle restreint (Staff/Streamer), on débloque l'option 
+        // pour qu'il puisse la conserver lors de la sauvegarde.
+        const roleOption = Array.from($("profRole").options).find(opt => opt.value === userRole);
+        if (roleOption) {
+            roleOption.disabled = false;
+        }
+        
+        $("profRole").value = userRole;
       }
 
       // Gestion de la Date de Naissance
