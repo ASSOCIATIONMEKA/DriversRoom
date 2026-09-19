@@ -1110,7 +1110,8 @@ async function loadReclamations() {
   try {
     const snap = await getDocs(collection(db, "estacup_s10_reclamations"));
     if (snap.empty) {
-      box.innerHTML = "<p class='muted-note' style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px;">Aucune réclamation n'a été soumise pour le moment.</p>";
+      // CORRECTION ICI : Utilisation des backticks ( ` ) au lieu des guillemets doubles ( " )
+      box.innerHTML = `<p class='muted-note' style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px;">Aucune réclamation n'a été soumise pour le moment.</p>`;
       return;
     }
 
@@ -1189,7 +1190,6 @@ async function loadReclamations() {
           });
           if (typeof window.showToast === "function") window.showToast("✅ Réclamation marquée comme traitée.", "success");
           
-          // On recharge immédiatement la liste pour faire descendre la réclamation
           loadReclamations(); 
         } catch (error) {
           console.error("Erreur lors de la mise à jour de la réclamation :", error);
