@@ -2572,12 +2572,21 @@ function showPersistentAlert(message, alertId, type = "warning") {
   container.appendChild(toast);
 }
 
-// Met à jour l'état et redessine tous les badges
+// Met à jour l'état, redessine tous les badges et nettoie les pop-ups résolus
 function setAlertState(key, type, message, alertId) {
   window.appAlerts[key] = type;
+  
   if (type && message && alertId) {
     showPersistentAlert(message, alertId, type === 'red' ? 'error' : 'warning');
+  } else if (!type && alertId) {
+    // Si l'alerte n'est plus valide, on la supprime visuellement de l'écran
+    const existingToast = document.getElementById("alert-" + alertId);
+    if (existingToast) {
+      existingToast.classList.add('fade-out');
+      setTimeout(() => existingToast.remove(), 300);
+    }
   }
+  
   renderAllBadges();
 }
 
@@ -2639,67 +2648,12 @@ function renderAllBadges() {
 
 // --- 3. Logique d'analyse Firebase en temps réel ---
 async function initNotifications(uid, isAdmin) {
-  // A. Inscriptions & Livrées
-  onSnapshot(collection(db, "estacup_s10_signups"), (snap) => {
-    let pendingAdminValidation = 0;
-    let pendingAdminLivery = 0;
-    let isUserSignedUp = false;
-    let isUserValidated = false;
-    let userLiveryDone = false;
-    let userLiveryChoice = "personnelle";
+  // Variables locales pour stocker l'état
+  let currentUserIsValidated = false;
+  let userVotesData = null;
+  let userPresenceData = null;
 
-    snap.forEach(d => {
-      const data = d.data();
-      if (!data.isValidated) pendingAdminValidation++;
-      if (data.isValidated && data.liveryChoice === "personnelle" && !data.liveryImplemented) pendingAdminLivery++;
-      
-      if (d.id === uid) {
-        isUserSignedUp = true;
-        isUserValidated = data.isValidated === true;
-        userLiveryDone = data.liveryImplemented === true;
-        userLiveryChoice = data.liveryChoice || "personnelle";
-      }
-    });
-
-    if (isAdmin && window.adminViewActive) {
-      if (pendingAdminValidation > 0) {
-        setAlertState('inscription', 'red', `🔴 <strong>Action Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente.`, "admin-validation");
-      } else if (pendingAdminLivery > 0) {
-        setAlertState('inscription', 'orange', null, null);
-      } else {
-        setAlertState('inscription', null, null, null);
-      }
-    } else {
-      if (!isUserSignedUp) {
-        setAlertState('inscription', 'red', "⚠️ <strong>Inscription requise :</strong> Remplissez votre formulaire d'engagement à l'ESTACUP !", "user-signup");
-      } else if (!isUserValidated) {
-        setAlertState('inscription', 'orange', null, null);
-      } else {
-        setAlertState('inscription', null, null, null);
-        
-        // La livrée n'est demandée QUE si le pilote est validé ET qu'il a choisi une livrée personnelle
-        if (userLiveryChoice === "personnelle" && !userLiveryDone) {
-          setAlertState('livree', 'orange', "🎨 <strong>Livrée :</strong> N'oubliez pas de déposer votre fichier .zip sur le OneDrive !", "user-livery");
-        } else {
-          setAlertState('livree', null, null, null);
-        }
-      }
-    }
-  });
-
-  // B. Votes Circuits
-  if (!isAdmin || !window.adminViewActive) {
-    onSnapshot(doc(db, "estacup_s10_circuit_votes", uid), (docSnap) => {
-      const data = docSnap.exists() ? docSnap.data() : {};
-      if (!data.round3 || !data.round5) {
-        setAlertState('votecircuit', 'orange', "🗳️ <strong>Votes :</strong> Votre avis compte ! Choisissez les circuits des manches 3 et 5.", "user-votes");
-      } else {
-        setAlertState('votecircuit', null, null, null);
-      }
-    });
-  }
-
-  // C. Présence Course (Alerte rouge à J-7)
+  // C. Définition de la course imminente
   const racesList = [
     { id: "prologue", dateObj: new Date("2026-09-22T20:00:00") },
     { id: "manche1", dateObj: new Date("2026-10-06T20:00:00") },
@@ -2710,21 +2664,113 @@ async function initNotifications(uid, isAdmin) {
     { id: "manche6", dateObj: new Date("2027-02-02T20:00:00") }
   ];
   
-  const now = new Date();
-  const nextRace = racesList.find(r => r.dateObj >= now);
-  
-  if ((!isAdmin || !window.adminViewActive) && nextRace) {
-    const diffDays = (nextRace.dateObj - now) / (1000 * 60 * 60 * 24);
-    if (diffDays <= 7) {
-      onSnapshot(doc(db, `attendances_${nextRace.id}`, uid), (docSnap) => {
-        if (!docSnap.exists()) {
-          setAlertState('presence', 'red', `📅 <strong>Course imminente :</strong> Pensez à indiquer votre présence pour la course à venir !`, "user-presence");
-        } else {
-          setAlertState('presence', null, null, null);
-        }
-      });
-    } else {
-      setAlertState('presence', null, null, null);
+  const nextRace = racesList.find(r => r.dateObj >= new Date());
+
+  // Fonction d'évaluation centralisée des alertes secondaires (Votes & Présence)
+  const evaluateSecondaryAlerts = () => {
+    // Si on est en vue Admin, on cache les alertes liées à la piste
+    if (isAdmin && window.adminViewActive) {
+      setAlertState('votecircuit', null, null, "user-votes");
+      setAlertState('presence', null, null, "user-presence");
+      return;
     }
+
+    // CONDITION CLÉ : Si le joueur n'est pas validé, on annule les alertes de piste
+    if (!currentUserIsValidated) {
+      setAlertState('votecircuit', null, null, "user-votes");
+      setAlertState('presence', null, null, "user-presence");
+      return;
+    }
+
+    // Évaluation Votes
+    if (!userVotesData || !userVotesData.round3 || !userVotesData.round5) {
+      setAlertState('votecircuit', 'orange', "🗳️ <strong>Votes :</strong> Votre avis compte ! Choisissez les circuits des manches 3 et 5.", "user-votes");
+    } else {
+      setAlertState('votecircuit', null, null, "user-votes");
+    }
+
+    // Évaluation Présence (Alerte rouge à J-7)
+    if (nextRace) {
+      const diffDays = (nextRace.dateObj - new Date()) / (1000 * 60 * 60 * 24);
+      if (diffDays <= 7 && !userPresenceData) {
+        setAlertState('presence', 'red', `📅 <strong>Course imminente :</strong> Pensez à indiquer votre présence pour la course à venir !`, "user-presence");
+      } else {
+        setAlertState('presence', null, null, "user-presence");
+      }
+    }
+  };
+
+  // A. Écoute globale : Inscriptions & Livrées
+  onSnapshot(collection(db, "estacup_s10_signups"), (snap) => {
+    let pendingAdminValidation = 0;
+    let pendingAdminLivery = 0;
+    let isUserSignedUp = false;
+    currentUserIsValidated = false;
+    let userLiveryDone = false;
+    let userLiveryChoice = "personnelle";
+
+    snap.forEach(d => {
+      const data = d.data();
+      if (!data.isValidated) pendingAdminValidation++;
+      if (data.isValidated && data.liveryChoice === "personnelle" && !data.liveryImplemented) pendingAdminLivery++;
+      
+      if (d.id === uid) {
+        isUserSignedUp = true;
+        currentUserIsValidated = data.isValidated === true;
+        userLiveryDone = data.liveryImplemented === true;
+        userLiveryChoice = data.liveryChoice || "personnelle";
+      }
+    });
+
+    if (isAdmin && window.adminViewActive) {
+      // Nettoyage des alertes pilote
+      setAlertState('inscription', null, null, "user-signup");
+      setAlertState('livree', null, null, "user-livery");
+
+      if (pendingAdminValidation > 0) {
+        setAlertState('inscription', 'red', `🔴 <strong>Action Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente.`, "admin-validation");
+      } else if (pendingAdminLivery > 0) {
+        setAlertState('inscription', 'orange', null, "admin-validation");
+      } else {
+        setAlertState('inscription', null, null, "admin-validation");
+      }
+    } else {
+      // Nettoyage des alertes admin
+      setAlertState('inscription', null, null, "admin-validation");
+
+      if (!isUserSignedUp) {
+        setAlertState('inscription', 'red', "⚠️ <strong>Inscription requise :</strong> Remplissez votre formulaire d'engagement à l'ESTACUP !", "user-signup");
+        setAlertState('livree', null, null, "user-livery");
+      } else if (!currentUserIsValidated) {
+        setAlertState('inscription', 'orange', null, "user-signup");
+        setAlertState('livree', null, null, "user-livery");
+      } else {
+        setAlertState('inscription', null, null, "user-signup");
+        
+        // La livrée n'est demandée QUE si le pilote est validé ET qu'il a choisi une livrée personnelle
+        if (userLiveryChoice === "personnelle" && !userLiveryDone) {
+          setAlertState('livree', 'orange', "🎨 <strong>Livrée :</strong> N'oubliez pas de déposer votre fichier .zip sur le OneDrive !", "user-livery");
+        } else {
+          setAlertState('livree', null, null, "user-livery");
+        }
+      }
+    }
+
+    // À chaque modification du statut d'inscription, on réévalue les autres alertes
+    evaluateSecondaryAlerts();
+  });
+
+  // B. Écoute locale : Votes Circuits
+  onSnapshot(doc(db, "estacup_s10_circuit_votes", uid), (docSnap) => {
+    userVotesData = docSnap.exists() ? docSnap.data() : null;
+    evaluateSecondaryAlerts();
+  });
+
+  // C. Écoute locale : Présence Course
+  if (nextRace) {
+    onSnapshot(doc(db, `attendances_${nextRace.id}`, uid), (docSnap) => {
+      userPresenceData = docSnap.exists() ? docSnap.data() : null;
+      evaluateSecondaryAlerts();
+    });
   }
 }
