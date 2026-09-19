@@ -11,7 +11,7 @@ import {
   doc,
   deleteDoc,
   addDoc,
-  query,
+  query,g
   where,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1276,10 +1276,6 @@ async function loadCourses() {
       loadCourses();
     });
   });
-}
-
-async function loadIncidentHistory() {
-  const box = document.getElementById("incidentHistory"); if (box) box.innerHTML = "<p class='muted'>Aucun incident.</p>";
 }
 
 /* ======================== GESTION DES RÉCLAMATIONS (ADMIN) ======================== */
