@@ -1943,6 +1943,119 @@ async function renderLiverySection() {
   }
 }
 
+/* ======================== RÉCLAMATIONS ======================== */
+
+// 1. Écouteur pour l'envoi du formulaire
+const btnSubmitReclam = document.getElementById("submitReclam");
+if (btnSubmitReclam) {
+  btnSubmitReclam.addEventListener("click", async () => {
+    const rDate = document.getElementById("reclamDate").value;
+    const rSplit = document.getElementById("reclamSplit").value;
+    const rDesc = document.getElementById("reclamDesc").value.trim();
+    const rVideo = document.getElementById("reclamVideo").value.trim();
+
+    // Vérification des champs
+    if (!rDate || !rSplit || !rDesc || !rVideo) {
+      if (window.showToast) window.showToast("⚠️ Veuillez remplir tous les champs obligatoires.", "warning");
+      return;
+    }
+
+    // Vérification basique du lien YouTube
+    if (!rVideo.includes("youtube.com") && !rVideo.includes("youtu.be")) {
+      if (window.showToast) window.showToast("⚠️ Le lien vidéo doit être une URL YouTube valide.", "warning");
+      return;
+    }
+
+    btnSubmitReclam.disabled = true;
+    btnSubmitReclam.textContent = "Envoi en cours...";
+
+    try {
+      // Ajout dans la collection Firebase
+      await addDoc(collection(db, "estacup_s10_reclamations"), {
+        uid: currentUid,
+        piloteName: document.getElementById("fullName")?.textContent || "Pilote inconnu",
+        dateCourse: rDate,
+        split: rSplit,
+        description: rDesc,
+        videoUrl: rVideo,
+        status: "en attente", // Statut par défaut
+        isTreated: false,
+        createdAt: new Date()
+      });
+
+      if (window.showToast) window.showToast("✅ Réclamation envoyée avec succès !", "success");
+      
+      // Réinitialisation du formulaire
+      document.getElementById("reclamDate").value = "";
+      document.getElementById("reclamSplit").value = "";
+      document.getElementById("reclamDesc").value = "";
+      document.getElementById("reclamVideo").value = "";
+
+      // Rechargement immédiat de l'historique
+      if (typeof loadReclamHistory === "function") loadReclamHistory();
+
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de la réclamation:", error);
+      if (window.showToast) window.showToast("❌ Erreur lors de l'envoi.", "error");
+    } finally {
+      btnSubmitReclam.disabled = false;
+      btnSubmitReclam.textContent = "📨 Envoyer la réclamation";
+    }
+  });
+}
+
+// 2. Affichage de l'historique personnel du pilote
+window.loadReclamHistory = async function() {
+  const container = document.getElementById("reclamHistory");
+  if (!container || !currentUid) return;
+
+  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement de vos réclamations...</div>`;
+
+  try {
+    // On ne récupère que les réclamations de l'utilisateur connecté
+    const q = query(collection(db, "estacup_s10_reclamations"), where("uid", "==", currentUid));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      container.innerHTML = `<p class="muted-note">Vous n'avez soumis aucune réclamation.</p>`;
+      return;
+    }
+
+    const reclamations = [];
+    snap.forEach(doc => reclamations.push({ id: doc.id, ...doc.data() }));
+    
+    // Tri par date de création (les plus récentes en haut)
+    reclamations.sort((a, b) => b.createdAt - a.createdAt);
+
+    let html = `<h4 style="color: var(--accent-primary); margin-top: 2rem; margin-bottom: 1rem;">Vos réclamations envoyées</h4><div style="display: flex; flex-direction: column; gap: 1rem;">`;
+
+    reclamations.forEach(r => {
+      const isTreated = r.status === "traité" || r.isTreated;
+      const statusColor = isTreated ? "#10b981" : "#f59e0b";
+      const statusText = isTreated ? "Traitée" : "En attente";
+      const dCourse = new Date(r.dateCourse).toLocaleDateString("fr-FR");
+
+      html += `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${statusColor}; border-radius: 8px; padding: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong style="color: #fff; font-size: 1.05rem;">Course du ${dCourse} (Split ${r.split})</strong>
+            <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; color: ${statusColor}; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: 1px solid ${statusColor};">${statusText}</span>
+          </div>
+          <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 0.95rem;">${escapeHtml(r.description)}</p>
+          <a href="${escapeHtml(r.videoUrl)}" target="_blank" style="color: #38bdf8; font-size: 0.85rem; text-decoration: underline;">📺 Voir la vidéo fournie</a>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+
+  } catch (error) {
+    console.error("Erreur chargement historique réclamations:", error);
+    container.innerHTML = `<p class="impact-bad">Erreur lors du chargement de l'historique.</p>`;
+  }
+};
+
 /* ======================== GLOBE 3D & CALENDRIER ======================== */
 let globeInitialized = false;
 
@@ -2538,7 +2651,8 @@ window.appAlerts = {
   livree: null,
   votecircuit: null,
   presence: null,
-  adminValidation: null // Nouvelle clé pour les admins
+  adminValidation: null,
+  adminReclamations: null // Nouvelle clé pour les réclamations Admin
 };
 
 // Affiche un Toast pop-up
@@ -2581,11 +2695,10 @@ function setAlertState(key, type, message, alertId) {
   if (type && message && alertId) {
     let toastType = 'warning';
     if (type === 'red') toastType = 'error';
-    if (type === 'admin') toastType = 'admin'; // Attribution du nouveau style CSS violet
+    if (type === 'admin') toastType = 'admin'; // Utilise le style violet pour les admins
     
     showPersistentAlert(message, alertId, toastType);
   } else if (!type && alertId) {
-    // Si l'alerte n'est plus valide, on la supprime visuellement de l'écran
     const existingToast = document.getElementById("alert-" + alertId);
     if (existingToast) {
       existingToast.classList.add('fade-out');
@@ -2642,8 +2755,8 @@ function renderAllBadges() {
   applyDot('button[data-cat="piste"]', pisteAlert);
   applyDot('button[data-section="championship"]', adminAlert || paddockAlert || pisteAlert);
 
-  // 3. Bouton Espace Admin (Exclusif aux administrateurs)
-  applyDot('#goToAdmin', window.appAlerts.adminValidation);
+  // 3. Bouton Espace Admin (S'allume si Validation OU Réclamation en attente)
+  applyDot('#goToAdmin', window.appAlerts.adminValidation || window.appAlerts.adminReclamations);
 }
 
 // --- 3. Logique d'analyse Firebase en temps réel ---
@@ -2712,10 +2825,10 @@ async function initNotifications(uid, isAdmin) {
       }
     });
 
-    // 🔴 NOTIFICATIONS ADMIN (Indépendantes de la vue active Pilote/Admin)
+    // 🔴 NOTIFICATIONS ADMIN : VALIDATION DES INSCRIPTIONS
     if (isAdmin) {
       if (pendingAdminValidation > 0) {
-        setAlertState('adminValidation', 'admin', `🛡️ <strong>Espace Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente de validation.`, "admin-val-popup");
+        setAlertState('adminValidation', 'admin', `🛡️ <strong>Espace Admin :</strong> Il y a ${pendingAdminValidation} inscription(s) en attente.`, "admin-val-popup");
       } else {
         setAlertState('adminValidation', null, null, "admin-val-popup");
       }
@@ -2757,6 +2870,26 @@ async function initNotifications(uid, isAdmin) {
     onSnapshot(doc(db, `attendances_${nextRace.id}`, uid), (docSnap) => {
       userPresenceData = docSnap.exists() ? docSnap.data() : null;
       evaluateSecondaryAlerts();
+    });
+  }
+
+  // D. 🔴 NOTIFICATIONS ADMIN : RÉCLAMATIONS
+  if (isAdmin) {
+    onSnapshot(collection(db, "estacup_s10_reclamations"), (snap) => {
+      let pendingReclamations = 0;
+      snap.forEach(d => {
+        const data = d.data();
+        // On vérifie que la réclamation n'a pas été traitée
+        if (data.status !== "traité" && data.status !== "resolved" && !data.isTreated) {
+          pendingReclamations++;
+        }
+      });
+
+      if (pendingReclamations > 0) {
+        setAlertState('adminReclamations', 'admin', `⚖️ <strong>Espace Admin :</strong> Il y a ${pendingReclamations} réclamation(s) en attente.`, "admin-reclam-popup");
+      } else {
+        setAlertState('adminReclamations', null, null, "admin-reclam-popup");
+      }
     });
   }
 }
