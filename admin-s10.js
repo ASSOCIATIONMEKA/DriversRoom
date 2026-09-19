@@ -1722,18 +1722,18 @@ async function loadEstacupSignups() {
 async function loadVotesResults() {
   try {
     const snap = await getDocs(collection(db, "estacup_s10_circuit_votes"));
-    let votesRA = 0, votesVIR = 0, votesMagny = 0, votesDijon = 0;
+    let votesFuji = 0, votesOkayama = 0, votesRA = 0, votesMont = 0;
     
     snap.forEach(docSnap => {
       const d = docSnap.data();
-      if (d.round3 === 'Road America') votesRA++;
-      if (d.round3 === 'Virginia') votesVIR++;
-      if (d.round5 === 'Magny-Cours') votesMagny++;
-      if (d.round5 === 'Dijon-Prenois') votesDijon++;
+      if (d.round2 === 'Fuji') votesFuji++;
+      if (d.round2 === 'Okayama') votesOkayama++;
+      if (d.round5 === 'Road America') votesRA++;
+      if (d.round5 === 'Montréal') votesMont++;
     });
 
-    const totalR3 = votesRA + votesVIR;
-    const totalR5 = votesMagny + votesDijon;
+    const totalR2 = votesFuji + votesOkayama;
+    const totalR5 = votesRA + votesMont;
 
     const updateUI = (el_cnt, el_pct, el_bar, votes, total) => {
       if (!$(el_cnt)) return;
@@ -1743,12 +1743,12 @@ async function loadVotesResults() {
       $(el_bar).style.width = `${pct}%`;
     };
 
-    updateUI("q3_a_cnt", "q3_a_pct", "q3_a_bar", votesRA, totalR3);
-    updateUI("q3_b_cnt", "q3_b_pct", "q3_b_bar", votesVIR, totalR3);
-    if ($("q3_total")) $("q3_total").textContent = `Total : ${totalR3}`;
+    updateUI("q2_a_cnt", "q2_a_pct", "q2_a_bar", votesFuji, totalR2);
+    updateUI("q2_b_cnt", "q2_b_pct", "q2_b_bar", votesOkayama, totalR2);
+    if ($("q2_total")) $("q2_total").textContent = `Total : ${totalR2}`;
 
-    updateUI("q5_a_cnt", "q5_a_pct", "q5_a_bar", votesMagny, totalR5);
-    updateUI("q5_b_cnt", "q5_b_pct", "q5_b_bar", votesDijon, totalR5);
+    updateUI("q5_a_cnt", "q5_a_pct", "q5_a_bar", votesRA, totalR5);
+    updateUI("q5_b_cnt", "q5_b_pct", "q5_b_bar", votesMont, totalR5);
     if ($("q5_total")) $("q5_total").textContent = `Total : ${totalR5}`;
 
   } catch (err) {
