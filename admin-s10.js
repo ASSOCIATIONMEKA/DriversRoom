@@ -1100,8 +1100,110 @@ async function loadIncidentHistory() {
   const box = document.getElementById("incidentHistory"); if (box) box.innerHTML = "<p class='muted'>Aucun incident.</p>";
 }
 
+/* ======================== GESTION DES RÉCLAMATIONS (ADMIN) ======================== */
 async function loadReclamations() {
-  const box = document.getElementById("reclamationsBox"); if (box) box.innerHTML = "<p class='muted'>Aucune réclamation.</p>";
+  const box = document.getElementById("reclamationsBox");
+  if (!box) return;
+
+  box.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement des réclamations...</div>`;
+
+  try {
+    const snap = await getDocs(collection(db, "estacup_s10_reclamations"));
+    if (snap.empty) {
+      box.innerHTML = "<p class='muted-note' style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px;">Aucune réclamation n'a été soumise pour le moment.</p>";
+      return;
+    }
+
+    const reclamations = [];
+    snap.forEach(docSnap => reclamations.push({ id: docSnap.id, ...docSnap.data() }));
+
+    // Tri : on met les non traitées en premier, puis on trie par date de soumission (récentes en haut)
+    reclamations.sort((a, b) => {
+      const aTreated = a.status === "traité" || a.isTreated;
+      const bTreated = b.status === "traité" || b.isTreated;
+      
+      if (aTreated !== bTreated) return aTreated ? 1 : -1;
+      
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return timeB - timeA;
+    });
+
+    let html = `<div style="display: flex; flex-direction: column; gap: 15px;">`;
+
+    reclamations.forEach(r => {
+      const isTreated = r.status === "traité" || r.isTreated;
+      const dateCourse = r.dateCourse ? new Date(r.dateCourse).toLocaleDateString("fr-FR") : "Date inconnue";
+      const dateSoumission = r.createdAt ? new Date(r.createdAt.toDate ? r.createdAt.toDate() : r.createdAt).toLocaleString("fr-FR", {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) : "Inconnue";
+      
+      const borderColor = isTreated ? "#10b981" : "#f59e0b";
+      const bgColor = isTreated ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)";
+
+      html += `
+        <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-left: 4px solid ${borderColor}; border-radius: 8px; padding: 15px; transition: all 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <strong style="color: #fff; font-size: 1.15rem; display: block; margin-bottom: 4px;">${escapeHtml(r.piloteName)}</strong>
+              <span style="color: #94a3b8; font-size: 0.9rem;">Course du ${dateCourse} (Split ${escapeHtml(String(r.split))})</span>
+            </div>
+            <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${borderColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${borderColor};">
+              ${isTreated ? '✅ Traitée' : '⏳ En attente'}
+            </span>
+          </div>
+          
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            <p style="color: #e2e8f0; font-size: 0.95rem; margin: 0; white-space: pre-wrap;">${escapeHtml(r.description)}</p>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <a href="${escapeHtml(r.videoUrl)}" target="_blank" style="background: #ef4444; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+              ▶️ Voir la vidéo
+            </a>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">Soumise le ${dateSoumission}</span>
+              ${!isTreated ? `
+                <button class="btn-treat-reclam" data-id="${r.id}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='#fff';" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'; this.style.color='#10b981';">
+                  ✔️ Marquer comme traitée
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    box.innerHTML = html;
+
+    // Ajout de l'événement de clic pour valider une réclamation
+    document.querySelectorAll(".btn-treat-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        e.target.disabled = true;
+        e.target.textContent = "Mise à jour...";
+        try {
+          await updateDoc(doc(db, "estacup_s10_reclamations", id), {
+            isTreated: true,
+            status: "traité"
+          });
+          if (typeof window.showToast === "function") window.showToast("✅ Réclamation marquée comme traitée.", "success");
+          
+          // On recharge immédiatement la liste pour faire descendre la réclamation
+          loadReclamations(); 
+        } catch (error) {
+          console.error("Erreur lors de la mise à jour de la réclamation :", error);
+          if (typeof window.showToast === "function") window.showToast("❌ Erreur lors de la mise à jour.", "error");
+          e.target.disabled = false;
+          e.target.textContent = "✔️ Marquer comme traitée";
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error("Erreur lors du chargement des réclamations:", error);
+    box.innerHTML = "<p class='impact-bad'>Erreur de chargement de la base de données.</p>";
+  }
 }
 
 /* ---------------- ESTACUP : Listing inscriptions S10 ---------------- */
