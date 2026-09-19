@@ -2582,53 +2582,57 @@ function setAlertState(key, type, message, alertId) {
 }
 
 // Applique visuellement les bordures (enfants) et les puces (parents)
+// Applique visuellement les bordures (enfants) et les puces (parents)
 function renderAllBadges() {
-  // 1. Boutons d'action finale (Bordure clignotante)
-  const applyBlink = (selector, type) => {
+  // Fonction universelle pour appliquer la petite puce rouge (dot) clignotante
+  const applyDot = (selector, hasAlert) => {
+    const btns = document.querySelectorAll(selector);
+    btns.forEach(btn => {
+      let dot = btn.querySelector('.notify-dot-parent');
+      if (hasAlert) {
+        if (!dot) {
+          btn.classList.add('btn-has-notification');
+          // On force la position relative pour que le point rouge s'accroche bien au coin du bouton
+          btn.style.position = "relative"; 
+          dot = document.createElement('span');
+          dot.className = 'notify-dot-parent';
+          btn.appendChild(dot);
+        }
+      } else {
+        if (dot) dot.remove();
+        btn.classList.remove('btn-has-notification');
+      }
+    });
+  };
+
+  // 1. Boutons de sous-catégories (Bordure clignotante ET Puce rouge)
+  const applyAlert = (selector, type) => {
     const btns = document.querySelectorAll(selector);
     btns.forEach(btn => {
       btn.classList.remove('btn-notify-red', 'btn-notify-orange');
       if (type) btn.classList.add(`btn-notify-${type}`);
     });
+    // On applique le point rouge directement sur le bouton de sous-catégorie pour le rendre évident
+    applyDot(selector, type != null);
   };
 
-  applyBlink('button[data-sub="inscription"]', window.appAlerts.inscription);
-  applyBlink('button[data-sub="livree"]', window.appAlerts.livree);
-  applyBlink('button[data-sub="votecircuit"]', window.appAlerts.votecircuit);
-  
-  // On cible "presence" ET "presences" pour être sûr de l'allumer !
-  applyBlink('button[data-sub="presence"], button[data-sub="presences"]', window.appAlerts.presence);
+  // Application des alertes sur les actions requises
+  applyAlert('button[data-sub="inscription"]', window.appAlerts.inscription);
+  applyAlert('button[data-sub="livree"]', window.appAlerts.livree);
+  applyAlert('button[data-sub="votecircuit"]', window.appAlerts.votecircuit);
+  applyAlert('button[data-sub="presence"], button[data-sub="presences"]', window.appAlerts.presence);
 
-  // 2. Boutons parents de navigation (Petite puce rouge)
-  const applyDot = (selector, hasAlert) => {
-    const btn = document.querySelector(selector);
-    if (!btn) return;
-    
-    let dot = btn.querySelector('.notify-dot-parent');
-    if (hasAlert) {
-      if (!dot) {
-        btn.classList.add('btn-has-notification');
-        dot = document.createElement('span');
-        dot.className = 'notify-dot-parent';
-        btn.appendChild(dot);
-      }
-    } else {
-      if (dot) dot.remove();
-      btn.classList.remove('btn-has-notification');
-    }
-  };
-
-  // On vérifie s'il y a des alertes dans les sous-catégories
+  // 2. Boutons parents de navigation (Petite puce rouge uniquement)
   const adminAlert = window.appAlerts.inscription || window.appAlerts.presence;
   const paddockAlert = window.appAlerts.livree;
   const pisteAlert = window.appAlerts.votecircuit;
 
-  // On applique la petite puce rouge sur les onglets du milieu
+  // On remonte l'alerte sur les gros onglets du milieu
   applyDot('button[data-cat="admin"]', adminAlert);
   applyDot('button[data-cat="paddock"]', paddockAlert);
   applyDot('button[data-cat="piste"]', pisteAlert);
 
-  // On remonte l'alerte jusqu'au bouton principal "Le Championnat"
+  // 3. On remonte l'alerte jusqu'au bouton principal "Le Championnat"
   const champAlert = adminAlert || paddockAlert || pisteAlert;
   applyDot('button[data-section="championship"]', champAlert);
 }
