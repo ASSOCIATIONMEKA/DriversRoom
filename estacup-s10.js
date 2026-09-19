@@ -341,8 +341,22 @@ onAuthStateChanged(auth, async (user) => {
     currentUid = userSnap.id; 
     lastUserData = data;
 
-    // ✅ VRAIE VÉRIFICATION ADMIN SÉCURISÉE
+    // ✅ VRAIE VÉRIFICATION ADMIN SÉCURISÉE ET RÔLES
     const isAdmin = data.admin === true;
+    const userRole = data.role || "Pilote";
+    
+    // Droit d'accès à la page Média
+    const isMediaAllowed = isAdmin || userRole === "Staff / Orga" || userRole === "Streamer / Commentateur";
+
+    // Affichage ou masquage de l'onglet Média
+    const navMediaBtn = $("navMediaBtn");
+    if (navMediaBtn) {
+      if (isMediaAllowed) {
+        navMediaBtn.classList.remove("hidden");
+      } else {
+        navMediaBtn.classList.add("hidden");
+      }
+    }
 
     if ($("fullName")) $("fullName").textContent = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || "—";
     if ($("licenseId")) $("licenseId").textContent = data.licenseId || data.licenceId || "-";
