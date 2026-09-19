@@ -1622,7 +1622,7 @@ async function loadEstacupEquipes() {
   }
 }
 
-/* ======================== VOTES DES CIRCUITS (MANCHES 3 & 5) ======================== */
+/* ======================== VOTES DES CIRCUITS (MANCHES 2 & 5) ======================== */
 async function renderVoteCircuit() {
   const host = $("voteCircuitHost");
   if (!host) return;
@@ -1638,7 +1638,7 @@ async function renderVoteCircuit() {
     const voteDocRef = doc(db, "estacup_s10_circuit_votes", currentUid);
     const voteSnap = await getDoc(voteDocRef);
     const userVotes = voteSnap.exists() ? voteSnap.data() : {};
-    const hasVoted = !!(userVotes.round3 && userVotes.round5);
+    const hasVoted = !!(userVotes.round2 && userVotes.round5);
 
     host.innerHTML = `
       <div class="course-box">
@@ -1648,18 +1648,50 @@ async function renderVoteCircuit() {
         </div>
 
         <p class="muted-note" style="margin-bottom: 1.5rem;">
-          Votez pour vos tracés préférés pour les manches 3 et 5. Les pourcentages s'actualisent en direct avec les votes des autres pilotes.
+          Votez pour vos tracés préférés pour les manches 2 et 5. Les pourcentages s'actualisent en direct avec les votes des autres pilotes.
         </p>
 
-        <!-- DUEL MANCHE 3 -->
+        <!-- DUEL MANCHE 2 -->
         <div style="margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-primary);">
-          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 3 (24/11/2026)</h4>
-          <p class="muted-note" style="margin-bottom: 1rem;">Choisissez entre les deux tracés américains :</p>
+          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 2 (20/10/2026)</h4>
+          <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre tracé japonais :</p>
           
           <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <label id="label-RA" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round3 === 'Road America' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round3 === 'Road America' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+            <label id="label-Fuji" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round2 === 'Fuji' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round2 === 'Fuji' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_3" value="Road America" ${userVotes.round3 === 'Road America' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
+                <input type="radio" name="vote_round_2" value="Fuji" ${userVotes.round2 === 'Fuji' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-jp" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Fuji Speedway</strong>
+              </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+                <div id="bar-Fuji" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div id="count-Fuji" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
+            </label>
+
+            <label id="label-Okayama" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round2 === 'Okayama' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round2 === 'Okayama' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <input type="radio" name="vote_round_2" value="Okayama" ${userVotes.round2 === 'Okayama' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-jp" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Okayama</strong>
+              </div>
+              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+                <div id="bar-Okayama" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div id="count-Okayama" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- DUEL MANCHE 5 -->
+        <div style="margin-bottom: 2rem;">
+          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2027)</h4>
+          <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre tracé américain :</p>
+          
+          <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <label id="label-RA" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Road America' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Road America' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <input type="radio" name="vote_round_5" value="Road America" ${userVotes.round5 === 'Road America' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
                 <span class="fi fi-us" style="font-size: 1.2rem;"></span>
                 <strong style="font-size: 1.1rem; color: #fff;">Road America</strong>
               </div>
@@ -1669,48 +1701,16 @@ async function renderVoteCircuit() {
               <div id="count-RA" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
             </label>
 
-            <label id="label-VIR" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round3 === 'Virginia' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round3 === 'Virginia' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
+            <label id="label-Mont" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Montréal' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Montréal' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_3" value="Virginia" ${userVotes.round3 === 'Virginia' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
-                <span class="fi fi-us" style="font-size: 1.2rem;"></span>
-                <strong style="font-size: 1.1rem; color: #fff;">Virginia (VIR)</strong>
+                <input type="radio" name="vote_round_5" value="Montréal" ${userVotes.round5 === 'Montréal' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
+                <span class="fi fi-ca" style="font-size: 1.2rem;"></span>
+                <strong style="font-size: 1.1rem; color: #fff;">Circuit Gilles Villeneuve</strong>
               </div>
               <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
-                <div id="bar-VIR" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                <div id="bar-Mont" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
               </div>
-              <div id="count-VIR" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
-            </label>
-          </div>
-        </div>
-
-        <!-- DUEL MANCHE 5 -->
-        <div style="margin-bottom: 2rem;">
-          <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Manche 5 (19/01/2027)</h4>
-          <p class="muted-note" style="margin-bottom: 1rem;">Choisissez votre destination européenne :</p>
-          
-          <div class="vote-options" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <label id="label-Magny" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Magny-Cours' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Magny-Cours' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
-              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_5" value="Magny-Cours" ${userVotes.round5 === 'Magny-Cours' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
-                <span class="fi fi-fr" style="font-size: 1.2rem;"></span>
-                <strong style="font-size: 1.1rem; color: #fff;">Magny-Cours</strong>
-              </div>
-              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
-                <div id="bar-Magny" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-              </div>
-              <div id="count-Magny" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
-            </label>
-
-            <label id="label-Dijon" style="flex: 1; min-width: 220px; padding: 16px; border-radius: 10px; cursor: pointer; border: 1px solid ${userVotes.round5 === 'Dijon-Prenois' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${userVotes.round5 === 'Dijon-Prenois' ? 'rgba(16, 185, 129, 0.05)' : 'transparent'}; transition: all 0.2s ease;">
-              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <input type="radio" name="vote_round_5" value="Dijon-Prenois" ${userVotes.round5 === 'Dijon-Prenois' ? 'checked' : ''} style="width: auto; margin: 0; flex-shrink: 0; transform: scale(1.2); accent-color: #10b981;">
-                <span class="fi fi-fr" style="font-size: 1.2rem;"></span>
-                <strong style="font-size: 1.1rem; color: #fff;">Dijon-Prenois</strong>
-              </div>
-              <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
-                <div id="bar-Dijon" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-              </div>
-              <div id="count-Dijon" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
+              <div id="count-Mont" style="text-align: right; font-size: 0.85rem; margin-top: 6px; color: #94a3b8; font-weight: 600;">Chargement...</div>
             </label>
           </div>
         </div>
@@ -1727,36 +1727,36 @@ async function renderVoteCircuit() {
     const radios = host.querySelectorAll('input[type="radio"]');
     radios.forEach(radio => {
       radio.addEventListener('change', () => {
-        if (radio.name === 'vote_round_3') {
+        if (radio.name === 'vote_round_2') {
+          const isFuji = radio.value === 'Fuji';
+          $("label-Fuji").style.borderColor = isFuji ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-Fuji").style.background = isFuji ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+          $("label-Okayama").style.borderColor = !isFuji ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-Okayama").style.background = !isFuji ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+        }
+        if (radio.name === 'vote_round_5') {
           const isRA = radio.value === 'Road America';
           $("label-RA").style.borderColor = isRA ? '#10b981' : 'rgba(255,255,255,0.1)';
           $("label-RA").style.background = isRA ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
-          $("label-VIR").style.borderColor = !isRA ? '#10b981' : 'rgba(255,255,255,0.1)';
-          $("label-VIR").style.background = !isRA ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
-        }
-        if (radio.name === 'vote_round_5') {
-          const isMagny = radio.value === 'Magny-Cours';
-          $("label-Magny").style.borderColor = isMagny ? '#10b981' : 'rgba(255,255,255,0.1)';
-          $("label-Magny").style.background = isMagny ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
-          $("label-Dijon").style.borderColor = !isMagny ? '#10b981' : 'rgba(255,255,255,0.1)';
-          $("label-Dijon").style.background = !isMagny ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+          $("label-Mont").style.borderColor = !isRA ? '#10b981' : 'rgba(255,255,255,0.1)';
+          $("label-Mont").style.background = !isRA ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
         }
       });
     });
 
     // Écouteur en temps réel pour actualiser les barres de progression
     onSnapshot(collection(db, "estacup_s10_circuit_votes"), (snapshot) => {
-      let votesRA = 0, votesVIR = 0, votesMagny = 0, votesDijon = 0;
+      let votesFuji = 0, votesOkayama = 0, votesRA = 0, votesMont = 0;
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        if (d.round3 === 'Road America') votesRA++;
-        if (d.round3 === 'Virginia') votesVIR++;
-        if (d.round5 === 'Magny-Cours') votesMagny++;
-        if (d.round5 === 'Dijon-Prenois') votesDijon++;
+        if (d.round2 === 'Fuji') votesFuji++;
+        if (d.round2 === 'Okayama') votesOkayama++;
+        if (d.round5 === 'Road America') votesRA++;
+        if (d.round5 === 'Montréal') votesMont++;
       });
       
-      const totalR3 = votesRA + votesVIR;
-      const totalR5 = votesMagny + votesDijon;
+      const totalR2 = votesFuji + votesOkayama;
+      const totalR5 = votesRA + votesMont;
 
       const updateStatUI = (id, votes, total) => {
         const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
@@ -1766,20 +1766,19 @@ async function renderVoteCircuit() {
         if(countStr) countStr.innerHTML = `<span style="color: #fff;">${votes}</span> vote${votes > 1 ? 's' : ''} (${pct}%)`;
       };
 
-      // Léger délai pour que l'animation CSS se déclenche après le render initial
       setTimeout(() => {
-        updateStatUI('RA', votesRA, totalR3);
-        updateStatUI('VIR', votesVIR, totalR3);
-        updateStatUI('Magny', votesMagny, totalR5);
-        updateStatUI('Dijon', votesDijon, totalR5);
+        updateStatUI('Fuji', votesFuji, totalR2);
+        updateStatUI('Okayama', votesOkayama, totalR2);
+        updateStatUI('RA', votesRA, totalR5);
+        updateStatUI('Mont', votesMont, totalR5);
       }, 100);
     });
 
     $("btnSaveCircuitVotes").onclick = async () => {
-      const r3 = document.querySelector('input[name="vote_round_3"]:checked')?.value || null;
+      const r2 = document.querySelector('input[name="vote_round_2"]:checked')?.value || null;
       const r5 = document.querySelector('input[name="vote_round_5"]:checked')?.value || null;
 
-      if (!r3 || !r5) {
+      if (!r2 || !r5) {
         if (window.showToast) window.showToast("⚠️ Veuillez faire un choix pour chaque manche avant de valider.", "warning");
         return;
       }
@@ -1791,13 +1790,12 @@ async function renderVoteCircuit() {
         btn.textContent = "Enregistrement en cours...";
 
         await setDoc(doc(db, "estacup_s10_circuit_votes", currentUid), {
-          round3: r3,
+          round2: r2,
           round5: r5,
           userName: $("fullName")?.textContent || "Pilote",
           updatedAt: new Date()
         }, { merge: true });
 
-        // Animation et affichage de la bannière de succès
         const banner = $("voteSuccessBanner");
         if (banner) {
           banner.style.display = "flex";
@@ -1806,7 +1804,6 @@ async function renderVoteCircuit() {
           setTimeout(() => banner.style.transform = "scale(1)", 200);
         }
 
-        // Animation de confirmation sur le bouton
         btn.textContent = "✅ VOTES ENREGISTRÉS !";
         btn.style.background = "#10b981";
         btn.style.borderColor = "#059669";
