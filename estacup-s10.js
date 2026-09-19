@@ -1864,13 +1864,36 @@ async function renderLiverySection() {
 
     host.innerHTML = `
       <div class="course-box">
-        <p class="muted-note" style="margin-bottom: 1.5rem; line-height: 1.6;">
-          Le dépôt des livrées s'effectue sur l'espace OneDrive officiel de l'association. Regroupez tous vos fichiers (textures, decals, fichiers .json) dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo).<br><br>
-          <span style="color: #f59e0b;">⚠️ <strong>TRÈS IMPORTANT :</strong></span> Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format :<br>
-          <code style="display: inline-block; margin-top: 8px; font-size: 1.1rem; color: #38bdf8; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">### - NOM_Prénom.zip</code><br>
-          <em>(Où ### est votre numéro de course. Exemple : <strong>96 - TOMCZYK_Marin.zip</strong>)</em>
-        </p>
+        
+        <!-- RÈGLES DE NOMMAGE -->
+        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 2rem; border-radius: 0 8px 8px 0;">
+          <h4 style="color: #f59e0b; margin-top: 0; margin-bottom: 8px;">⚠️ TRÈS IMPORTANT : Format du fichier</h4>
+          <p style="margin: 0; font-size: 0.95rem; color: #cbd5e1; line-height: 1.6;">
+            Regroupez tous vos fichiers dans un seul fichier <strong>.ZIP</strong> (Max 25 Mo). Le nom de votre fichier doit <strong>obligatoirement</strong> respecter ce format :<br>
+            <code style="display: inline-block; margin-top: 8px; margin-bottom: 4px; font-size: 1.1rem; color: #38bdf8; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">### - NOM_Prénom.zip</code><br>
+            <em style="font-size: 0.85rem; color: #94a3b8;">(Où ### est votre numéro de course. Exemple : <strong>96 - TOMCZYK_Marin.zip</strong>)</em>
+          </p>
+        </div>
 
+        <!-- RÈGLEMENT DES LIVRÉES -->
+        <div style="margin-bottom: 2.5rem; background: rgba(15, 23, 42, 0.4); padding: 20px; border-radius: 10px; border: 1px solid var(--border-primary);">
+          <h4 style="color: var(--accent-primary); margin-top: 0; margin-bottom: 10px;">Livrées semi-personnalisables MEKA</h4>
+          <p style="color: #cbd5e1; font-size: 0.95rem; margin-bottom: 20px;">
+            MEKA met à disposition des livrées semi-personnalisables pour les pilotes ne souhaitant ou ne pouvant pas créer les leurs. Le modèle est unique, seules les couleurs sont libres, et seront à renseigner au moment de l’inscription.
+          </p>
+
+          <h4 style="color: var(--accent-primary); margin-bottom: 10px;">Règles pour les livrées personnalisées</h4>
+          <p style="color: #cbd5e1; font-size: 0.95rem; margin-bottom: 10px;">L’utilisation de livrées personnalisées est acceptée et même encouragée. Néanmoins, les règles suivantes sont à respecter :</p>
+          <ul style="color: #94a3b8; font-size: 0.9rem; list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0; line-height: 1.6;">
+            <li style="margin-bottom: 8px;"><strong style="color: #e2e8f0;">Respect du règlement Twitch :</strong> Pas de contenus pornographiques, racistes, injurieux, xénophobes, etc.</li>
+            <li style="margin-bottom: 8px;"><strong style="color: #e2e8f0;">Plaques de numéros (Art. 2.5.1) :</strong> Les plaques de numéros seront ajoutées par le CO. Nous vous demandons de ne pas rajouter vos plaques personnalisées sur votre livrée ou dans votre dossier. <em>Pour cette année, ce ne seront pas des packs DCP mais juste les numéros en eux-mêmes. La livrée DCP ne doit pas contenir de logos et avoir un espace vide afin d'accueillir ce logo sans qu'il y ait des sponsors ou décos dérangeantes sur cet emplacement.</em></li>
+            <li style="margin-bottom: 8px;"><strong style="color: #e2e8f0;">Pare-soleil (Art. 2.5.2) :</strong> Utilisation du bandeau de pare-soleil fourni par le CO.</li>
+            <li style="margin-bottom: 8px;"><strong style="color: #e2e8f0;">Délai limite :</strong> Toute livrée non-rendue avant le <strong>samedi précédent la course à 23h59</strong> ne sera pas intégrée au Skin Pack de la course à venir.</li>
+            <li><strong style="color: #e2e8f0;">Validation :</strong> Le CO se réserve le droit de refuser une livrée pour des raisons non-citées ci-dessus, avec justification auprès du pilote.</li>
+          </ul>
+        </div>
+
+        <!-- BOUTON ONEDRIVE -->
         <div style="display: flex; flex-direction: column; gap: 15px; background: rgba(15,23,42,0.6); padding: 20px; border-radius: 10px; border: 1px dashed var(--border-secondary); text-align: center; margin-bottom: 2rem;">
           <h4 style="color: var(--accent-primary); margin-bottom: 0;">Dépôt OneDrive</h4>
           <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">Cliquez sur le bouton pour ouvrir le dossier partagé et y glisser/déposer votre fichier .ZIP.</p>
@@ -1883,12 +1906,12 @@ async function renderLiverySection() {
         </div>
 
         <!-- ZONE DE CONFIRMATION / CASE À COCHER -->
-        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid ${isImplemented ? 'var(--accent-success)' : 'var(--border-primary)'}; padding: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid ${isImplemented ? 'var(--accent-success)' : 'var(--border-primary)'}; padding: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; transition: border-color 0.3s ease;">
           <div>
             <h5 style="margin: 0 0 5px 0; color: #fff; font-size: 1.1rem;">Confirmation de dépôt</h5>
             <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Cochez cette case une fois que votre fichier .zip est correctement mis en ligne sur le OneDrive.</p>
           </div>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;">
             <input type="checkbox" id="chkLiveryDone" ${isImplemented ? 'checked' : ''} style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: #10b981;">
             <span style="font-weight: 600; color: ${isImplemented ? 'var(--accent-success)' : '#fff'};">J'ai déposé ma livrée</span>
           </label>
