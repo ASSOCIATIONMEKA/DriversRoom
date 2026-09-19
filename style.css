@@ -597,3 +597,10 @@ div:has(> #adminViewToggle),
   transform: scale(0.85); /* Réduit légèrement la taille globale de l'interrupteur s'il est trop gros */
   margin: 0 !important;
 }
+
+/* Style des Toasts Pop-ups Administrateur */
+.toast-admin {
+  border-left-color: #a855f7 !important; /* Violet */
+  background: rgba(30, 27, 75, 0.95) !important; /* Fond violet très sombre */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 0 15px rgba(168, 85, 247, 0.4) !important;
+}
