@@ -226,67 +226,112 @@
     <div class="course-box">
       <h2>Les championnats en cours</h2>
       
-      <!-- CHAMPIONNAT 1 -->
+      <!-- CHAMPIONNAT 1 : TFR -->
       <div class="championship-card" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
         
         <!-- En-tête du championnat -->
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 15px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
           <div style="display: flex; align-items: center; gap: 20px;">
-            <!-- Remplacez le src par le chemin du logo de l'événement -->
-            <img src="logos/logo-championnat.png" alt="Logo de l'événement" style="max-height: 80px; max-width: 150px; object-fit: contain;">
+            <img src="logos/tfr-logo.png" alt="Logo TFR" style="max-height: 80px; max-width: 150px; object-fit: contain;">
             <div>
-              <h3 style="margin-bottom: 5px; color: #818cf8; text-transform: uppercase;">Nom de l'Événement</h3>
-              <!-- Badge Type (Équipe ou Solo) -->
+              <h3 style="margin-bottom: 5px; color: #818cf8; text-transform: uppercase;">TFR (Team's Friday Races)</h3>
               <span class="badge-type" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">🏆 Type : Équipe</span>
             </div>
           </div>
           <div>
-            <a href="https://lien-du-championnat.com" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-              Visiter le site officiel
+            <a href="#" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              Site du championnat
             </a>
           </div>
         </div>
         
-        <!-- Informations Véhicules & Pilotes -->
+        <!-- Informations Équipes & Pilotes -->
         <div style="padding: 10px 0;">
-          <h4 style="color: #cbd5e1; font-size: 1.1rem; margin-bottom: 15px;">Voitures & Pilotes Inscrits</h4>
+          <h4 style="color: #cbd5e1; font-size: 1.1rem; margin-bottom: 15px;">Équipes & Pilotes Inscrits</h4>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
             
-            <!-- Voiture 1 -->
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; transition: background 0.3s ease;">
+            <!-- Équipe 1 : YELLOW -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid #eab308; padding: 15px; border-radius: 8px; transition: background 0.3s ease;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <strong style="color: #f8fafc; font-size: 1.1rem;">🏎️ Porsche 911 GT3 R</strong>
-                <span style="background: #e11d48; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">#99</span>
+                <strong style="color: #f8fafc; font-size: 1.1rem;">MEKA SimRacing #YELLOW</strong>
+                <span style="background: #eab308; color: #000; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">#23</span>
               </div>
               <div style="color: #94a3b8; font-size: 0.95rem; display: flex; flex-direction: column; gap: 4px;">
-                <span><strong>Catégorie :</strong> PRO</span>
-                <span><strong>Pilotes :</strong> Nicolas Moreau, Ilan Guilbaud</span>
+                <span><strong>Catégorie :</strong> <span style="color: #38bdf8; font-weight: bold;">PRO</span></span>
+                <span><strong>Pilotes :</strong> Marin TOMCZYK & Ilan GUILBAUD</span>
               </div>
             </div>
 
-            <!-- Voiture 2 (Si plusieurs voitures inscrites au même championnat) -->
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; transition: background 0.3s ease;">
+            <!-- Équipe 2 : PINK -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid #ec4899; padding: 15px; border-radius: 8px; transition: background 0.3s ease;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <strong style="color: #f8fafc; font-size: 1.1rem;">🏎️ Corvette Z06 GT3.R</strong>
-                <span style="background: #38bdf8; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">#42</span>
+                <strong style="color: #f8fafc; font-size: 1.1rem;">MEKA SimRacing #PINK</strong>
+                <span style="background: #ec4899; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">#53</span>
               </div>
               <div style="color: #94a3b8; font-size: 0.95rem; display: flex; flex-direction: column; gap: 4px;">
-                <span><strong>Catégorie :</strong> AM</span>
-                <span><strong>Pilotes :</strong> Marin Tomczyk, Timothée Jacobsen</span>
+                <span><strong>Catégorie :</strong> <span style="color: #38bdf8; font-weight: bold;">PRO</span></span>
+                <span><strong>Pilotes :</strong> Nicolas MOREAU & Timothée JACOBSEN</span>
               </div>
             </div>
 
           </div>
         </div>
-      </div>
-      
-      <!-- SÉPARATEUR ENTRE CHAMPIONNATS -->
-      <hr style="border: 0; height: 1px; background: rgba(255, 255, 255, 0.1); margin: 30px 0;">
-      
-      <!-- CHAMPIONNAT 2 (Copier-coller la structure du premier championnat et modifier les données) -->
-      <div class="championship-card" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px;">
-        <p style="text-align: center; color: #64748b; font-style: italic; margin: 0;">(Ajoutez d'autres championnats ici en reprenant la structure ci-dessus)</p>
+
+        <!-- Calendrier et Tableau des points -->
+        <div style="margin-top: 30px;">
+          <h4 style="color: #cbd5e1; font-size: 1.1rem; margin-bottom: 15px;">Calendrier & Suivi des points</h4>
+          <div style="overflow-x: auto;">
+            <table class="results-table" style="width: 100%; border-radius: 8px; overflow: hidden; table-layout: auto;">
+              <thead>
+                <tr style="background: rgba(255, 255, 255, 0.05);">
+                  <th style="width: 20%;">Manche</th>
+                  <th style="width: 25%;">Circuit</th>
+                  <th style="width: 25%;">Date</th>
+                  <th style="text-align: center; color: #eab308; width: 15%;">Pts #YELLOW</th>
+                  <th style="text-align: center; color: #ec4899; width: 15%;">Pts #PINK</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Manche 1</strong></td>
+                  <td>Ledenon</td>
+                  <td>Ven. 23/10/2026</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                </tr>
+                <tr>
+                  <td><strong>Manche 2</strong></td>
+                  <td>Mugello</td>
+                  <td>Ven. 06/11/2026</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                </tr>
+                <tr>
+                  <td><strong>Manche 3</strong></td>
+                  <td>Indianapolis</td>
+                  <td>Ven. 20/11/2026</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                </tr>
+                <tr>
+                  <td><strong>Manche 4</strong></td>
+                  <td>Mexico</td>
+                  <td>Ven. 04/12/2026</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                  <td style="text-align: center; color: #64748b; font-style: italic;">À venir</td>
+                </tr>
+                <!-- Ligne du Total -->
+                <tr style="background: rgba(255, 255, 255, 0.03); border-top: 2px solid rgba(255, 255, 255, 0.1);">
+                  <td colspan="3" style="text-align: right; color: #f8fafc; font-weight: bold; font-size: 1.05rem; padding-right: 20px;">TOTAL DU CHAMPIONNAT :</td>
+                  <td style="text-align: center; color: #eab308; font-weight: 900; font-size: 1.2rem;">0</td>
+                  <td style="text-align: center; color: #ec4899; font-weight: 900; font-size: 1.2rem;">0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </div>
