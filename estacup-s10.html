@@ -1071,6 +1071,7 @@
   </div>
 
   <!-- SCRIPTS : GESTION DES 7 JOURS ET AFFICHAGE CONDITIONNEL DU PANEL ADMIN -->
+  <!-- SCRIPTS : GESTION DES 7 JOURS ET AFFICHAGE CONDITIONNEL DU PANEL ADMIN -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1090,13 +1091,13 @@
     const auth = getAuth(app);
 
     const racesList = [
-      { id: "prologue", title: "Prologue - Silverstone", dateStr: "22/09/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-09-22T20:00:00") },
-      { id: "manche1", title: "Manche 1 - Brno", dateStr: "06/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-06T20:00:00") },
-      { id: "manche2", title: "Manche 2 - Fuji / Okayama", dateStr: "20/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-20T20:00:00") },
-      { id: "manche3", title: "Manche 3 - Valence", dateStr: "24/11/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-11-24T20:00:00") },
-      { id: "manche4", title: "Manche 4 - Sydney", dateStr: "08/12/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-12-08T20:00:00") },
-      { id: "manche5", title: "Manche 5 - Road America / Montréal", dateStr: "19/01/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-01-19T20:00:00") },
-      { id: "manche6", title: "Manche 6 - Interlagos", dateStr: "02/02/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-02-02T20:00:00") }
+      { id: "prologue", title: "Prologue - Silverstone", dateStr: "22/09/2026", time: "20h00", dateObj: new Date("2026-09-22T20:00:00") },
+      { id: "manche1", title: "Manche 1 - Brno", dateStr: "06/10/2026", time: "20h00", dateObj: new Date("2026-10-06T20:00:00") },
+      { id: "manche2", title: "Manche 2 - Fuji / Okayama", dateStr: "20/10/2026", time: "20h00", dateObj: new Date("2026-10-20T20:00:00") },
+      { id: "manche3", title: "Manche 3 - Valence", dateStr: "24/11/2026", time: "20h00", dateObj: new Date("2026-11-24T20:00:00") },
+      { id: "manche4", title: "Manche 4 - Sydney", dateStr: "08/12/2026", time: "20h00", dateObj: new Date("2026-12-08T20:00:00") },
+      { id: "manche5", title: "Manche 5 - Road America / Montréal", dateStr: "19/01/2027", time: "20h00", dateObj: new Date("2027-01-19T20:00:00") },
+      { id: "manche6", title: "Manche 6 - Interlagos", dateStr: "02/02/2027", time: "20h00", dateObj: new Date("2027-02-02T20:00:00") }
     ];
 
     let currentUser = null;
@@ -1105,7 +1106,6 @@
     let isUserValidated = false;
     let userTeamName = "";
 
-    // GESTION DU TOGGLE VUE ADMIN / VUE PILOTE
     let isMaintMode = false;
     let adminViewActive = true;
 
@@ -1118,8 +1118,6 @@
 
     window.updateViewModeUI = function() {
       const effectiveAdmin = isAdmin && adminViewActive;
-
-      // Gestion du mode de travaux
       const normalContent = document.getElementById("normalContent");
       const publicMaint = document.getElementById("publicMaintenanceScreen");
       const adminBanner = document.getElementById("adminMaintenanceBanner");
@@ -1140,7 +1138,6 @@
         if (adminBanner) adminBanner.classList.add("hidden");
       }
 
-      // Applique la classe globale pour cacher les éléments '.admin-only'
       if (effectiveAdmin) {
         document.body.classList.remove("pilot-view-mode");
       } else {
@@ -1227,7 +1224,6 @@
         console.error("Erreur de vérification de l'inscription:", e);
       }
 
-      // Initialisation du conteneur de switch admin
       const toggleContainer = document.getElementById("adminViewToggleContainer");
       if (isAdmin) {
         if (toggleContainer) toggleContainer.classList.remove("hidden");
@@ -1246,14 +1242,11 @@
       window.showRestrictedFeatures();
       loadNextRacePresence();
 
-      // ================= GESTION DU MODE TRAVAUX =================
       onSnapshot(doc(db, "config", "maintenance"), (snap) => {
         isMaintMode = snap.exists() && snap.data().s10_under_maintenance === true;
         window.updateViewModeUI();
       });
-      // =========================================================
 
-      // ================= GESTION DE L'EDITEUR DE REGLEMENT =================
       if (isAdmin) {
         const btnEdit = document.getElementById("btnEditReglement");
         if (btnEdit) btnEdit.classList.remove("hidden");
@@ -1311,19 +1304,7 @@
       }
     });
 
-    function timeToMs(tStr) {
-      if (!tStr || tStr === "X" || tStr.includes("En attente")) return Infinity;
-      const parts = tStr.split(":");
-      if (parts.length === 2) {
-        const mins = parseFloat(parts[0]);
-        const secs = parseFloat(parts[1]);
-        return (mins * 60 + secs) * 1000;
-      }
-      const num = parseFloat(tStr);
-      return isNaN(num) ? Infinity : num;
-    }
-
-   function loadNextRacePresence() {
+    function loadNextRacePresence() {
       const container = document.getElementById("presenceRacesContainer");
       if (!container) return;
 
@@ -1422,7 +1403,6 @@
           // ⚠️ AUTO-REFUS DES INCERTAINS À 16H00
           if (isLocked && status === "tentative") {
             status = "absent";
-            // Met à jour la base de données automatiquement pour ce pilote si c'est lui qui regarde la page
             if (currentUser && docSnap.id === currentUser.uid) {
               setDoc(doc(db, `attendances_${nextRace.id}`, currentUser.uid), { status: "absent" }, { merge: true });
             }
@@ -1478,7 +1458,7 @@
 
     window.togglePresence = async function(raceId, status) {
       if (!currentUser) {
-        showToast("⚠️️ Vous devez être connecté pour indiquer votre présence.", "warning");
+        if(typeof window.showToast === "function") window.showToast("⚠ Vous devez être connecté pour indiquer votre présence.", "warning");
         window.location.href = "login.html";
         return;
       }
@@ -1490,7 +1470,7 @@
         const deadline = new Date(nextRace.dateObj.getTime());
         deadline.setHours(16, 0, 0, 0);
         if (now >= deadline) {
-          showToast("🔒 Les inscriptions sont closes depuis 16h00.", "error");
+          if(typeof window.showToast === "function") window.showToast("🔒 Les inscriptions sont closes depuis 16h00.", "error");
           return;
         }
       }
@@ -1511,6 +1491,9 @@
         }
       } catch (err) {
         console.error("Erreur lors de la modification de la présence :", err);
-        showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
+        if(typeof window.showToast === "function") window.showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
       }
     };
+  </script>
+</body>
+</html>
