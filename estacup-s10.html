@@ -1323,7 +1323,7 @@
       return isNaN(num) ? Infinity : num;
     }
 
-    function loadNextRacePresence() {
+   function loadNextRacePresence() {
       const container = document.getElementById("presenceRacesContainer");
       if (!container) return;
 
@@ -1338,6 +1338,11 @@
       const diffTime = nextRace.dateObj - now;
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
+      // 🕒 CALCUL DE LA DEADLINE (Mardi de la course à 16h00)
+      const deadline = new Date(nextRace.dateObj.getTime());
+      deadline.setHours(16, 0, 0, 0);
+      const isLocked = now >= deadline;
+
       if (diffDays > 7) {
         container.innerHTML = `
           <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
@@ -1348,7 +1353,6 @@
         return;
       }
 
-      // Affiche le bloc de présence si dans les délais
       if (isAdmin && typeof window.showRestrictedFeatures === "function") {
         window.showRestrictedFeatures();
       }
@@ -1356,6 +1360,23 @@
       const parts = nextRace.title.split(" - ");
       const mancheNom = parts[0] || "Manche";
       const circuitNom = parts[1] || "";
+
+      // 🔒 GESTION DE L'AFFICHAGE DES BOUTONS SI LA DEADLINE EST PASSÉE
+      let actionsHtml = "";
+      if (isLocked) {
+        actionsHtml = `
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #f87171; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; width: 100%; margin: 1.5rem 0;">
+            🔒 Les inscriptions sont closes (Heure limite dépassée : Mardi 16h00).<br>
+            <span style="font-size: 0.9rem; font-weight: normal; color: #cbd5e1;">Tous les pilotes encore "Incertains" ont été automatiquement passés en "Absents".</span>
+          </div>`;
+      } else {
+        actionsHtml = `
+          <div class="presence-actions" data-race="${nextRace.id}">
+            <button class="btn-presence" data-status="present" onclick="window.togglePresence('${nextRace.id}', 'present')">✅ PRÉSENT</button>
+            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ ABSENT / REFUSÉ</button>
+            <button class="btn-presence" data-status="tentative" onclick="window.togglePresence('${nextRace.id}', 'tentative')">❓ INCERTAIN</button>
+          </div>`;
+      }
 
       container.innerHTML = `
         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
@@ -1365,14 +1386,11 @@
             Bonjour à tous, nous vous invitons à participer à la <strong>${mancheNom.toLowerCase()}</strong> de cette <strong>ESTACUP Saison 10</strong> à <strong>${circuitNom.toUpperCase()}</strong> ce mardi ${nextRace.dateStr} à <strong>${nextRace.time}</strong> (début du briefing).<br>
             Veuillez noter que seuls les pilotes inscrits seront pris en compte.<br>
             Réagissez avec <strong>✅</strong> pour valider votre présence, <strong>❌</strong> si vous êtes absent et <strong>❓</strong> si votre présence est incertaine.<br>
-            Il y a un total de <strong>34 places disponibles</strong> pour cette course (Split unique). Au-delà, vous serez placé sur liste d'attente (waitlist). Si vous ne faites pas partie des 34 premiers confirmés, vous ne pourrez malheureusement pas rouler sur cette manche.
+            Il y a un total de <strong>34 places disponibles</strong> pour cette course (Split unique). Au-delà, vous serez placé sur liste d'attente (waitlist). Si vous ne faites pas partie des 34 premiers confirmés, vous ne pourrez malheureusement pas rouler sur cette manche.<br>
+            <strong style="color: #f59e0b;">⚠️ Fermeture des inscriptions le mardi à 16h00.</strong>
           </p>
 
-          <div class="presence-actions" data-race="${nextRace.id}">
-            <button class="btn-presence" data-status="present" onclick="window.togglePresence('${nextRace.id}', 'present')">✅ PRÉSENT</button>
-            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ ABSENT / REFUSÉ</button>
-            <button class="btn-presence" data-status="tentative" onclick="window.togglePresence('${nextRace.id}', 'tentative')">❓ INCERTAIN</button>
-          </div>
+          ${actionsHtml}
 
           <div class="presence-lists-grid">
             <div class="presence-list-box">
@@ -1391,7 +1409,6 @@
         </div>
       `;
 
-      // On écoute uniquement les présences, plus de préqualifications
       onSnapshot(collection(db, `attendances_${nextRace.id}`), (attendanceSnap) => {
         const presentListNames = [];
         const absentListNames = [];
@@ -1400,14 +1417,26 @@
 
         attendanceSnap.forEach(docSnap => {
           const data = docSnap.data();
-          if (currentUser && docSnap.id === currentUser.uid) {
-            userStatus = data.status;
+          let status = data.status;
+
+          // ⚠️ AUTO-REFUS DES INCERTAINS À 16H00
+          if (isLocked && status === "tentative") {
+            status = "absent";
+            // Met à jour la base de données automatiquement pour ce pilote si c'est lui qui regarde la page
+            if (currentUser && docSnap.id === currentUser.uid) {
+              setDoc(doc(db, `attendances_${nextRace.id}`, currentUser.uid), { status: "absent" }, { merge: true });
+            }
           }
-          if (data.status === "present") {
+
+          if (currentUser && docSnap.id === currentUser.uid) {
+            userStatus = status;
+          }
+
+          if (status === "present") {
             presentListNames.push(data.userName);
-          } else if (data.status === "absent") {
+          } else if (status === "absent") {
             absentListNames.push(data.userName);
-          } else if (data.status === "tentative") {
+          } else if (status === "tentative") {
             tentativeListNames.push(data.userName);
           }
         });
@@ -1415,7 +1444,7 @@
         const countPresentEl = document.getElementById(`count-present-${nextRace.id}`);
         if (countPresentEl) {
           countPresentEl.textContent = `${presentListNames.length}/34`;
-          countPresentEl.style.color = presentListNames.length > 34 ? "#f87171" : ""; // Passe en rouge si > 34
+          countPresentEl.style.color = presentListNames.length > 34 ? "#f87171" : "";
         }
         
         const countAbsentEl = document.getElementById(`count-absent-${nextRace.id}`);
@@ -1436,7 +1465,7 @@
         const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
         if (actionBox) {
           actionBox.querySelectorAll('.btn-presence').forEach(btn => {
-            btn.className = "btn-presence"; // reset
+            btn.className = "btn-presence";
             if (userStatus && btn.getAttribute('data-status') === userStatus) {
               if (userStatus === 'present') btn.classList.add('active-present');
               if (userStatus === 'absent') btn.classList.add('active-absent');
@@ -1449,9 +1478,21 @@
 
     window.togglePresence = async function(raceId, status) {
       if (!currentUser) {
-        showToast("⚠️ Vous devez être connecté pour indiquer votre présence.", "warning");
+        showToast("⚠️️ Vous devez être connecté pour indiquer votre présence.", "warning");
         window.location.href = "login.html";
         return;
+      }
+
+      // 🕒 VÉRIFICATION DE LA DEADLINE CÔTÉ BOUTON
+      const now = new Date();
+      let nextRace = racesList.find(r => r.id === raceId);
+      if (nextRace) {
+        const deadline = new Date(nextRace.dateObj.getTime());
+        deadline.setHours(16, 0, 0, 0);
+        if (now >= deadline) {
+          showToast("🔒 Les inscriptions sont closes depuis 16h00.", "error");
+          return;
+        }
       }
 
       try {
@@ -1473,6 +1514,3 @@
         showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
       }
     };
-  </script>
-</body>
-</html>
