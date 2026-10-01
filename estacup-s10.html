@@ -567,117 +567,6 @@
               <div class="loading-inline"><div class="spinner"></div> Chargement des présences...</div>
             </div>
 
-            <!-- PANEL ADMIN POUR SAISIE ET MODIFICATION DES TEMPS (MASQUÉ PAR DÉFAUT) -->
-            <div id="adminPrequalPanel" class="admin-only" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; padding: 1.2rem; border-radius: 10px; margin-top: 2rem; margin-bottom: 1.5rem;">
-              <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 1rem;">🛠️ Panel Admin : Enregistrer / Modifier un temps</h5>
-              <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
-                <div style="flex: 1; min-width: 160px;">
-                  <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Session :</label>
-                  <select id="adminPqDay" style="width: 100%; padding: 8px; background: #020617; color: #fff; border: 1px solid #334155; border-radius: 6px;">
-                    <option value="Jeudi">Jeudi</option>
-                    <option value="Vendredi">Vendredi</option>
-                    <option value="Samedi">Samedi</option>
-                    <option value="Dimanche">Dimanche</option>
-                  </select>
-                </div>
-                <div style="flex: 2; min-width: 220px;">
-                  <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Pilote présent :</label>
-                  <select id="adminPqPilot" style="width: 100%; padding: 8px; background: #020617; color: #fff; border: 1px solid #334155; border-radius: 6px;">
-                    <option value="">-- Choisir un pilote --</option>
-                  </select>
-                </div>
-                <div style="flex: 1; min-width: 150px;">
-                  <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Moyenne (ex: 01:46.518 ou X) :</label>
-                  <input type="text" id="adminPqTime" placeholder="01:46.518" style="width: 100%; padding: 8px; background: #020617; color: #fff; border: 1px solid #334155; border-radius: 6px; box-sizing: border-box;">
-                </div>
-                <div>
-                  <button id="adminPqSubmitBtn" class="btn-validate" style="padding: 9px 16px; height: 38px;">Enregistrer</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- TABLEAUX DE PRÉQUALIFICATIONS -->
-            <div id="prequalStatsContainer" style="margin-top: 2rem; border-top: 1px solid var(--border-primary); padding-top: 1.5rem; display: none;">
-              <h4 style="color: var(--accent-primary); margin-bottom: 1rem;">Résultats des Préqualifications</h4>
-              
-              <!-- Grand Tableau Récapitulatif Général -->
-              <div style="overflow-x: auto; margin-bottom: 2rem;">
-                <h5 style="color: #fde68a; margin-bottom: 0.5rem;">Classement Général Préqualifs</h5>
-                <table class="reglement-table">
-                  <thead>
-                    <tr>
-                      <th>Position</th>
-                      <th>Nom</th>
-                      <th>Moyenne de temps</th>
-                      <th>Nombre de tentatives</th>
-                    </tr>
-                  </thead>
-                  <tbody id="pqaGeneralTableBody">
-                    <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chargement du classement...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Grille compacte des 4 tableaux journaliers (Sans barre de défilement) -->
-              <div class="daily-tables-grid">
-                <!-- Jeudi -->
-                <div class="daily-table-box">
-                  <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Jeudi</h5>
-                  <table>
-                    <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelJeu" class="admin-only" style="display:none; width: 20px;"></th></tr>
-                    </thead>
-                    <tbody id="pqaThursdayBody">
-                      <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Vendredi -->
-                <div class="daily-table-box">
-                  <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Vendredi</h5>
-                  <table>
-                    <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelVen" class="admin-only" style="display:none; width: 20px;"></th></tr>
-                    </thead>
-                    <tbody id="pqaFridayBody">
-                      <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Samedi -->
-                <div class="daily-table-box">
-                  <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Samedi</h5>
-                  <table>
-                    <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelSam" class="admin-only" style="display:none; width: 20px;"></th></tr>
-                    </thead>
-                    <tbody id="pqaSaturdayBody">
-                      <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Dimanche -->
-                <div class="daily-table-box">
-                  <h5 style="color: #38bdf8; margin-top: 0; margin-bottom: 0.4rem; font-size: 0.9rem;">Dimanche</h5>
-                  <table>
-                    <thead>
-                      <tr><th>Nom</th><th>Moyenne</th><th id="thDelDim" class="admin-only" style="display:none; width: 20px;"></th></tr>
-                    </thead>
-                    <tbody id="pqaSundayBody">
-                      <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
         <!-- INSCRIPTION -->
         <div id="champ-sub-inscription" class="champ-subsection hidden">
           <h3>Inscription ESTACUP</h3>
@@ -1470,8 +1359,6 @@
       
       if (!nextRace) {
         container.innerHTML = `<p class="muted-note">Le championnat est terminé. Merci à tous !</p>`;
-        document.getElementById("prequalStatsContainer").style.display = "none";
-        if (adminPrequalPanel) adminPrequalPanel.style.display = "none";
         return;
       }
 
@@ -1485,15 +1372,12 @@
             <p style="font-size: 0.9rem;">Le formulaire pour la course du <strong>${nextRace.dateStr}</strong> s'ouvrira automatiquement 7 jours avant l'épreuve.</p>
           </div>
         `;
-        document.getElementById("prequalStatsContainer").style.display = "none";
-        if (adminPrequalPanel) adminPrequalPanel.style.display = "none";
         return;
       }
 
-      document.getElementById("prequalStatsContainer").style.display = "block";
-      if (isAdmin && adminPrequalPanel) {
-        // Le panneau lui-même a la classe .admin-only donc il respectera le toggle
-        adminPrequalPanel.style.display = "block";
+      // Affiche le bloc de présence si dans les délais
+      if (isAdmin && typeof window.showRestrictedFeatures === "function") {
+        window.showRestrictedFeatures();
       }
 
       const parts = nextRace.title.split(" - ");
@@ -1508,22 +1392,22 @@
             Bonjour à tous, nous vous invitons à participer à la <strong>${mancheNom.toLowerCase()}</strong> de cette <strong>ESTACUP Saison 10</strong> à <strong>${circuitNom.toUpperCase()}</strong> ce mardi ${nextRace.dateStr} à <strong>${nextRace.time}</strong> (début du briefing).<br>
             Veuillez noter que seuls les pilotes inscrits seront pris en compte.<br>
             Réagissez avec <strong>✅</strong> pour valider votre présence, <strong>❌</strong> si vous êtes absent et <strong>❓</strong> si votre présence est incertaine.<br>
-            Il y a un total de <strong>32 places disponibles</strong> pour cette course en split 1, après cela vous serez placé dans la waitlist et un split 2 pourra être mis en place afin que vous puissiez rouler. (voir le règlement pour les modalités).
+            Il y a un total de <strong>34 places disponibles</strong> pour cette course (Split unique). Au-delà, vous serez placé sur liste d'attente (waitlist). Si vous ne faites pas partie des 34 premiers confirmés, vous ne pourrez malheureusement pas rouler sur cette manche.
           </p>
 
           <div class="presence-actions" data-race="${nextRace.id}">
             <button class="btn-presence" data-status="present" onclick="window.togglePresence('${nextRace.id}', 'present')">✅ PRÉSENT</button>
-            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ ABSENT</button>
+            <button class="btn-presence" data-status="absent" onclick="window.togglePresence('${nextRace.id}', 'absent')">❌ ABSENT / REFUSÉ</button>
             <button class="btn-presence" data-status="tentative" onclick="window.togglePresence('${nextRace.id}', 'tentative')">❓ INCERTAIN</button>
           </div>
 
           <div class="presence-lists-grid">
             <div class="presence-list-box">
-              <h5><span>✅ Acceptés</span> <span id="count-present-${nextRace.id}">0/32</span></h5>
+              <h5><span>✅ Acceptés</span> <span id="count-present-${nextRace.id}">0/34</span></h5>
               <ul id="list-present-${nextRace.id}"><li>Aucun</li></ul>
             </div>
             <div class="presence-list-box">
-              <h5><span>❌ Refusés</span> <span id="count-absent-${nextRace.id}">0</span></h5>
+              <h5><span>❌ Absents / Refusés</span> <span id="count-absent-${nextRace.id}">0</span></h5>
               <ul id="list-absent-${nextRace.id}"><li>Aucun</li></ul>
             </div>
             <div class="presence-list-box">
@@ -1534,73 +1418,63 @@
         </div>
       `;
 
+      // On écoute uniquement les présences, plus de préqualifications
       onSnapshot(collection(db, `attendances_${nextRace.id}`), (attendanceSnap) => {
-        onSnapshot(collection(db, `prequals_${nextRace.id}`), (prequalSnap) => {
-          const presentPilotsMap = new Map();
-          const presentListNames = [];
-          const absentListNames = [];
-          const tentativeListNames = [];
-          let userStatus = null;
+        const presentListNames = [];
+        const absentListNames = [];
+        const tentativeListNames = [];
+        let userStatus = null;
 
-          attendanceSnap.forEach(docSnap => {
-            const data = docSnap.data();
-            if (currentUser && docSnap.id === currentUser.uid) {
-              userStatus = data.status;
-            }
-            if (data.status === "present") {
-              presentPilotsMap.set(data.userName, data.userId);
-              presentListNames.push(data.userName);
-            } else if (data.status === "absent") {
-              absentListNames.push(data.userName);
-            } else if (data.status === "tentative") {
-              tentativeListNames.push(data.userName);
+        attendanceSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (currentUser && docSnap.id === currentUser.uid) {
+            userStatus = data.status;
+          }
+          if (data.status === "present") {
+            presentListNames.push(data.userName);
+          } else if (data.status === "absent") {
+            absentListNames.push(data.userName);
+          } else if (data.status === "tentative") {
+            tentativeListNames.push(data.userName);
+          }
+        });
+
+        const countPresentEl = document.getElementById(`count-present-${nextRace.id}`);
+        if (countPresentEl) {
+          countPresentEl.textContent = `${presentListNames.length}/34`;
+          countPresentEl.style.color = presentListNames.length > 34 ? "#f87171" : ""; // Passe en rouge si > 34
+        }
+        
+        const countAbsentEl = document.getElementById(`count-absent-${nextRace.id}`);
+        if (countAbsentEl) countAbsentEl.textContent = absentListNames.length;
+        
+        const countTentativeEl = document.getElementById(`count-tentative-${nextRace.id}`);
+        if (countTentativeEl) countTentativeEl.textContent = tentativeListNames.length;
+
+        const listPresentEl = document.getElementById(`list-present-${nextRace.id}`);
+        if (listPresentEl) listPresentEl.innerHTML = presentListNames.length ? presentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        
+        const listAbsentEl = document.getElementById(`list-absent-${nextRace.id}`);
+        if (listAbsentEl) listAbsentEl.innerHTML = absentListNames.length ? absentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        
+        const listTentativeEl = document.getElementById(`list-tentative-${nextRace.id}`);
+        if (listTentativeEl) listTentativeEl.innerHTML = tentativeListNames.length ? tentativeListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+
+        const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
+        if (actionBox) {
+          actionBox.querySelectorAll('.btn-presence').forEach(btn => {
+            btn.className = "btn-presence"; // reset
+            if (userStatus && btn.getAttribute('data-status') === userStatus) {
+              if (userStatus === 'present') btn.classList.add('active-present');
+              if (userStatus === 'absent') btn.classList.add('active-absent');
+              if (userStatus === 'tentative') btn.classList.add('active-tentative');
             }
           });
+        }
+      });
+    }
 
-          const pilotSelect = document.getElementById("adminPqPilot");
-          if (pilotSelect) {
-            const currentSelected = pilotSelect.value;
-            pilotSelect.innerHTML = `<option value="">-- Choisir un pilote --</option>`;
-            presentPilotsMap.forEach((uid, name) => {
-              pilotSelect.innerHTML += `<option value="${uid}_${name}">${name}</option>`;
-            });
-            pilotSelect.value = currentSelected;
-          }
-
-          document.getElementById(`count-present-${nextRace.id}`).textContent = `${presentListNames.length}/32`;
-          document.getElementById(`count-absent-${nextRace.id}`).textContent = absentListNames.length;
-          document.getElementById(`count-tentative-${nextRace.id}`).textContent = tentativeListNames.length;
-
-          document.getElementById(`list-present-${nextRace.id}`).innerHTML = presentListNames.length ? presentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-          document.getElementById(`list-absent-${nextRace.id}`).innerHTML = absentListNames.length ? absentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-          document.getElementById(`list-tentative-${nextRace.id}`).innerHTML = tentativeListNames.length ? tentativeListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
-
-          const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
-          if (actionBox) {
-            actionBox.querySelectorAll('.btn-presence').forEach(btn => {
-              btn.className = "btn-presence";
-              if (userStatus && btn.getAttribute('data-status') === userStatus) {
-                if (userStatus === 'present') btn.classList.add('active-present');
-                if (userStatus === 'absent') btn.classList.add('active-absent');
-                if (userStatus === 'tentative') btn.classList.add('active-tentative');
-              }
-            });
-          }
-
-          const prequalsByName = {};
-          prequalSnap.forEach(docSnap => {
-            const d = docSnap.data();
-            const name = d.name;
-            if (!name) return;
-            if (!prequalsByName[name]) prequalsByName[name] = [];
-            
-            prequalsByName[name].push({
-              docId: docSnap.id,
-              day: d.day,
-              avgTime: d.avgTime || "X",
-              timestamp: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : new Date(0)
-            });
-          });
+    // VOUS POUVEZ SUPPRIMER LA FONCTION window.deletePrequalSession QUI SE TROUVAIT JUSTE EN DESSOUS !
 
           const thursdayData = [];
           const fridayData = [];
@@ -1741,46 +1615,3 @@
         };
       }
     }
-
-    window.deletePrequalSession = async function(raceId, docId) {
-      if (!isAdmin || !adminViewActive) return;
-      if (await showConfirm("Voulez-vous vraiment supprimer ce temps de préqualification ?")) {
-        try {
-          await deleteDoc(doc(db, `prequals_${raceId}`, docId));
-          showToast("✅ Temps supprimé avec succès.", "success");
-        } catch (err) {
-          console.error("Erreur suppression préqualif:", err);
-          showToast("❌ Erreur lors de la suppression.", "error");
-        }
-      }
-    };
-
-    window.togglePresence = async function(raceId, status) {
-      if (!currentUser) {
-        showToast("⚠️ Vous devez être connecté pour indiquer votre présence.", "warning");
-        window.location.href = "login.html";
-        return;
-      }
-
-      try {
-        const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists() && docSnap.data().status === status) {
-          await deleteDoc(docRef);
-        } else {
-          await setDoc(docRef, {
-            userId: currentUser.uid,
-            userName: currentUserName,
-            status: status,
-            timestamp: new Date()
-          });
-        }
-      } catch (err) {
-        console.error("Erreur lors de la modification de la présence :", err);
-        showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
-      }
-    };
-  </script>
-</body>
-</html>
