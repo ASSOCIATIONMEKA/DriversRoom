@@ -307,44 +307,6 @@
     .presence-list-box ul { padding-left: 1.2rem; margin: 0; color: #94a3b8; }
     .presence-list-box li { list-style-type: disc; margin-bottom: 0.2rem; }
 
-    /* Ajustement tableaux journaliers compacts sans scrollbar */
-    .daily-tables-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.8rem;
-    }
-    @media (max-width: 1024px) {
-      .daily-tables-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 640px) {
-      .daily-tables-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .daily-table-box {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 0.75rem;
-    }
-    .daily-table-box table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-    .daily-table-box th, .daily-table-box td {
-      padding: 6px 8px;
-      border-bottom: 1px solid #233047;
-      text-align: left;
-    }
-    .daily-table-box th {
-      background: rgba(51, 65, 85, 0.4);
-      color: #fde68a;
-      font-size: 0.8rem;
-    }
-
     /* Switch Vue Admin */
     #adminViewToggleContainer {
       position: fixed; bottom: 20px; left: 20px; z-index: 9999;
@@ -559,7 +521,7 @@
           </div>
         </div>
 
-       <!-- PRÉSENCES COURSES -->
+        <!-- PRÉSENCES COURSES -->
         <div id="champ-sub-presence" class="champ-subsection hidden">
           <h3>Formulaire de Présence</h3>
           <div class="course-box">
@@ -568,8 +530,6 @@
             </div>
           </div>
         </div>
-
-        <!-- INSCRIPTION -->
 
         <!-- INSCRIPTION -->
         <div id="champ-sub-inscription" class="champ-subsection hidden">
@@ -1144,8 +1104,6 @@
     const navContenuBtn = document.querySelector('[data-sub="contenu"]');
     const navLivreeBtn = document.querySelector('[data-sub="livree"]');
     const navMyTeamBtn = document.querySelector('[data-sub="monequipe"]');
-    
-    const adminPrequalPanel = document.getElementById("adminPrequalPanel");
 
     window.updateViewModeUI = function() {
       const effectiveAdmin = isAdmin && adminViewActive;
@@ -1478,144 +1436,32 @@
       });
     }
 
-    // VOUS POUVEZ SUPPRIMER LA FONCTION window.deletePrequalSession QUI SE TROUVAIT JUSTE EN DESSOUS !
-
-          const thursdayData = [];
-          const fridayData = [];
-          const saturdayData = [];
-          const sundayData = [];
-
-          prequalSnap.forEach(docSnap => {
-            const d = docSnap.data();
-            const name = d.name;
-            const avgTime = d.avgTime || "X";
-            const day = (d.day || "").toLowerCase();
-            const docId = docSnap.id;
-            const item = { docId, name, avgTime };
-
-            if (day.includes("jeu")) thursdayData.push(item);
-            else if (day.includes("ven")) fridayData.push(item);
-            else if (day.includes("sam")) saturdayData.push(item);
-            else if (day.includes("dim")) sundayData.push(item);
-          });
-
-          const pqaData = [];
-          presentPilotsMap.forEach((uid, pilotName) => {
-            const sessions = prequalsByName[pilotName] || [];
-            const attempts = sessions.length;
-
-            if (attempts === 0) {
-              pqaData.push({
-                name: pilotName,
-                bestTime: "En attente (Pas de temps)",
-                sortVal: Infinity,
-                attempts: 0
-              });
-            } else {
-              sessions.sort((a, b) => a.timestamp - b.timestamp);
-              const validSessions = sessions.length >= 3 ? sessions.slice(0, 2) : sessions;
-
-              let bestTime = "X";
-              let bestMs = Infinity;
-
-              validSessions.forEach(s => {
-                const ms = timeToMs(s.avgTime);
-                if (ms < bestMs) {
-                  bestMs = ms;
-                  bestTime = s.avgTime;
-                }
-              });
-
-              pqaData.push({
-                name: pilotName,
-                bestTime: bestTime,
-                sortVal: bestMs,
-                attempts: attempts
-              });
-            }
-          });
-
-          pqaData.sort((a, b) => a.sortVal - b.sortVal);
-
-          const generalTbody = document.getElementById("pqaGeneralTableBody");
-          if (pqaData.length === 0) {
-            generalTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Aucun pilote présent</td></tr>`;
-          } else {
-            generalTbody.innerHTML = pqaData.map((p, idx) => `
-              <tr>
-                <td><strong>${idx + 1}</strong></td>
-                <td>${p.name}</td>
-                <td><span style="color: ${p.bestTime.includes('En attente') || p.bestTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${p.bestTime}</span></td>
-                <td>${p.attempts}</td>
-              </tr>
-            `).join('');
-          }
-
-          const fillDayTable = (tbodyId, thDelId, list) => {
-            const tb = document.getElementById(tbodyId);
-            const thDel = document.getElementById(thDelId);
-
-            if (isAdmin) {
-              if (thDel) thDel.style.display = "";
-            }
-
-            if (!list.length) {
-              tb.innerHTML = `<tr><td colspan="${isAdmin ? 3 : 2}" style="text-align: center; color: var(--text-muted);">Aucune donnée</td></tr>`;
-            } else {
-              list.sort((a, b) => timeToMs(a.avgTime) - timeToMs(b.avgTime));
-              tb.innerHTML = list.map(item => `
-                <tr>
-                  <td>${item.name}</td>
-                  <td><span style="color: ${item.avgTime === 'X' ? '#f87171' : '#34d399'}; font-weight: 600;">${item.avgTime}</span></td>
-                  ${isAdmin ? `<td class="admin-only" style="text-align: center;"><button onclick="window.deletePrequalSession('${nextRace.id}', '${item.docId}')" title="Supprimer" style="background: transparent; border: none; cursor: pointer; color: #f87171; font-size: 0.9rem;">❌</button></td>` : ''}
-                </tr>
-              `).join('');
-            }
-          };
-
-          fillDayTable("pqaThursdayBody", "thDelJeu", thursdayData);
-          fillDayTable("pqaFridayBody", "thDelVen", fridayData);
-          fillDayTable("pqaSaturdayBody", "thDelSam", saturdayData);
-          fillDayTable("pqaSundayBody", "thDelDim", sundayData);
-        });
-      });
-
-      const submitBtn = document.getElementById("adminPqSubmitBtn");
-      if (submitBtn) {
-        submitBtn.onclick = async () => {
-          const daySelect = document.getElementById("adminPqDay").value;
-          const pilotVal = document.getElementById("adminPqPilot").value;
-          const timeInput = document.getElementById("adminPqTime").value.trim();
-
-          if (!pilotVal || !timeInput) {
-            showToast("⚠️ Veuillez sélectionner un pilote et indiquer une moyenne de temps.", "warning");
-            return;
-          }
-
-          const [pilotUid, pilotName] = pilotVal.split("_");
-
-          try {
-            submitBtn.disabled = true;
-            submitBtn.textContent = "...";
-
-            const docId = `${pilotUid}_${daySelect}`;
-            await setDoc(doc(db, `prequals_${nextRace.id}`, docId), {
-              userId: pilotUid,
-              name: pilotName,
-              day: daySelect,
-              avgTime: timeInput,
-              timestamp: new Date()
-            }, { merge: true });
-
-            showToast(`✅ Temps de ${pilotName} (${daySelect}) enregistré avec succès !`, "success");
-            document.getElementById("adminPqTime").value = "";
-          } catch (err) {
-            console.error("Erreur enregistrement admin préqualif:", err);
-            showToast("❌ Erreur lors de l'enregistrement.", "error");
-          } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Enregistrer";
-          }
-        };
+    window.togglePresence = async function(raceId, status) {
+      if (!currentUser) {
+        showToast("⚠️ Vous devez être connecté pour indiquer votre présence.", "warning");
+        window.location.href = "login.html";
+        return;
       }
-    }
+
+      try {
+        const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists() && docSnap.data().status === status) {
+          await deleteDoc(docRef);
+        } else {
+          await setDoc(docRef, {
+            userId: currentUser.uid,
+            userName: currentUserName,
+            status: status,
+            timestamp: new Date()
+          });
+        }
+      } catch (err) {
+        console.error("Erreur lors de la modification de la présence :", err);
+        showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
+      }
+    };
+  </script>
+</body>
+</html>
