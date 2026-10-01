@@ -386,7 +386,7 @@
       </div>
       
       <p style="color: #94a3b8; font-style: italic; margin-bottom: 0; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
-        ℹ️ <strong>Bon à savoir :</strong> Le calendrier complet ainsi que les formats de course ont été spécialement réadaptés pour exploiter tout le potentiel de cette monoplace. Préparez-vous pour une Saison 10 inoubliable !
+        ℹ️️ <strong>Bon à savoir :</strong> Le calendrier complet ainsi que les formats de course ont été spécialement réadaptés pour exploiter tout le potentiel de cette monoplace. Préparez-vous pour une Saison 10 inoubliable !
       </p>
     </div>
     <!-- FIN ANNONCE -->
@@ -587,13 +587,13 @@
 
     // Calendrier officiel - Permet au site de s'actualiser tout seul
     const racesList = [
-      { id: "prologue", title: "Prologue", track: "Silverstone", dateStr: "22/09/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-09-22T20:00:00") },
-      { id: "manche1", title: "Manche 1", track: "Portimão", dateStr: "06/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-06T20:00:00") },
-      { id: "manche2", title: "Manche 2", track: "Brno", dateStr: "20/10/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-10-20T20:00:00") },
-      { id: "manche3", title: "Manche 3", track: "VIR / Road America", dateStr: "24/11/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-11-24T20:00:00") },
-      { id: "manche4", title: "Manche 4", track: "Fuji Speedway", dateStr: "08/12/2026", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2026-12-08T20:00:00") },
-      { id: "manche5", title: "Manche 5", track: "Magny-Cours / Dijon", dateStr: "19/01/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-01-19T20:00:00") },
-      { id: "manche6", title: "Manche 6", track: "Kyalami", dateStr: "02/02/2027", time: "20h00 (19h30 si 2 splits)", dateObj: new Date("2027-02-02T20:00:00") }
+      { id: "prologue", title: "Prologue", track: "Silverstone", dateStr: "22/09/2026", time: "20h00", dateObj: new Date("2026-09-22T20:00:00") },
+      { id: "manche1", title: "Manche 1", track: "Brno", dateStr: "06/10/2026", time: "20h00", dateObj: new Date("2026-10-06T20:00:00") },
+      { id: "manche2", title: "Manche 2", track: "Fuji / Okayama", dateStr: "20/10/2026", time: "20h00", dateObj: new Date("2026-10-20T20:00:00") },
+      { id: "manche3", title: "Manche 3", track: "Valence", dateStr: "24/11/2026", time: "20h00", dateObj: new Date("2026-11-24T20:00:00") },
+      { id: "manche4", title: "Manche 4", track: "Sydney", dateStr: "08/12/2026", time: "20h00", dateObj: new Date("2026-12-08T20:00:00") },
+      { id: "manche5", title: "Manche 5", track: "Road America / Montréal", dateStr: "19/01/2027", time: "20h00", dateObj: new Date("2027-01-19T20:00:00") },
+      { id: "manche6", title: "Manche 6", track: "Interlagos", dateStr: "02/02/2027", time: "20h00", dateObj: new Date("2027-02-02T20:00:00") }
     ];
 
     async function loadHomeStats() {
@@ -667,7 +667,7 @@
           snap.forEach(doc => { if (doc.data().status === "present") count++; });
           const countEl = document.getElementById("nr-count");
           countEl.textContent = count;
-          if (count >= 34) countEl.style.color = "#f87171"; // Passe en rouge si le Split 1 est plein
+          if (count > 34) countEl.style.color = "#f87171"; // Passe en rouge si liste d'attente
         });
       }
     }
