@@ -2807,9 +2807,23 @@ async function initNotifications(uid, isAdmin) {
 
     if (nextRace) {
       const diffDays = (nextRace.dateObj - new Date()) / (1000 * 60 * 60 * 24);
-      if (diffDays <= 7 && !userPresenceData) {
-        setAlertState('presence', 'red', `📅 <strong>Course imminente :</strong> Pensez à indiquer votre présence pour la course à venir !`, "user-presence");
+      
+      // Calcul de la deadline (16h le jour de la course)
+      const deadline = new Date(nextRace.dateObj.getTime());
+      deadline.setHours(16, 0, 0, 0);
+
+      // Si on est dans les 7 jours ET avant 16h
+      if (diffDays <= 7 && new Date() < deadline) {
+        if (!userPresenceData) {
+          setAlertState('presence', 'red', `📅 <strong>Course imminente :</strong> Pensez à indiquer votre présence pour la course à venir !`, "user-presence");
+        } else if (userPresenceData.status === "tentative") {
+          // ⚠️ ALERTE POUR LES INCERTAINS
+          setAlertState('presence', 'orange', `❓ <strong>Présence incertaine :</strong> N'oubliez pas de confirmer (Présent ou Absent) avant mardi 16h00, sinon vous serez refusé.`, "user-presence");
+        } else {
+          setAlertState('presence', null, null, "user-presence");
+        }
       } else {
+        // La deadline est passée ou la course est trop loin, on coupe l'alerte
         setAlertState('presence', null, null, "user-presence");
       }
     }
