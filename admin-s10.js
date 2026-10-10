@@ -219,32 +219,47 @@ function setupNavigation() {
 
 /* ---------------- Étapes UI (import résultats) ---------------- */
 function setupResultsUI() {
-  const manualBox = $("manualBox");
-  const jsonBox = $("jsonImportBox");
+  const manualBox = document.getElementById("manualBox");
+  const jsonBox = document.getElementById("jsonImportBox");
   const modeRadios = document.querySelectorAll('input[name="inputMode"]');
   
   modeRadios.forEach(r =>
     r.addEventListener("change", () => {
-      const mode = document.querySelector('input[name="inputMode"]:checked').value;
-      if(manualBox) manualBox.style.display = (mode === "manual") ? "block" : "none";
-      if(jsonBox) jsonBox.style.display = (mode === "json") ? "block" : "none";
+      const mode = document.querySelector('input[name="inputMode"]:checked');
+      if(mode) {
+        if(manualBox) manualBox.style.display = (mode.value === "manual") ? "block" : "none";
+        if(jsonBox) jsonBox.style.display = (mode.value === "json") ? "block" : "none";
+      }
     })
   );
 
-  $("fileSprintS1")?.addEventListener("change", e => ImportState.files.sprintS1 = e.target.files?.[0] || null);
-  $("fileMainS1")?.addEventListener("change", e => ImportState.files.mainS1 = e.target.files?.[0] || null);
+  const sprintInp = document.getElementById("fileSprintS1");
+  if(sprintInp) sprintInp.addEventListener("change", e => ImportState.files.sprintS1 = e.target.files?.[0] || null);
+  
+  const mainInp = document.getElementById("fileMainS1");
+  if(mainInp) mainInp.addEventListener("change", e => ImportState.files.mainS1 = e.target.files?.[0] || null);
 
-  $("analyzeJson")?.addEventListener("click", handleAnalyzeJson);
-  $("applyMatching")?.addEventListener("click", applyMatchingSelections);
-  $("submitJsonResults")?.addEventListener("click", saveImportedResults);
+  const btnAnalyze = document.getElementById("analyzeJson");
+  if(btnAnalyze) btnAnalyze.addEventListener("click", handleAnalyzeJson);
+  
+  const btnMatch = document.getElementById("applyMatching");
+  if(btnMatch) btnMatch.addEventListener("click", applyMatchingSelections);
+  
+  const btnSubmit = document.getElementById("submitJsonResults");
+  if(btnSubmit) btnSubmit.addEventListener("click", saveImportedResults);
 
-  $("modeManual")?.dispatchEvent(new Event("change"));
+  const defaultMode = document.querySelector('input[name="inputMode"]:checked');
+  if(defaultMode) {
+      defaultMode.dispatchEvent(new Event("change"));
+  }
 }
 
 function renderPreviewTables() {
-  const block = $("previewBlock"); const root = $("resultsPreview"); if (!block || !root) return;
-  const titleBase = buildBaseName();
+  const block = document.getElementById("previewBlock"); 
+  const root = document.getElementById("resultsPreview"); 
+  if (!block || !root) return;
   
+  const titleBase = buildBaseName();
   const makeTitle = (label) => `${titleBase} • ${label}`;
 
   const makeTable = (title, rows) => {
@@ -276,15 +291,23 @@ function renderPreviewTables() {
 }
 
 async function handleAnalyzeJson() {
-  ImportState.isEstacup = true; // Toujours vrai en S10
-  ImportState.splitCount = 1; // Toujours 1 en S10
-  ImportState.roundText = $("estcRoundText")?.value?.trim() || "";
-  ImportState.circuit = $("raceCircuit")?.value?.trim() || "";
-  ImportState.date = $("raceDate")?.valueAsDate || new Date();
+  ImportState.isEstacup = true;
+  ImportState.splitCount = 1;
+  ImportState.roundText = document.getElementById("estcRoundText")?.value?.trim() || "";
+  ImportState.circuit = document.getElementById("raceCircuit")?.value?.trim() || "";
+  ImportState.date = document.getElementById("raceDate")?.valueAsDate || new Date();
 
-  // Seuls le Sprint et la Course principale S10 sont lus
+  const btn = document.getElementById("analyzeJson");
+  if(btn) { btn.disabled = true; btn.textContent = "Analyse..."; }
+
   const jSprintS1 = await readFileAsJson(ImportState.files.sprintS1).catch(() => null);
   const jMainS1 = await readFileAsJson(ImportState.files.mainS1).catch(() => null);
+  
+  if (!jSprintS1 || !jMainS1) {
+    if (window.showToast) window.showToast("⚠️ Les deux fichiers (Sprint et Principale) sont obligatoires.", "warning");
+    if(btn) { btn.disabled = false; btn.textContent = "Analyser les fichiers"; }
+    return;
+  }
   
   ImportState.parsed.S1 = { sprint: extractResultsGeneric(jSprintS1), main: extractResultsGeneric(jMainS1) };
   
@@ -301,16 +324,18 @@ async function handleAnalyzeJson() {
     else ImportState.unmatched.push({ key, lastName: r.lastName, firstName: r.firstName });
   }
   renderMatchingUI(); renderPreviewTables();
+  if(btn) { btn.disabled = false; btn.textContent = "Analyser les fichiers"; }
 }
 
 function buildBaseName() {
-  const circuit = $("raceCircuit")?.value?.trim() || "";
-  return `ESTACUP • Round ${$("estcRoundText")?.value?.trim()} • ${circuit}`;
+  const circuit = document.getElementById("raceCircuit")?.value?.trim() || "";
+  return `ESTACUP • Round ${document.getElementById("estcRoundText")?.value?.trim()} • ${circuit}`;
 }
 
 async function saveImportedResults() {
-  const baseName = buildBaseName(); const raceDate = $("raceDate")?.valueAsDate || new Date();
-  if (!baseName) { showToast("⚠️ Formulaire incomplet.", "warning"); return; }
+  const baseName = buildBaseName(); 
+  const raceDate = document.getElementById("raceDate")?.valueAsDate || new Date();
+  if (!baseName) { if(window.showToast) window.showToast("⚠️ Formulaire incomplet.", "warning"); return; }
   
   const races = [];
   if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint", split: 1, rows: ImportState.parsed.S1.sprint });
@@ -339,7 +364,8 @@ async function saveImportedResults() {
 
     await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: race.split, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
   }
-  showToast("✅ Importation terminée !", "success"); await loadCourses();
+  if(window.showToast) window.showToast("✅ Importation terminée !", "success"); 
+  await loadCourses();
 }
 
 /* ---------------- Classement manuel (UI) ---------------- */
