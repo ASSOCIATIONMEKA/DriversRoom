@@ -333,7 +333,9 @@ function suggestUserFor(lastName, firstName) {
 }
 
 function renderMatchingUI() {
-  const block = $("matchBlock"); const list = $("matchList"); if (!block || !list) return;
+  const block = document.getElementById("matchBlock"); 
+  const list = document.getElementById("matchList"); 
+  if (!block || !list) return;
   if (!ImportState.unmatched.length) { block.style.display = "none"; return; }
   block.style.display = "block"; list.innerHTML = "";
   
@@ -357,7 +359,9 @@ function buildBaseName() {
 async function saveImportedResults() {
   const baseName = buildBaseName(); 
   const raceDate = document.getElementById("raceDate")?.valueAsDate || new Date();
-  if (!baseName) { if(window.showToast) window.showToast("⚠️ Formulaire incomplet.", "warning"); return; }
+  if (!baseName || !document.getElementById("estcRoundText")?.value?.trim()) { 
+     if(window.showToast) window.showToast("⚠️ Formulaire incomplet. Veuillez préciser le round et le circuit.", "warning"); return; 
+  }
   
   const races = [];
   if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint", split: 1, rows: ImportState.parsed.S1.sprint });
@@ -372,7 +376,7 @@ async function saveImportedResults() {
       
       const tr = document.querySelector(`tr[data-idx="${race.rows.indexOf(r)}"]`);
       const domPoints = tr ? Number(tr.querySelector(".points-input").value) : null;
-      const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), race.split, r.position);
+      const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), 1, r.position);
 
       withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, status: "OK" });
     }
@@ -381,67 +385,14 @@ async function saveImportedResults() {
     const displayName = `${baseName} • ${race.label}`;
 
     for (const p of withUid) {
-      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: race.split, isSprint: race.key.includes("sprint"), estacup: true });
+      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: true });
     }
 
-    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: race.split, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
+    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
   }
   if(window.showToast) window.showToast("✅ Importation terminée !", "success"); 
   await loadCourses();
 }
-
-async function loadCourses() {
-  const s10List = document.getElementById("courseListS10");
-  const s9List = document.getElementById("courseListS9");
-  if (!s10List || !s9List) return;
-
-  s10List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
-  s9List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
-
-  const snap = await getDocs(collection(db, "courses"));
-  s10List.innerHTML = "";
-  s9List.innerHTML = "";
-
-  const courses = [];
-  snap.forEach(d => courses.push({ id: d.id, ...d.data() }));
-  courses.sort((a, b) => (toDateVal(b.date) || 0) - (toDateVal(a.date) || 0));
-
-  let countS10 = 0, countS9 = 0;
-
-  courses.forEach(c => {
-    const box = document.createElement("div"); 
-    box.className = "course-box";
-    box.style.display = "flex";
-    box.style.justifyContent = "space-between";
-    box.style.alignItems = "center";
-    box.style.padding = "1.2rem";
-    box.style.marginBottom = "1rem";
-    
-    box.innerHTML = `<h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0;">${escapeHtml(c.name)}</h4><button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>`;
-    
-    const raceDate = toDateVal(c.date) || new Date(0);
-    if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
-      s10List.appendChild(box);
-      countS10++;
-    } else {
-      s9List.appendChild(box);
-      countS9++;
-    }
-  });
-  
-  if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
-  if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
-
-  document.querySelectorAll(".delete-course").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?"))) return;
-      await deleteDoc(doc(db, "courses", btn.dataset.id)); 
-      loadCourses();
-    });
-  });
-}
-
-/* ---------------- Classement manuel (UI) ---------------- */
 
 /* ---------------- Classement manuel (UI) ---------------- */
 function renderRanking() {
@@ -1225,197 +1176,6 @@ function getDefaultPoints(isSprint, split, position) {
   const ptsS10 = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
   if (position <= 20) return ptsS10[position - 1];
   return 1;
-}
-
-function renderPreviewTables() {
-  const block = $("previewBlock"); const root = $("resultsPreview"); if (!block || !root) return;
-  const titleBase = buildBaseName();
-  
-  const makeTitle = (label) => {
-      let t = String(`${titleBase} • ${label}`);
-      t = t.replace(/\bFinale\b/i, "Course").replace(/\bPrincipale\b/i, "Course");
-      return t;
-  };
-
-  const makeTable = (title, rows) => {
-    if (!rows || !rows.length) return "";
-    recomputePositions(rows);
-    const isSprint = /Sprint/i.test(title);
-    const splitNum = /S2/i.test(title) ? 2 : 1;
-    const isEstacup = ($("isEstacup")?.value === "yes");
-
-    let html = `<div class="course-box" style="margin-top:10px"><h4 style="color:#fde68a;">${escapeHtml(title)}</h4><div style="overflow:auto"><table class="race-table"><thead><tr><th>#</th><th>Nom</th><th>Prénom</th><th>Équipe</th><th>Voiture</th><th>Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
-    const groups = new Map();
-    rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
-    
-    [...groups.keys()].sort((a, b) => b - a).forEach(g => {
-      html += `<tbody>`;
-      groups.get(g).forEach(({ r, idx }) => {
-        const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : (isEstacup ? getDefaultPoints(isSprint, splitNum, r.position) : 0);
-        html += `<tr data-idx="${idx}"><td>${r.position}</td><td>${escapeHtml(r.lastName)}</td><td>${escapeHtml(r.firstName)}</td><td>${escapeHtml(r.team)}</td><td>${escapeHtml(r.carBrand)}</td><td><input class="points-input" type="number" style="width:80px;text-align:right" value="${pointsVal}"></td><td>${formatMs(r.bestLapMs)}</td><td>${g}</td><td>${r._gapText || "—"}</td><td>${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td></tr>`;
-      });
-      html += `</tbody>`;
-    });
-    return html + `</table></div></div>`;
-  };
-
-  let html = "";
-  if (ImportState.parsed.S1.sprint.length) html += makeTable(makeTitle("Sprint S1"), ImportState.parsed.S1.sprint);
-  if (ImportState.parsed.S1.main.length) html += makeTable(makeTitle("Course S1"), ImportState.parsed.S1.main);
-  if (ImportState.parsed.S2.sprint.length) html += makeTable(makeTitle("Sprint S2"), ImportState.parsed.S2.sprint);
-  if (ImportState.parsed.S2.main.length) html += makeTable(makeTitle("Course S2"), ImportState.parsed.S2.main);
-  
-  root.innerHTML = html || `<p class="muted-note" style="text-align:center;">Aucune donnée valide à afficher.</p>`;
-  block.style.display = "block";
-}
-
-async function handleAnalyzeJson() {
-  ImportState.isEstacup = $("isEstacup")?.value === "yes";
-  ImportState.roundText = $("estcRoundText")?.value?.trim() || "";
-  ImportState.circuit = $("raceCircuit")?.value?.trim() || "";
-  ImportState.date = $("raceDate")?.valueAsDate || new Date();
-
-  const jSprintS1 = await readFileAsJson(ImportState.files.sprintS1).catch(() => null);
-  const jMainS1 = await readFileAsJson(ImportState.files.mainS1).catch(() => null);
-  const jSprintS2 = await readFileAsJson(ImportState.files.sprintS2).catch(() => null);
-  const jMainS2 = await readFileAsJson(ImportState.files.mainS2).catch(() => null);
-  
-  ImportState.parsed.S1 = { sprint: extractResultsGeneric(jSprintS1), main: extractResultsGeneric(jMainS1) };
-  ImportState.parsed.S2 = { sprint: extractResultsGeneric(jSprintS2), main: extractResultsGeneric(jMainS2) };
-  
-  ImportState.nameMap.clear(); ImportState.unmatched = [];
-
-  const allImported = [].concat(
-      ImportState.parsed.S1.sprint, ImportState.parsed.S1.main,
-      ImportState.parsed.S2.sprint, ImportState.parsed.S2.main
-  );
-  
-  const seen = new Set();
-  for (const r of allImported) {
-    if (!r.lastName && !r.firstName) continue;
-    const key = buildKey(r.lastName, r.firstName); if (seen.has(key)) continue; seen.add(key);
-    const match = suggestUserFor(r.lastName, r.firstName);
-    if (match) ImportState.nameMap.set(key, { uid: match.id });
-    else ImportState.unmatched.push({ key, lastName: r.lastName, firstName: r.firstName });
-  }
-  renderMatchingUI(); renderPreviewTables();
-}
-
-function suggestUserFor(lastName, firstName) {
-  const ln = normLower(lastName);
-  return ImportState.usersCache.find(u => normLower(u.lastName) === ln || normLower(u.lastName).includes(ln));
-}
-
-function renderMatchingUI() {
-  const block = $("matchBlock"); const list = $("matchList"); if (!block || !list) return;
-  if (!ImportState.unmatched.length) { block.style.display = "none"; return; }
-  block.style.display = "block"; list.innerHTML = "";
-  
-  ImportState.unmatched.forEach(u => {
-    const div = document.createElement("div"); div.style.marginBottom = "8px";
-    div.innerHTML = `<label><strong>${escapeHtml(u.lastName)} ${escapeHtml(u.firstName)}</strong> : </label><select class="match-select" data-key="${u.key}"><option value="">-- Non assigné --</option>${ImportState.usersCache.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("")}</select>`;
-    list.appendChild(div);
-  });
-}
-
-function applyMatchingSelections() {
-  document.querySelectorAll(".match-select").forEach(sel => { if(sel.value) ImportState.nameMap.set(sel.dataset.key, { uid: sel.value }); });
-  renderPreviewTables(); showToast("✅ Assignations appliquées.", "success");
-}
-
-async function saveImportedResults() {
-  const baseName = buildBaseName(); const raceDate = $("raceDate")?.valueAsDate || new Date();
-  if (!baseName) { showToast("⚠️ Formulaire incomplet.", "warning"); return; }
-  
-  const races = [];
-  if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint S1", split: 1, rows: ImportState.parsed.S1.sprint });
-  if (ImportState.parsed.S1.main.length) races.push({ key: "S1_main", label: "Course S1", split: 1, rows: ImportState.parsed.S1.main });
-  if (ImportState.parsed.S2.sprint.length) races.push({ key: "S2_sprint", label: "Sprint S2", split: 2, rows: ImportState.parsed.S2.sprint });
-  if (ImportState.parsed.S2.main.length) races.push({ key: "S2_main", label: "Course S2", split: 2, rows: ImportState.parsed.S2.main });
-
-  const baseTs = Date.now(); let incr = 0;
-  for (const race of races) {
-    recomputePositions(race.rows);
-    const withUid = [];
-    for (const r of race.rows) {
-      const map = ImportState.nameMap.get(buildKey(r.lastName, r.firstName)); if (!map?.uid) continue;
-      
-      // Récupère les points du DOM (l'input)
-      const tr = document.querySelector(`tr[data-idx="${race.rows.indexOf(r)}"]`);
-      const domPoints = tr ? Number(tr.querySelector(".points-input").value) : null;
-      const finalPoints = Number.isFinite(domPoints) ? domPoints : (ImportState.isEstacup ? getDefaultPoints(race.key.includes("sprint"), race.split, r.position) : 0);
-
-      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, status: "OK" });
-    }
-
-    const raceId = `${baseTs + (incr++)}_${race.key}`;
-    let labelFinal = race.label.replace(/\bFinale\b/i, "Course").replace(/\bPrincipale\b/i, "Course");
-    const displayName = `${baseName} • ${labelFinal}`;
-
-    for (const p of withUid) {
-      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: race.split, isSprint: race.key.includes("sprint"), estacup: ImportState.isEstacup });
-    }
-
-    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: ImportState.isEstacup, split: race.split, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
-  }
-  showToast("✅ Importation terminée !", "success"); await loadCourses();
-}
-
-function buildBaseName() {
-  const circuit = $("raceCircuit")?.value?.trim() || "";
-  return $("isEstacup")?.value === "yes" ? `ESTACUP • Round ${$("estcRoundText")?.value?.trim()} • ${circuit}` : `${$("raceName")?.value?.trim()} • ${circuit}`;
-}
-
-async function loadCourses() {
-  const s10List = document.getElementById("courseListS10");
-  const s9List = document.getElementById("courseListS9");
-  if (!s10List || !s9List) return;
-
-  s10List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
-  s9List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
-
-  const snap = await getDocs(collection(db, "courses"));
-  s10List.innerHTML = "";
-  s9List.innerHTML = "";
-
-  const courses = [];
-  snap.forEach(d => courses.push({ id: d.id, ...d.data() }));
-  courses.sort((a, b) => (toDateVal(b.date) || 0) - (toDateVal(a.date) || 0));
-
-  let countS10 = 0, countS9 = 0;
-
-  courses.forEach(c => {
-    const box = document.createElement("div"); 
-    box.className = "course-box";
-    box.style.display = "flex";
-    box.style.justifyContent = "space-between";
-    box.style.alignItems = "center";
-    box.style.padding = "1.2rem";
-    box.style.marginBottom = "1rem";
-    
-    box.innerHTML = `<h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0;">${escapeHtml(c.name)}</h4><button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>`;
-    
-    const raceDate = toDateVal(c.date) || new Date(0);
-    // S10 est séparée avec la date bascule d'août 2026
-    if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
-      s10List.appendChild(box);
-      countS10++;
-    } else {
-      s9List.appendChild(box);
-      countS9++;
-    }
-  });
-  
-  if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
-  if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
-
-  document.querySelectorAll(".delete-course").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?"))) return;
-      await deleteDoc(doc(db, "courses", btn.dataset.id)); 
-      loadCourses();
-    });
-  });
 }
 
 /* ======================== GESTION DES RÉCLAMATIONS (ADMIN) ======================== */
