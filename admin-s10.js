@@ -453,6 +453,8 @@ async function saveImportedResults() {
 async function loadCourses() {
   const s10List = document.getElementById("courseListS10");
   const s9List = document.getElementById("courseListS9");
+  const incidentRaceSelect = document.getElementById("incidentRaceSelect"); // On cible le menu déroulant
+  
   if (!s10List || !s9List) return;
 
   s10List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
@@ -461,6 +463,11 @@ async function loadCourses() {
   const snap = await getDocs(collection(db, "courses"));
   s10List.innerHTML = "";
   s9List.innerHTML = "";
+  
+  // On vide le menu déroulant des incidents pour le reremplir proprement
+  if (incidentRaceSelect) {
+      incidentRaceSelect.innerHTML = `<option value="">-- Sélectionner une course --</option>`;
+  }
 
   const courses = [];
   snap.forEach(d => courses.push({ id: d.id, ...d.data() }));
@@ -480,10 +487,19 @@ async function loadCourses() {
     box.innerHTML = `<h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0;">${escapeHtml(c.name)}</h4><button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>`;
     
     const raceDate = toDateVal(c.date) || new Date(0);
+    
     // S10 est séparée avec la date bascule d'août 2026
     if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
       s10List.appendChild(box);
       countS10++;
+      
+      // AJOUT DE LA COURSE DANS LE MENU DÉROULANT
+      if (incidentRaceSelect) {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          incidentRaceSelect.appendChild(opt);
+      }
     } else {
       s9List.appendChild(box);
       countS9++;
@@ -493,6 +509,7 @@ async function loadCourses() {
   if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
   if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
 
+  // Écouteurs pour le bouton de suppression (qui nettoie aussi l'historique des pilotes)
   document.querySelectorAll(".delete-course").forEach(btn => {
     btn.addEventListener("click", async () => {
       if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?\n(Cela nettoiera également l'historique de tous les pilotes participants)"))) return;
@@ -502,18 +519,15 @@ async function loadCourses() {
       btn.textContent = "Suppression...";
       
       try {
-        // 1. On récupère la liste des pilotes ayant participé
         const courseSnap = await getDoc(doc(db, "courses", courseId));
         if (courseSnap.exists()) {
            const participants = courseSnap.data().participants || [];
-           // 2. On supprime l'historique dans le profil de chaque pilote
            for (const p of participants) {
               if (p.uid) {
                  await deleteDoc(doc(db, "users", p.uid, "raceHistory_s10", courseId));
               }
            }
         }
-        // 3. On supprime la course principale
         await deleteDoc(doc(db, "courses", courseId)); 
         if(window.showToast) window.showToast("✅ Course supprimée avec succès.", "success");
       } catch(err) {
