@@ -277,7 +277,10 @@ function showChampionshipSub(subKey) {
   if (subKey === "livree") renderLiverySection();
   if (subKey === "courses") loadResults(currentUid);
   if (subKey === "equipes") loadEstacupEquipes();
-  if (subKey === "reclamations" && typeof loadReclamHistory === "function") loadReclamHistory();
+  if (subKey === "reclamations") {
+    if (typeof updateReclamationsUI === "function") updateReclamationsUI();
+    if (typeof loadReclamHistory === "function") loadReclamHistory();
+  }
   if (subKey === "rankpilots" && typeof loadEstacupPilotStandings === "function") loadEstacupPilotStandings();
   if (subKey === "rankteams" && typeof loadEstacupTeamStandings === "function") loadEstacupTeamStandings();
   if (typeof renderAllBadges === "function") renderAllBadges();
@@ -1956,10 +1959,88 @@ async function renderLiverySection() {
 
 /* ======================== RÉCLAMATIONS ======================== */
 
+const RECLAMATIONS_RACES_LIST = [
+  { id: "prologue", title: "Prologue", dateObj: new Date("2026-09-22T20:00:00") },
+  { id: "manche1", title: "Manche 1", dateObj: new Date("2026-10-06T20:00:00") },
+  { id: "manche2", title: "Manche 2", dateObj: new Date("2026-10-20T20:00:00") },
+  { id: "manche3", title: "Manche 3", dateObj: new Date("2026-11-24T20:00:00") },
+  { id: "manche4", title: "Manche 4", dateObj: new Date("2026-12-08T20:00:00") },
+  { id: "manche5", title: "Manche 5", dateObj: new Date("2027-01-19T20:00:00") },
+  { id: "manche6", title: "Manche 6", dateObj: new Date("2027-02-02T20:00:00") }
+];
+
+window.updateReclamationsUI = function() {
+  const container = document.getElementById("reclamFormContainer");
+  const closedMsg = document.getElementById("reclamClosedMsg");
+  const alertBox = document.getElementById("reclamDeadlineAlert");
+  if (!container || !closedMsg) return;
+
+  const now = new Date();
+  let activeRace = null;
+
+  for (const race of RECLAMATIONS_RACES_LIST) {
+    const raceStart = new Date(race.dateObj.getTime());
+    const raceEnd = new Date(race.dateObj.getTime());
+    raceEnd.setDate(raceEnd.getDate() + 4); // Ajoute 4 jours (arrive au Samedi)
+    raceEnd.setHours(16, 0, 0, 0); // Fermeture à 16h00 pile
+
+    // Si on est dans la fenêtre d'ouverture
+    if (now >= raceStart && now <= raceEnd) {
+      activeRace = race;
+      break;
+    }
+  }
+
+  if (activeRace) {
+    container.style.display = "block";
+    closedMsg.style.display = "none";
+    
+    // Auto-remplissage de la date de la course
+    const dateInput = document.getElementById("reclamDate");
+    if (dateInput && !dateInput.value) {
+        dateInput.value = activeRace.dateObj.toISOString().split('T')[0];
+    }
+    
+    // Affichage de l'alerte
+    if (alertBox) {
+        alertBox.innerHTML = `⚠️ <strong>Attention :</strong> Les réclamations pour la <strong>${activeRace.title}</strong> sont ouvertes. Vous avez jusqu'au <strong>samedi à 16h00</strong> pour soumettre votre dossier.`;
+        alertBox.style.display = "block";
+    }
+  } else {
+    // Si la période est passée ou pas encore commencée
+    container.style.display = "none";
+    closedMsg.style.display = "block";
+    if (alertBox) alertBox.style.display = "none";
+  }
+};
+
 // 1. Écouteur pour l'envoi du formulaire
 const btnSubmitReclam = document.getElementById("submitReclam");
 if (btnSubmitReclam) {
   btnSubmitReclam.addEventListener("click", async () => {
+    
+    // --- VÉRIFICATION DE LA DEADLINE AU CLIC (DÉBUT DE L'AJOUT) ---
+    const now = new Date();
+    let isActive = false;
+    for (const race of RECLAMATIONS_RACES_LIST) {
+      const raceStart = new Date(race.dateObj.getTime());
+      const raceEnd = new Date(race.dateObj.getTime());
+      raceEnd.setDate(raceEnd.getDate() + 4); // +4 jours = samedi
+      raceEnd.setHours(16, 0, 0, 0); // Fermeture à 16h00
+      
+      if (now >= raceStart && now <= raceEnd) {
+        isActive = true; 
+        break;
+      }
+    }
+    
+    if (!isActive) {
+      if (window.showToast) window.showToast("🔒 Le formulaire de réclamation est actuellement fermé.", "error");
+      return; // On arrête tout, l'envoi est bloqué
+    }
+    // --- FIN DE L'AJOUT ---
+
+    // La suite de ton code d'origine ne change pas :
     const rDate = document.getElementById("reclamDate").value;
     const rSplit = document.getElementById("reclamSplit").value;
     const rDesc = document.getElementById("reclamDesc").value.trim();
