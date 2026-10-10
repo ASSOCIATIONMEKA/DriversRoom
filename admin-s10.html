@@ -101,6 +101,16 @@
               <input type="file" id="fileSprintS1" accept=".json,application/json" />
             </div>
 
+            <!-- NOUVEAU : Sélection du poleman -->
+            <div class="course-box" style="padding:15px; border-color: rgba(168, 85, 247, 0.3); margin-top: 15px;">
+              <h4 style="margin:0 0 12px; color: #a855f7;">🌟 Points Bonus</h4>
+              <label style="font-weight: 600; display:block;">Pilote en Pole Position (Q2) <span style="color:#a855f7; font-size:0.8rem; font-weight: normal;">+2 pts (appliqués sur la Course Principale)</span></label>
+              <select id="poleSitterSelect" data-pilots="alpha" style="width: 100%; padding: 10px; background: #020617; border: 1px solid #334155; color: #fff; border-radius: 6px; margin-bottom: 10px;">
+                <option value="">-- Aucun / Non défini --</option>
+              </select>
+              <p class="muted-note" style="margin: 0; font-size: 0.85rem;">Les <strong style="color:#34d399;">+1 pt</strong> pour les meilleurs tours de chaque course seront calculés et ajoutés automatiquement lors de l'analyse !</p>
+            </div>
+
             <button id="analyzeJson" class="btn-validate" style="margin-top: 10px;">Analyser les fichiers</button>
           </div>
 
