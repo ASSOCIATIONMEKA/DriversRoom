@@ -589,19 +589,34 @@
             <p class="muted-note" style="margin-bottom:15px;">
               Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
             </p>
-            <label for="reclamDate">Date de la course :</label>
-            <input id="reclamDate" type="date" />
-            <label for="reclamSplit">Split :</label>
-            <select id="reclamSplit">
-              <option value="">-- Choisir un split --</option>
-              <option value="1">Split 1</option>
-              <option value="2">Split 2</option>
-            </select>
+
+            <!-- NOUVEAU : Titre de la course généré automatiquement -->
+            <h4 id="reclamActiveRaceTitle" style="color: #38bdf8; margin-top: 0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(56, 189, 248, 0.2);">
+              🏎️ Course concernée : Chargement...
+            </h4>
+
+            <!-- NOUVEAU : Bandeau glissant pour le type de course -->
+            <div style="margin-bottom: 1.5rem;">
+              <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Course sprint ou principale ?</label>
+              <div style="position: relative; display: flex; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 4px;">
+                <!-- Le fond violet qui va glisser -->
+                <div id="reclamTypeSlider" style="position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px); background: linear-gradient(135deg, #6366F1, #8B5CF6); border-radius: 6px; transition: left 0.3s ease;"></div>
+                
+                <button type="button" id="btnTypeSprint" style="flex: 1; background: transparent; border: none; box-shadow: none; color: white; padding: 10px; font-weight: bold; position: relative; z-index: 1;">Sprint</button>
+                <button type="button" id="btnTypeMain" style="flex: 1; background: transparent; border: none; box-shadow: none; color: #94a3b8; padding: 10px; font-weight: bold; position: relative; z-index: 1;">Principale</button>
+                
+                <!-- Ce champ caché stocke la valeur choisie pour l'envoi -->
+                <input type="hidden" id="reclamRaceType" value="Sprint">
+              </div>
+            </div>
+
             <label for="reclamDesc">Description de l'incident :</label>
             <textarea id="reclamDesc" placeholder="Décrivez précisément l'incident (tour, virage, pilotes impliqués, etc.)" rows="5"></textarea>
+            
             <label for="reclamVideo">Lien de la vidéo YouTube (obligatoire) :</label>
             <input id="reclamVideo" type="url" placeholder="https://youtu.be/..." />
-            <button id="submitReclam">📨 Envoyer la réclamation</button>
+            
+            <button id="submitReclam" style="width: 100%; margin-top: 10px;">📨 Envoyer la réclamation</button>
           </div>
           
           <div id="reclamHistory" style="margin-top:20px;"></div>
