@@ -1349,11 +1349,23 @@ async function loadReclamations() {
         const borderColor = isTreated ? "#10b981" : "#f59e0b";
         const bgColor = isTreated ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)";
 
+        // Gérer les nouvelles données (avec sécurité pour les anciennes réclamations)
+        const incidentType = r.incidentType || "Non spécifié";
+        const lap = r.lap ? `Tour ${r.lap}` : "Non spécifié";
+        
+        // Affichage des pilotes impliqués sous forme de tags
+        let involvedHtml = "";
+        if (r.involvedPilots && r.involvedPilots.length > 0) {
+          involvedHtml = r.involvedPilots.map(p => `<span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">👤 ${escapeHtml(p)}</span>`).join(" ");
+        } else {
+          involvedHtml = `<span style="color: #94a3b8; font-size: 0.85rem;">Non spécifiés</span>`;
+        }
+
         html += `
           <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-left: 4px solid ${borderColor}; border-radius: 8px; padding: 15px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
               <div>
-                <strong style="color: #fff; font-size: 1.15rem; display: block; margin-bottom: 4px;">👤 ${escapeHtml(r.piloteName)}</strong>
+                <strong style="color: #fff; font-size: 1.15rem; display: block; margin-bottom: 4px;">Demandeur : ${escapeHtml(r.piloteName)}</strong>
               </div>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${borderColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${borderColor};">
@@ -1363,7 +1375,25 @@ async function loadReclamations() {
               </div>
             </div>
             
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+              
+              <!-- NOUVELLES INFORMATIONS -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                <div>
+                  <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Type d'incident :</span>
+                  <strong style="color: #fde68a;">${escapeHtml(incidentType)}</strong>
+                </div>
+                <div>
+                  <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Moment :</span>
+                  <strong style="color: #fde68a;">${escapeHtml(lap)}</strong>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                  <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 6px;">Pilotes impliqués :</span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px;">${involvedHtml}</div>
+                </div>
+              </div>
+              
+              <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Description de l'incident :</span>
               <p style="color: #e2e8f0; font-size: 0.95rem; margin: 0; white-space: pre-wrap;">${escapeHtml(r.description)}</p>
             </div>
             
