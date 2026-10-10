@@ -219,47 +219,127 @@ function setupNavigation() {
 
 /* ---------------- Étapes UI (import résultats) ---------------- */
 function setupResultsUI() {
-  const isEstacupSel = $("isEstacup");
-  const roundWrap = $("roundWrap");
-  const raceNameWrap = $("raceNameWrap");
-  const splitCountWrap = $("splitCountWrap");
-  if(isEstacupSel) isEstacupSel.value = "yes";
-  if(roundWrap) roundWrap.style.display = "block";
-  if(raceNameWrap) raceNameWrap.style.display = "none";
-
-  isEstacupSel?.addEventListener("change", () => {
-    const yes = isEstacupSel.value === "yes";
-    if(splitCountWrap) splitCountWrap.style.display = $("modeJson")?.checked ? "block" : "none";
-    if(roundWrap) roundWrap.style.display = yes ? "block" : "none";
-    if(raceNameWrap) raceNameWrap.style.display = yes ? "none" : "block";
-  });
-
   const manualBox = $("manualBox");
   const jsonBox = $("jsonImportBox");
   const modeRadios = document.querySelectorAll('input[name="inputMode"]');
+  
   modeRadios.forEach(r =>
     r.addEventListener("change", () => {
       const mode = document.querySelector('input[name="inputMode"]:checked').value;
       if(manualBox) manualBox.style.display = (mode === "manual") ? "block" : "none";
       if(jsonBox) jsonBox.style.display = (mode === "json") ? "block" : "none";
-      if($("splitCountWrap")) $("splitCountWrap").style.display = (mode === "json") ? "block" : "none";
     })
   );
 
   $("fileSprintS1")?.addEventListener("change", e => ImportState.files.sprintS1 = e.target.files?.[0] || null);
   $("fileMainS1")?.addEventListener("change", e => ImportState.files.mainS1 = e.target.files?.[0] || null);
-  $("fileSprintS2")?.addEventListener("change", e => ImportState.files.sprintS2 = e.target.files?.[0] || null);
-  $("fileMainS2")?.addEventListener("change", e => ImportState.files.mainS2 = e.target.files?.[0] || null);
-  $("splitCount")?.addEventListener("change", e => {
-    ImportState.splitCount = parseInt(e.target.value, 10) || 1;
-    if($("split2Wrap")) $("split2Wrap").style.display = (ImportState.splitCount === 2) ? "block" : "none";
-  });
 
   $("analyzeJson")?.addEventListener("click", handleAnalyzeJson);
   $("applyMatching")?.addEventListener("click", applyMatchingSelections);
   $("submitJsonResults")?.addEventListener("click", saveImportedResults);
 
   $("modeManual")?.dispatchEvent(new Event("change"));
+}
+
+function renderPreviewTables() {
+  const block = $("previewBlock"); const root = $("resultsPreview"); if (!block || !root) return;
+  const titleBase = buildBaseName();
+  
+  const makeTitle = (label) => `${titleBase} • ${label}`;
+
+  const makeTable = (title, rows) => {
+    if (!rows || !rows.length) return "";
+    recomputePositions(rows);
+    const isSprint = /Sprint/i.test(title);
+
+    let html = `<div class="course-box" style="margin-top:10px"><h4 style="color:#fde68a;">${escapeHtml(title)}</h4><div style="overflow:auto"><table class="race-table"><thead><tr><th>#</th><th>Nom</th><th>Prénom</th><th>Équipe</th><th>Voiture</th><th>Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
+    const groups = new Map();
+    rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
+    
+    [...groups.keys()].sort((a, b) => b - a).forEach(g => {
+      html += `<tbody>`;
+      groups.get(g).forEach(({ r, idx }) => {
+        const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : getDefaultPoints(isSprint, 1, r.position);
+        html += `<tr data-idx="${idx}"><td>${r.position}</td><td>${escapeHtml(r.lastName)}</td><td>${escapeHtml(r.firstName)}</td><td>${escapeHtml(r.team)}</td><td>${escapeHtml(r.carBrand)}</td><td><input class="points-input" type="number" style="width:80px;text-align:right" value="${pointsVal}"></td><td>${formatMs(r.bestLapMs)}</td><td>${g}</td><td>${r._gapText || "—"}</td><td>${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td></tr>`;
+      });
+      html += `</tbody>`;
+    });
+    return html + `</table></div></div>`;
+  };
+
+  let html = "";
+  if (ImportState.parsed.S1.sprint.length) html += makeTable(makeTitle("Sprint"), ImportState.parsed.S1.sprint);
+  if (ImportState.parsed.S1.main.length) html += makeTable(makeTitle("Course Principale"), ImportState.parsed.S1.main);
+  
+  root.innerHTML = html || `<p class="muted-note" style="text-align:center;">Aucune donnée valide à afficher.</p>`;
+  block.style.display = "block";
+}
+
+async function handleAnalyzeJson() {
+  ImportState.isEstacup = true; // Toujours vrai en S10
+  ImportState.splitCount = 1; // Toujours 1 en S10
+  ImportState.roundText = $("estcRoundText")?.value?.trim() || "";
+  ImportState.circuit = $("raceCircuit")?.value?.trim() || "";
+  ImportState.date = $("raceDate")?.valueAsDate || new Date();
+
+  // Seuls le Sprint et la Course principale S10 sont lus
+  const jSprintS1 = await readFileAsJson(ImportState.files.sprintS1).catch(() => null);
+  const jMainS1 = await readFileAsJson(ImportState.files.mainS1).catch(() => null);
+  
+  ImportState.parsed.S1 = { sprint: extractResultsGeneric(jSprintS1), main: extractResultsGeneric(jMainS1) };
+  
+  ImportState.nameMap.clear(); ImportState.unmatched = [];
+
+  const allImported = [].concat(ImportState.parsed.S1.sprint, ImportState.parsed.S1.main);
+  
+  const seen = new Set();
+  for (const r of allImported) {
+    if (!r.lastName && !r.firstName) continue;
+    const key = buildKey(r.lastName, r.firstName); if (seen.has(key)) continue; seen.add(key);
+    const match = suggestUserFor(r.lastName, r.firstName);
+    if (match) ImportState.nameMap.set(key, { uid: match.id });
+    else ImportState.unmatched.push({ key, lastName: r.lastName, firstName: r.firstName });
+  }
+  renderMatchingUI(); renderPreviewTables();
+}
+
+function buildBaseName() {
+  const circuit = $("raceCircuit")?.value?.trim() || "";
+  return `ESTACUP • Round ${$("estcRoundText")?.value?.trim()} • ${circuit}`;
+}
+
+async function saveImportedResults() {
+  const baseName = buildBaseName(); const raceDate = $("raceDate")?.valueAsDate || new Date();
+  if (!baseName) { showToast("⚠️ Formulaire incomplet.", "warning"); return; }
+  
+  const races = [];
+  if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint", split: 1, rows: ImportState.parsed.S1.sprint });
+  if (ImportState.parsed.S1.main.length) races.push({ key: "S1_main", label: "Course Principale", split: 1, rows: ImportState.parsed.S1.main });
+
+  const baseTs = Date.now(); let incr = 0;
+  for (const race of races) {
+    recomputePositions(race.rows);
+    const withUid = [];
+    for (const r of race.rows) {
+      const map = ImportState.nameMap.get(buildKey(r.lastName, r.firstName)); if (!map?.uid) continue;
+      
+      const tr = document.querySelector(`tr[data-idx="${race.rows.indexOf(r)}"]`);
+      const domPoints = tr ? Number(tr.querySelector(".points-input").value) : null;
+      const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), race.split, r.position);
+
+      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, status: "OK" });
+    }
+
+    const raceId = `${baseTs + (incr++)}_${race.key}`;
+    const displayName = `${baseName} • ${race.label}`;
+
+    for (const p of withUid) {
+      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: race.split, isSprint: race.key.includes("sprint"), estacup: true });
+    }
+
+    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: race.split, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
+  }
+  showToast("✅ Importation terminée !", "success"); await loadCourses();
 }
 
 /* ---------------- Classement manuel (UI) ---------------- */
