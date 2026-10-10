@@ -394,6 +394,58 @@ async function saveImportedResults() {
   await loadCourses();
 }
 
+async function loadCourses() {
+  const s10List = document.getElementById("courseListS10");
+  const s9List = document.getElementById("courseListS9");
+  if (!s10List || !s9List) return;
+
+  s10List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
+  s9List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
+
+  const snap = await getDocs(collection(db, "courses"));
+  s10List.innerHTML = "";
+  s9List.innerHTML = "";
+
+  const courses = [];
+  snap.forEach(d => courses.push({ id: d.id, ...d.data() }));
+  courses.sort((a, b) => (toDateVal(b.date) || 0) - (toDateVal(a.date) || 0));
+
+  let countS10 = 0, countS9 = 0;
+
+  courses.forEach(c => {
+    const box = document.createElement("div"); 
+    box.className = "course-box";
+    box.style.display = "flex";
+    box.style.justifyContent = "space-between";
+    box.style.alignItems = "center";
+    box.style.padding = "1.2rem";
+    box.style.marginBottom = "1rem";
+    
+    box.innerHTML = `<h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0;">${escapeHtml(c.name)}</h4><button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>`;
+    
+    const raceDate = toDateVal(c.date) || new Date(0);
+    // S10 est séparée avec la date bascule d'août 2026
+    if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
+      s10List.appendChild(box);
+      countS10++;
+    } else {
+      s9List.appendChild(box);
+      countS9++;
+    }
+  });
+  
+  if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
+  if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
+
+  document.querySelectorAll(".delete-course").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?"))) return;
+      await deleteDoc(doc(db, "courses", btn.dataset.id)); 
+      loadCourses();
+    });
+  });
+}
+
 /* ---------------- Classement manuel (UI) ---------------- */
 function renderRanking() {
   const ol = document.getElementById("rankingList"); if (!ol) return;
