@@ -1996,6 +1996,10 @@ window.updateReclamationsUI = function() {
 
   if (activeRace || isEffectiveAdmin) {
     container.style.display = "block";
+    // Initialisation du nom du pilote pour le système d'implication
+    const nameEl = document.getElementById("fullName");
+    currentPilotNameForReclam = nameEl ? nameEl.textContent : "Pilote";
+    if (typeof window.renderReclamPilots === "function") window.renderReclamPilots();
     closedMsg.style.display = "none";
     
     // --- MISE À JOUR DU TITRE DE LA COURSE ---
@@ -2030,46 +2034,124 @@ window.updateReclamationsUI = function() {
   }
 };
 
-// --- LOGIQUE DU BANDEAU GLISSANT (SPRINT/PRINCIPALE) ---
-const btnSprint = document.getElementById("btnTypeSprint");
-const btnMain = document.getElementById("btnTypeMain");
-const slider = document.getElementById("reclamTypeSlider");
-const inputType = document.getElementById("reclamRaceType");
+// --- VARIABLES GLOBALES POUR LES PILOTES IMPLIQUÉS ---
+let reclamInvolvedPilots = [];
+let currentPilotNameForReclam = "";
 
-if (btnSprint && btnMain && slider && inputType) {
-  btnSprint.addEventListener("click", () => {
-    slider.style.left = "4px";
-    btnSprint.style.color = "white";
-    btnMain.style.color = "#94a3b8";
-    inputType.value = "Sprint";
+// Fonction pour afficher les pilotes sélectionnés
+window.renderReclamPilots = function() {
+  const container = document.getElementById("reclamPilotsList");
+  if (!container) return;
+  
+  let html = "";
+  const chk = document.getElementById("reclamAmIInvolved");
+  
+  let totalCount = reclamInvolvedPilots.length + (chk && chk.checked ? 1 : 0);
+  
+  // Tag pour le pilote actuel s'il est coché
+  if (chk && chk.checked) {
+     html += `<span style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                👤 ${escapeHtml(currentPilotNameForReclam)}
+              </span>`;
+  }
+  
+  // Tags pour les pilotes ajoutés
+  reclamInvolvedPilots.forEach((p, idx) => {
+     html += `<span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #cbd5e1; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                ${escapeHtml(p)}
+                <button type="button" class="btn-remove-reclam-pilot" data-idx="${idx}" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0; font-size: 1rem; line-height: 1; box-shadow: none;">✖</button>
+              </span>`;
   });
-  btnMain.addEventListener("click", () => {
-    slider.style.left = "50%";
-    btnMain.style.color = "white";
-    btnSprint.style.color = "#94a3b8";
-    inputType.value = "Principale";
+  
+  container.innerHTML = html;
+  
+  // Boutons de suppression des tags
+  container.querySelectorAll(".btn-remove-reclam-pilot").forEach(btn => {
+     btn.addEventListener("click", (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        reclamInvolvedPilots.splice(idx, 1);
+        window.renderReclamPilots();
+     });
   });
-}
+  
+  // Désactiver le bouton d'ajout si limite atteinte
+  const btnAdd = document.getElementById("btnReclamAddPilot");
+  if (btnAdd) {
+    btnAdd.disabled = totalCount >= 5;
+    btnAdd.style.opacity = totalCount >= 5 ? "0.5" : "1";
+    btnAdd.style.cursor = totalCount >= 5 ? "not-allowed" : "pointer";
+  }
+};
 
-// 1. Écouteur pour l'envoi du formulaire
+// --- ÉCOUTEURS D'ÉVÉNEMENTS POUR L'INTERFACE ---
+document.addEventListener("DOMContentLoaded", () => {
+  // Bandeau Glissant (Sprint/Principale)
+  const btnSprint = document.getElementById("btnTypeSprint");
+  const btnMain = document.getElementById("btnTypeMain");
+  const slider = document.getElementById("reclamTypeSlider");
+  const inputType = document.getElementById("reclamRaceType");
+
+  if (btnSprint && btnMain && slider && inputType) {
+    btnSprint.addEventListener("click", () => {
+      slider.style.left = "4px";
+      btnSprint.style.color = "white";
+      btnMain.style.color = "#94a3b8";
+      inputType.value = "Sprint";
+    });
+    btnMain.addEventListener("click", () => {
+      slider.style.left = "50%";
+      btnMain.style.color = "white";
+      btnSprint.style.color = "#94a3b8";
+      inputType.value = "Principale";
+    });
+  }
+
+  // Ajout de pilotes impliqués
+  const btnAddPilotReclam = document.getElementById("btnReclamAddPilot");
+  const inputAddPilotReclam = document.getElementById("reclamAddPilotInput");
+  const chkAmIInvolved = document.getElementById("reclamAmIInvolved");
+
+  if (btnAddPilotReclam && inputAddPilotReclam) {
+    btnAddPilotReclam.addEventListener("click", () => {
+        const val = inputAddPilotReclam.value.trim();
+        if (!val) return;
+        
+        const totalCount = reclamInvolvedPilots.length + (chkAmIInvolved && chkAmIInvolved.checked ? 1 : 0);
+        if (totalCount >= 5) {
+            if (window.showToast) window.showToast("⚠️ Maximum 5 pilotes impliqués.", "warning");
+            return;
+        }
+        reclamInvolvedPilots.push(val);
+        inputAddPilotReclam.value = "";
+        window.renderReclamPilots();
+    });
+  }
+
+  if (chkAmIInvolved) {
+    chkAmIInvolved.addEventListener("change", () => {
+        window.renderReclamPilots();
+    });
+  }
+});
+
+// --- LOGIQUE D'ENVOI DU FORMULAIRE ---
 const btnSubmitReclam = document.getElementById("submitReclam");
 if (btnSubmitReclam) {
   btnSubmitReclam.addEventListener("click", async () => {
     
-    // --- VÉRIFICATION DE LA DEADLINE AU CLIC ---
+    // --- VÉRIFICATION DE LA DEADLINE ---
     const now = new Date();
     let isActive = false;
     for (const race of RECLAMATIONS_RACES_LIST) {
       const raceStart = new Date(race.dateObj.getTime());
       const raceEnd = new Date(race.dateObj.getTime());
-      raceEnd.setDate(raceEnd.getDate() + 4);
+      raceEnd.setDate(raceEnd.getDate() + 4); // Clôture le samedi
       raceEnd.setHours(16, 0, 0, 0);
       if (now >= raceStart && now <= raceEnd) {
         isActive = true; break;
       }
     }
 
-    // Autoriser si c'est un admin actif
     const adminToggle = document.getElementById("adminViewToggle");
     const adminContainer = document.getElementById("adminViewToggleContainer");
     const isEffectiveAdmin = adminToggle && adminToggle.checked && adminContainer && !adminContainer.classList.contains("hidden");
@@ -2079,21 +2161,31 @@ if (btnSubmitReclam) {
       return;
     }
 
-    // --- RÉCUPÉRATION DES NOUVELLES DONNÉES AUTOMATIQUES ---
+    // --- RÉCUPÉRATION DES DONNÉES ---
     const titleEl = document.getElementById("reclamActiveRaceTitle");
     const rDate = titleEl ? titleEl.dataset.raceDate : new Date().toISOString().split('T')[0];
-    const rTypeCourse = document.getElementById("reclamRaceType").value; // "Sprint" ou "Principale"
-    
+    const rTypeCourse = document.getElementById("reclamRaceType").value;
+    const rIncidentType = document.getElementById("reclamIncidentType").value;
+    const rLap = document.getElementById("reclamLap").value.trim();
     const rDesc = document.getElementById("reclamDesc").value.trim();
     const rVideo = document.getElementById("reclamVideo").value.trim();
+    const amIInvolved = document.getElementById("reclamAmIInvolved")?.checked;
+    
+    // Construction du tableau final des pilotes impliqués
+    let finalPilots = [];
+    if (amIInvolved) {
+      const nameEl = document.getElementById("fullName");
+      currentPilotNameForReclam = nameEl ? nameEl.textContent : "Pilote";
+      finalPilots.push(currentPilotNameForReclam);
+    }
+    finalPilots = finalPilots.concat(reclamInvolvedPilots);
 
     // Vérification des champs
-    if (!rDesc || !rVideo) {
-      if (window.showToast) window.showToast("⚠️ Veuillez remplir la description et le lien vidéo.", "warning");
+    if (!rIncidentType || !rLap || !rDesc || !rVideo || finalPilots.length === 0) {
+      if (window.showToast) window.showToast("⚠️ Veuillez remplir tous les champs obligatoires et lister les pilotes impliqués.", "warning");
       return;
     }
 
-    // Vérification basique du lien YouTube
     if (!rVideo.includes("youtube.com") && !rVideo.includes("youtu.be")) {
       if (window.showToast) window.showToast("⚠️ Le lien vidéo doit être une URL YouTube valide.", "warning");
       return;
@@ -2103,12 +2195,15 @@ if (btnSubmitReclam) {
     btnSubmitReclam.textContent = "Envoi en cours...";
 
     try {
-      // Ajout dans la collection Firebase
+      // Ajout dans la base de données
       await addDoc(collection(db, "estacup_s10_reclamations"), {
         uid: currentUid,
         piloteName: document.getElementById("fullName")?.textContent || "Pilote inconnu",
-        dateCourse: rDate, // Générée automatiquement
-        split: rTypeCourse, // Envoyé en tant que Split pour que le pannel Admin groupe correctement ("Sprint" ou "Principale")
+        dateCourse: rDate,
+        split: rTypeCourse,
+        incidentType: rIncidentType, // Nouveau
+        lap: rLap, // Nouveau
+        involvedPilots: finalPilots, // Nouveau
         description: rDesc,
         videoUrl: rVideo,
         status: "en attente",
@@ -2118,9 +2213,16 @@ if (btnSubmitReclam) {
 
       if (window.showToast) window.showToast("✅ Réclamation envoyée avec succès !", "success");
       
-      // Réinitialisation des champs de texte
+      // Réinitialisation du formulaire
+      document.getElementById("reclamIncidentType").value = "";
+      document.getElementById("reclamLap").value = "";
       document.getElementById("reclamDesc").value = "";
       document.getElementById("reclamVideo").value = "";
+      
+      const chk = document.getElementById("reclamAmIInvolved");
+      if (chk) chk.checked = true;
+      reclamInvolvedPilots = [];
+      window.renderReclamPilots();
 
       if (typeof loadReclamHistory === "function") loadReclamHistory();
 
@@ -2133,58 +2235,6 @@ if (btnSubmitReclam) {
     }
   });
 }
-
-// 2. Affichage de l'historique personnel du pilote
-window.loadReclamHistory = async function() {
-  const container = document.getElementById("reclamHistory");
-  if (!container || !currentUid) return;
-
-  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement de vos réclamations...</div>`;
-
-  try {
-    // On ne récupère que les réclamations de l'utilisateur connecté
-    const q = query(collection(db, "estacup_s10_reclamations"), where("uid", "==", currentUid));
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      container.innerHTML = `<p class="muted-note">Vous n'avez soumis aucune réclamation.</p>`;
-      return;
-    }
-
-    const reclamations = [];
-    snap.forEach(doc => reclamations.push({ id: doc.id, ...doc.data() }));
-    
-    // Tri par date de création (les plus récentes en haut)
-    reclamations.sort((a, b) => b.createdAt - a.createdAt);
-
-    let html = `<h4 style="color: var(--accent-primary); margin-top: 2rem; margin-bottom: 1rem;">Vos réclamations envoyées</h4><div style="display: flex; flex-direction: column; gap: 1rem;">`;
-
-    reclamations.forEach(r => {
-      const isTreated = r.status === "traité" || r.isTreated;
-      const statusColor = isTreated ? "#10b981" : "#f59e0b";
-      const statusText = isTreated ? "Traitée" : "En attente";
-      const dCourse = new Date(r.dateCourse).toLocaleDateString("fr-FR");
-
-      html += `
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${statusColor}; border-radius: 8px; padding: 15px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <strong style="color: #fff; font-size: 1.05rem;">Course du ${dCourse} (Split ${r.split})</strong>
-            <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; color: ${statusColor}; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; border: 1px solid ${statusColor};">${statusText}</span>
-          </div>
-          <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 0.95rem;">${escapeHtml(r.description)}</p>
-          <a href="${escapeHtml(r.videoUrl)}" target="_blank" style="color: #38bdf8; font-size: 0.85rem; text-decoration: underline;">📺 Voir la vidéo fournie</a>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    container.innerHTML = html;
-
-  } catch (error) {
-    console.error("Erreur chargement historique réclamations:", error);
-    container.innerHTML = `<p class="impact-bad">Erreur lors du chargement de l'historique.</p>`;
-  }
-};
 
 /* ======================== GLOBE 3D & CALENDRIER ======================== */
 let globeInitialized = false;
