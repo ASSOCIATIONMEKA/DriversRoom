@@ -732,7 +732,11 @@ async function loadIncidentHistory() {
 async function loadPilots() {
   const pilotList = document.getElementById("pilotList");
   const select = document.getElementById("incidentPilotSelect");
-  const snap = await getDocs(collection(db, "users"));
+  
+  // NOUVEAU : On cible uniquement les inscriptions validées de la Saison 10
+  const signupsRef = collection(db, "estacup_s10_signups");
+  const q = query(signupsRef, where("isValidated", "==", true));
+  const snap = await getDocs(q);
 
   if (pilotList) pilotList.innerHTML = "";
   if (select) {
@@ -746,14 +750,18 @@ async function loadPilots() {
   ImportState.usersCache = [];
 
   const users = snap.docs.map(docu => {
-    const d = docu.data(), uid = docu.id;
+    const d = docu.data();
+    const uid = d.uid || docu.id;
     const firstName = d.firstName || "", lastName = d.lastName || "";
     const name = `${firstName} ${lastName}`.trim() || "(Sans nom)";
+    
     return {
-      id: uid, firstName, lastName, name,
-      email: d.email || "",
-      teamName: d.teamName || d.team || "",
-      carChoice: d.carChoice || d.car || "",
+      id: uid, 
+      firstName, 
+      lastName, 
+      name,
+      teamName: d.teamName || "Indépendant",
+      carChoice: d.carChoice || "",
       _k: buildKey(lastName, firstName)
     };
   }).sort((a,b)=> a.lastName.localeCompare(b.lastName, 'fr', {sensitivity:'base'}) || a.firstName.localeCompare(b.firstName, 'fr', {sensitivity:'base'}));
@@ -761,6 +769,7 @@ async function loadPilots() {
   for (const u of users) {
     ImportState.usersCache.push(u);
 
+    // Remplissage de la liste de saisie manuelle
     if (pilotList) {
       const li = document.createElement("li"); li.dataset.uid = u.id;
       const nameSpan = document.createElement("span"); nameSpan.textContent = u.name;
@@ -768,24 +777,29 @@ async function loadPilots() {
       minusBtn.textContent = "–"; minusBtn.title = "Retirer du classement";
       minusBtn.style.marginLeft = "8px"; minusBtn.style.display = "none";
       minusBtn.addEventListener("click", (e) => { e.stopPropagation(); removeFromRanking(u.id); });
+      
       li.appendChild(nameSpan); li.appendChild(minusBtn);
       li.addEventListener("click", () => {
         if (selectedUIDs.has(u.id)) return;
         ranking.push({ uid: u.id, name: u.name }); selectedUIDs.add(u.id); renderRanking();
       });
+      
       pilotList.appendChild(li);
       pilotLiByUid.set(u.id, { li, minusBtn });
     }
+    
+    // Remplissage du menu déroulant pour les incidents
     if (select) {
       const opt = document.createElement("option");
       opt.value = u.id; opt.textContent = u.name; select.appendChild(opt);
     }
   }
 
+  // Remplissage des autres menus déroulants liés aux pilotes (si existants)
   document.querySelectorAll('select[data-pilots="alpha"]').forEach(sel=>{
     const cur = sel.value;
     sel.innerHTML = `<option value="">-- Pilote --</option>` + users.map(u=>{
-      const label = `${u.firstName} ${u.lastName}`.trim() || u.email || u.id;
+      const label = `${u.firstName} ${u.lastName}`.trim() || u.id;
       return `<option value="${u.id}">${escapeHtml(label)}</option>`;
     }).join("");
     if (cur && users.some(u=>u.id===cur)) sel.value = cur;
