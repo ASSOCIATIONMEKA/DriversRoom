@@ -60,22 +60,9 @@
           <h4>Étape 1 — Contexte</h4>
 
           <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:end">
-            <div>
-              <label for="isEstacup">Manche ESTACUP ?</label>
-              <select id="isEstacup">
-                <option value="yes">Oui</option>
-                <option value="no">Non</option>
-              </select>
-            </div>
-
             <div id="roundWrap">
               <label for="estcRoundText">Round</label>
               <input type="text" id="estcRoundText" placeholder="Prologue, 1, 2, 3…" />
-            </div>
-
-            <div id="raceNameWrap" style="display:none">
-              <label for="raceName">Nom de la course</label>
-              <input type="text" id="raceName" placeholder="Ex: Endu Monza du Jeudi" />
             </div>
 
             <div>
@@ -86,14 +73,6 @@
             <div>
               <label for="raceDate">Date</label>
               <input type="date" id="raceDate" />
-            </div>
-
-            <div id="splitCountWrap" style="display:none">
-              <label for="splitCount">Nombre de splits</label>
-              <select id="splitCount">
-                <option value="1">1</option>
-                <option value="2">2</option>
-              </select>
             </div>
           </div>
         </div>
@@ -113,23 +92,13 @@
             <h5 style="margin:6px 0">Fichiers JSON (résultats serveur)</h5>
 
             <div class="course-box" style="padding:15px; border-color: rgba(56, 189, 248, 0.3);">
-              <h4 style="margin:0 0 12px; color: #38bdf8;">Split 1</h4>
+              <h4 style="margin:0 0 12px; color: #38bdf8;">Fichiers de course</h4>
               
-              <label style="font-weight: 600;">Course (Principale / 1H) (JSON) <span style="color:#34d399; font-size:0.8rem; font-weight: normal;">*Requis S10</span></label>
+              <label style="font-weight: 600; display:block;">Course Principale (1H) (JSON) <span style="color:#34d399; font-size:0.8rem; font-weight: normal;">*Requis S10</span></label>
               <input type="file" id="fileMainS1" accept=".json,application/json" style="margin-bottom: 15px;" />
               
-              <label style="display:block; color:var(--text-muted); font-size: 0.9rem;">Sprint (Optionnel / Format S9)</label>
+              <label style="font-weight: 600; display:block;">Course Sprint (20 min) (JSON) <span style="color:#34d399; font-size:0.8rem; font-weight: normal;">*Requis S10</span></label>
               <input type="file" id="fileSprintS1" accept=".json,application/json" />
-            </div>
-
-            <div id="split2Wrap" class="course-box" style="padding:15px; border-color: rgba(56, 189, 248, 0.3); display:none">
-              <h4 style="margin:0 0 12px; color: #38bdf8;">Split 2</h4>
-              
-              <label style="font-weight: 600;">Course (Principale / 1H) (JSON) <span style="color:#34d399; font-size:0.8rem; font-weight: normal;">*Requis S10</span></label>
-              <input type="file" id="fileMainS2" accept=".json,application/json" style="margin-bottom: 15px;" />
-              
-              <label style="display:block; color:var(--text-muted); font-size: 0.9rem;">Sprint (Optionnel / Format S9)</label>
-              <input type="file" id="fileSprintS2" accept=".json,application/json" />
             </div>
 
             <button id="analyzeJson" class="btn-validate" style="margin-top: 10px;">Analyser les fichiers</button>
