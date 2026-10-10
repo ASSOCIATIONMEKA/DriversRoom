@@ -262,10 +262,22 @@ function renderPreviewTables() {
   const titleBase = buildBaseName();
   const makeTitle = (label) => `${titleBase} • ${label}`;
 
+  // Récupération de l'UID du poleman sélectionné dans le menu
+  const poleSitterUid = document.getElementById("poleSitterSelect")?.value;
+
   const makeTable = (title, rows) => {
     if (!rows || !rows.length) return "";
     recomputePositions(rows);
     const isSprint = /Sprint/i.test(title);
+    const isMain = /Principale/i.test(title);
+
+    // --- RECHERCHE DU MEILLEUR TOUR DE LA COURSE ---
+    let bestLapValue = Infinity;
+    rows.forEach(r => {
+      if (r.bestLapMs && r.bestLapMs > 0 && r.bestLapMs < bestLapValue) {
+        bestLapValue = r.bestLapMs;
+      }
+    });
 
     let html = `<div class="course-box" style="margin-top:10px"><h4 style="color:#fde68a;">${escapeHtml(title)}</h4><div style="overflow:auto"><table class="race-table"><thead><tr><th>#</th><th>Nom</th><th>Prénom</th><th>Équipe</th><th>Voiture</th><th>Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
     const groups = new Map();
@@ -274,8 +286,50 @@ function renderPreviewTables() {
     [...groups.keys()].sort((a, b) => b - a).forEach(g => {
       html += `<tbody>`;
       groups.get(g).forEach(({ r, idx }) => {
-        const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : getDefaultPoints(isSprint, 1, r.position);
-        html += `<tr data-idx="${idx}"><td>${r.position}</td><td>${escapeHtml(r.lastName)}</td><td>${escapeHtml(r.firstName)}</td><td>${escapeHtml(r.team)}</td><td>${escapeHtml(r.carBrand)}</td><td><input class="points-input" type="number" style="width:80px;text-align:right" value="${pointsVal}"></td><td>${formatMs(r.bestLapMs)}</td><td>${g}</td><td>${r._gapText || "—"}</td><td>${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td></tr>`;
+        
+        // --- CALCUL DES POINTS ET BONUS ---
+        let basePoints = getDefaultPoints(isSprint, r.position);
+        let bonus = 0;
+        let bonusTexts = [];
+
+        // Bonus Meilleur Tour (+1)
+        if (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) {
+            bonus += 1;
+            bonusTexts.push("Meilleur Tour (+1)");
+        }
+
+        // Bonus Pole Position (+2 appliqué uniquement sur la Principale)
+        const matchedUid = ImportState.nameMap.get(buildKey(r.lastName, r.firstName))?.uid;
+        if (isMain && matchedUid && matchedUid === poleSitterUid) {
+            bonus += 2;
+            bonusTexts.push("Pole Q2 (+2)");
+        }
+
+        // On additionne les points de base et les bonus
+        const totalCalculated = basePoints + bonus;
+        
+        // Si une valeur manuelle a été entrée, elle prime, sinon c'est le calcul auto
+        const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : totalCalculated;
+        
+        // Affichage stylisé des bonus sous l'input
+        const bonusHtml = bonusTexts.length > 0 ? `<div style="font-size:0.75rem; color:#a855f7; line-height:1.3; text-align:right; margin-top: 4px;">${bonusTexts.join("<br>")}</div>` : "";
+        const bestLapStyle = (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) ? 'color:#a855f7; font-weight:bold;' : '';
+
+        html += `<tr data-idx="${idx}">
+          <td>${r.position}</td>
+          <td>${escapeHtml(r.lastName)}</td>
+          <td>${escapeHtml(r.firstName)}</td>
+          <td>${escapeHtml(r.team)}</td>
+          <td>${escapeHtml(r.carBrand)}</td>
+          <td style="vertical-align: top;">
+            <input class="points-input" type="number" style="width:80px;text-align:right; margin-bottom: 0;" value="${pointsVal}">
+            ${bonusHtml}
+          </td>
+          <td style="${bestLapStyle}">${formatMs(r.bestLapMs)}</td>
+          <td>${g}</td>
+          <td>${r._gapText || "—"}</td>
+          <td>${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td>
+        </tr>`;
       });
       html += `</tbody>`;
     });
@@ -1236,12 +1290,17 @@ function extractResultsGeneric(json) {
   return rows;
 }
 
-// BAREME S10 UNIQUEMENT
-function getDefaultPoints(isSprint, split, position) {
-  if (isSprint) return 0; // Sprint S10 = 0 pt
-  const ptsS10 = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
-  if (position <= 20) return ptsS10[position - 1];
-  return 1;
+// BAREME S10 UNIQUEMENT (Mise à jour)
+function getDefaultPoints(isSprint, position) {
+  if (isSprint) {
+    const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
+    if (position <= 20) return ptsSprint[position - 1];
+    return 0; // 0 pt au-delà de la 20ème place en Sprint
+  } else {
+    const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+    if (position <= 20) return ptsMain[position - 1];
+    return 1; // 1 pt au-delà de la 20ème place en Principale
+  }
 }
 
 /* ======================== GESTION DES RÉCLAMATIONS (ADMIN) ======================== */
