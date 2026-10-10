@@ -2000,6 +2000,8 @@ window.updateReclamationsUI = function() {
     const nameEl = document.getElementById("fullName");
     currentPilotNameForReclam = nameEl ? nameEl.textContent : "Pilote";
     if (typeof window.renderReclamPilots === "function") window.renderReclamPilots();
+    // Charger la liste déroulante des pilotes
+    if (typeof window.populateReclamPilotsSelect === "function") window.populateReclamPilotsSelect();
     closedMsg.style.display = "none";
     
     // --- MISE À JOUR DU TITRE DE LA COURSE ---
@@ -2031,6 +2033,37 @@ window.updateReclamationsUI = function() {
     container.style.display = "none";
     closedMsg.style.display = "block";
     if (alertBox) alertBox.style.display = "none";
+  }
+};
+
+// Fonction pour récupérer la grille et remplir le menu déroulant
+window.populateReclamPilotsSelect = async function() {
+  const select = document.getElementById("reclamAddPilotSelect");
+  if (!select || select.options.length > 1) return; // Déjà rempli ou introuvable
+
+  try {
+    const snap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
+    let pilots = [];
+    
+    snap.forEach(d => {
+      const data = d.data();
+      const num = Number(data.raceNumber) || 0;
+      const name = `${data.firstName || ""} ${data.lastName || ""}`.trim();
+      if (name) pilots.push({ num, name });
+    });
+
+    // Tri par numéro de course croissant
+    pilots.sort((a, b) => a.num - b.num);
+
+    let html = `<option value="" disabled selected>-- Sélectionnez l'autre pilote --</option>`;
+    pilots.forEach(p => {
+      html += `<option value="#${p.num} - ${escapeHtml(p.name)}">#${p.num} - ${escapeHtml(p.name)}</option>`;
+    });
+    
+    select.innerHTML = html;
+  } catch (e) {
+    console.error("Erreur chargement des pilotes pour les réclamations:", e);
+    select.innerHTML = `<option value="" disabled selected>Erreur de chargement</option>`;
   }
 };
 
@@ -2106,29 +2139,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Ajout de pilotes impliqués
+  // Ajout de pilotes impliqués (Via Menu Déroulant)
   const btnAddPilotReclam = document.getElementById("btnReclamAddPilot");
-  const inputAddPilotReclam = document.getElementById("reclamAddPilotInput");
+  const selectAddPilotReclam = document.getElementById("reclamAddPilotSelect");
   const chkAmIInvolved = document.getElementById("reclamAmIInvolved");
 
-  if (btnAddPilotReclam && inputAddPilotReclam) {
+  if (btnAddPilotReclam && selectAddPilotReclam) {
     btnAddPilotReclam.addEventListener("click", () => {
-        const val = inputAddPilotReclam.value.trim();
-        if (!val) return;
+        const val = selectAddPilotReclam.value;
+        
+        if (!val) {
+            if (window.showToast) window.showToast("⚠️ Veuillez sélectionner un pilote dans la liste.", "warning");
+            return;
+        }
+
+        // Vérifier si le pilote n'est pas déjà dans la liste
+        if (reclamInvolvedPilots.includes(val)) {
+            if (window.showToast) window.showToast("⚠️ Ce pilote est déjà ajouté.", "warning");
+            return;
+        }
         
         const totalCount = reclamInvolvedPilots.length + (chkAmIInvolved && chkAmIInvolved.checked ? 1 : 0);
         if (totalCount >= 5) {
             if (window.showToast) window.showToast("⚠️ Maximum 5 pilotes impliqués.", "warning");
             return;
         }
+        
         reclamInvolvedPilots.push(val);
-        inputAddPilotReclam.value = "";
-        window.renderReclamPilots();
-    });
-  }
-
-  if (chkAmIInvolved) {
-    chkAmIInvolved.addEventListener("change", () => {
+        selectAddPilotReclam.value = ""; // Remet sur l'option par défaut
         window.renderReclamPilots();
     });
   }
