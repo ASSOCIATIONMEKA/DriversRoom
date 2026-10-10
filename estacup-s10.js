@@ -275,7 +275,7 @@ function showChampionshipSub(subKey) {
   if (subKey === "circuits") setTimeout(() => { if (typeof init3DGlobe === "function") init3DGlobe(); }, 50);
   if (subKey === "monequipe") loadMyTeamSection();
   if (subKey === "livree") renderLiverySection();
-  if (subKey === "courses") loadResults(currentUid);
+  if (subKey === "courses") loadResults();
   if (subKey === "equipes") loadEstacupEquipes();
   if (subKey === "reclamations") {
     if (typeof updateReclamationsUI === "function") updateReclamationsUI();
@@ -435,28 +435,48 @@ function computeGapLeaderText(p, leader) {
 }
 
 /* ======================== RÉSULTATS ======================== */
-async function loadResults(uid) {
+/* ======================== RÉSULTATS ======================== */
+async function loadResults() {
   const ul = $("raceHistory"); if (!ul) return;
   try {
     ul.innerHTML = "<li>Chargement…</li>";
-    const snap = await getDocs(collection(db, "users", uid, "raceHistory_s10"));
+    
+    // On requête la collection globale "courses" au lieu de l'historique privé
+    const q = query(collection(db, "courses"), where("estacup", "==", true));
+    const snap = await getDocs(q);
+    
     if (snap.empty) { ul.innerHTML = "<li>Aucun résultat pour l’instant.</li>"; return; }
-    const rows = []; snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    
+    const rows = []; 
+    snap.forEach(d => {
+      const c = d.data();
+      // On s'assure de ne prendre que les courses S10 (date >= août 2026)
+      const raceDate = toDate(c.date) || new Date(0);
+      if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
+        rows.push({ id: d.id, ...c });
+      }
+    });
+    
     rows.sort((a, b) => (toDate(b.date) ?? 0) - (toDate(a.date) ?? 0));
     ul.innerHTML = "";
+    
     for (const r of rows) {
-      const d = formatDateFR(r.date) || ""; const title = [d, (r.name || "Course")].filter(Boolean).join(" – ");
+      const d = formatDateFR(r.date) || ""; 
+      const title = [d, (r.name || "Course")].filter(Boolean).join(" – ");
       const li = document.createElement("li"); li.className = "race-item";
       const btn = document.createElement("button"); btn.className = "race-btn"; btn.textContent = title;
       const details = document.createElement("div"); details.id = `cls-${r.id}`; details.className = "race-classification"; details.style.display = "none";
+      
       btn.addEventListener("click", async () => {
         if (details.style.display !== "none") { details.style.display = "none"; return; }
         await renderRaceClassification(r.id, details, r); details.style.display = "block";
       });
+      
       li.appendChild(btn); li.appendChild(details); ul.appendChild(li);
     }
   } catch (e) { ul.innerHTML = `<li>Erreur de chargement.</li>`; }
 }
+
 async function renderRaceClassification(raceId, container, raceMeta) {
   try {
     const courseDoc = await getDoc(doc(db, "courses", raceId)); if (!courseDoc.exists()) { container.innerHTML = "<em>Aucune donnée.</em>"; return; }
