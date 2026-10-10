@@ -453,7 +453,7 @@ async function saveImportedResults() {
 async function loadCourses() {
   const s10List = document.getElementById("courseListS10");
   const s9List = document.getElementById("courseListS9");
-  const incidentRaceSelect = document.getElementById("incidentRaceSelect"); // On cible le menu déroulant
+  const incidentRaceSelect = document.getElementById("incidentRaceSelect");
   
   if (!s10List || !s9List) return;
 
@@ -464,7 +464,6 @@ async function loadCourses() {
   s10List.innerHTML = "";
   s9List.innerHTML = "";
   
-  // On vide le menu déroulant des incidents pour le reremplir proprement
   if (incidentRaceSelect) {
       incidentRaceSelect.innerHTML = `<option value="">-- Sélectionner une course --</option>`;
   }
@@ -479,21 +478,52 @@ async function loadCourses() {
     const box = document.createElement("div"); 
     box.className = "course-box";
     box.style.display = "flex";
-    box.style.justifyContent = "space-between";
-    box.style.alignItems = "center";
+    box.style.flexDirection = "column"; // Changement pour empiler le titre et l'éditeur
     box.style.padding = "1.2rem";
     box.style.marginBottom = "1rem";
     
-    box.innerHTML = `<h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0;">${escapeHtml(c.name)}</h4><button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>`;
+    // --- L'EN-TÊTE DE LA COURSE ---
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.width = "100%";
+    
+    header.innerHTML = `
+        <h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0; cursor:pointer; flex: 1; display: flex; align-items: center; gap: 10px;" class="course-title">
+            ${escapeHtml(c.name)} <span style="font-size:0.8rem; color:#38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">✏️ Éditer / Voir résultats</span>
+        </h4>
+        <div>
+            <button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>
+        </div>
+    `;
+    
+    // --- LA ZONE DÉROULANTE DE L'ÉDITEUR ---
+    const details = document.createElement("div");
+    details.style.display = "none";
+    details.style.marginTop = "15px";
+    details.style.width = "100%";
+    details.style.borderTop = "1px solid rgba(255,255,255,0.05)";
+    details.style.paddingTop = "15px";
+    
+    // Action au clic sur le titre
+    header.querySelector('.course-title').addEventListener('click', () => {
+        if (details.style.display === "none") {
+            renderCourseEditTable(c, details); // Charge le tableau interactif
+            details.style.display = "block";
+        } else {
+            details.style.display = "none";
+        }
+    });
+
+    box.appendChild(header);
+    box.appendChild(details);
     
     const raceDate = toDateVal(c.date) || new Date(0);
     
-    // S10 est séparée avec la date bascule d'août 2026
     if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
       s10List.appendChild(box);
       countS10++;
-      
-      // AJOUT DE LA COURSE DANS LE MENU DÉROULANT
       if (incidentRaceSelect) {
           const opt = document.createElement("option");
           opt.value = c.id;
@@ -509,15 +539,13 @@ async function loadCourses() {
   if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
   if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
 
-  // Écouteurs pour le bouton de suppression (qui nettoie aussi l'historique des pilotes)
+  // Écouteurs suppression
   document.querySelectorAll(".delete-course").forEach(btn => {
     btn.addEventListener("click", async () => {
       if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?\n(Cela nettoiera également l'historique de tous les pilotes participants)"))) return;
-      
       const courseId = btn.dataset.id;
       btn.disabled = true;
       btn.textContent = "Suppression...";
-      
       try {
         const courseSnap = await getDoc(doc(db, "courses", courseId));
         if (courseSnap.exists()) {
@@ -534,10 +562,150 @@ async function loadCourses() {
         console.error("Erreur lors de la suppression:", err);
         if(window.showToast) window.showToast("❌ Erreur de suppression.", "error");
       }
-      
       loadCourses();
     });
   });
+}
+
+// =========================================================================
+// NOUVEAU : FONCTION POUR ÉDITER LES RÉSULTATS D'UNE COURSE DÉJÀ SAUVEGARDÉE
+// =========================================================================
+function renderCourseEditTable(course, container) {
+  // On formate les données de la base pour les rendre compatibles avec recomputePositions
+  let rows = (course.participants || []).map(p => {
+    const parts = (p.name || "").split(' ');
+    const firstName = parts[0] || "";
+    const lastName = parts.slice(1).join(' ') || "";
+
+    return {
+      _uid: p.uid,
+      lastName: lastName,
+      firstName: firstName,
+      team: p.team || "",
+      carBrand: p.car || "",
+      bestLapMs: p.bestLapMs,
+      totalMs: p.totalMs,
+      basePenaltyMs: p.penaltyMs || 0,
+      editPenaltyMs: 0,
+      laps: p.laps,
+      position: p.position,
+      points: p.points
+    };
+  });
+
+  // Fonction interne qui redessine le tableau (pratique quand on change une pénalité)
+  function draw() {
+    recomputePositions(rows);
+
+    let html = `<div style="overflow-x:auto;"><table class="race-table" style="width: 100%; min-width: 800px;">
+      <thead><tr>
+        <th style="width: 50px;">#</th>
+        <th>Pilote</th>
+        <th style="width: 100px;">Points</th>
+        <th>Best lap</th>
+        <th>Laps</th>
+        <th>Gap leader</th>
+        <th>Pénalité (s)</th>
+      </tr></thead>`;
+    
+    const groups = new Map();
+    rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
+    
+    [...groups.keys()].sort((a, b) => b - a).forEach(g => {
+      html += `<tbody>`;
+      groups.get(g).forEach(({ r, idx }) => {
+        const defaultPenaltySec = Math.round((r.basePenaltyMs) / 1000);
+        
+        html += `<tr data-idx="${idx}">
+          <td style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem;">${r.position}</td>
+          <td style="font-weight: 700;">${escapeHtml(r.firstName)} ${escapeHtml(r.lastName)}</td>
+          <td style="vertical-align: middle;">
+            <input class="edit-points-input" data-idx="${idx}" type="number" style="width:70px; text-align:center; margin-bottom: 0; padding: 0.5rem; background: #020617; border: 1px solid #334155; color: #fff; border-radius: 6px;" value="${r.points}">
+          </td>
+          <td>${formatMs(r.bestLapMs)}</td>
+          <td>${g}</td>
+          <td>${r._gapText || "—"}</td>
+          <td style="vertical-align: middle;">
+            <input class="edit-penalty-input" data-idx="${idx}" type="number" style="width:70px; text-align:center; margin-bottom: 0; padding: 0.5rem; background: #020617; border: 1px solid #334155; border-radius: 6px; color: ${defaultPenaltySec > 0 ? '#ef4444' : '#fff'}; font-weight: ${defaultPenaltySec > 0 ? 'bold' : 'normal'};" value="${defaultPenaltySec}">
+          </td>
+        </tr>`;
+      });
+      html += `</tbody>`;
+    });
+    
+    html += `</table></div>
+    <div style="margin-top: 15px; text-align: right; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 0.85rem; color: #94a3b8;">⚠️ Modifier les pénalités mettra à jour l'ordre d'arrivée en temps réel. Ajustez manuellement les points si le classement change !</span>
+      <button class="btn-validate save-course-edits" style="padding: 10px 20px;">💾 Sauvegarder les modifications</button>
+    </div>`;
+    
+    container.innerHTML = html;
+
+    // Événement : modification des pénalités
+    container.querySelectorAll('.edit-penalty-input').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        const newSec = parseInt(e.target.value, 10) || 0;
+        rows[idx].basePenaltyMs = newSec * 1000; // Conversion en ms
+        draw(); // On recalcule le classement direct et on redessine !
+      });
+    });
+
+    // Événement : modification des points
+    container.querySelectorAll('.edit-points-input').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        rows[idx].points = parseInt(e.target.value, 10) || 0;
+      });
+    });
+
+    // Événement : Sauvegarder dans Firebase
+    container.querySelector('.save-course-edits').addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = "Sauvegarde en cours...";
+
+      try {
+        // Préparation du nouveau tableau de participants
+        const updatedParticipants = rows.map(r => {
+          const orig = course.participants.find(p => p.uid === r._uid) || {};
+          return {
+            ...orig,
+            position: r.position,
+            penaltyMs: r.basePenaltyMs,
+            points: r.points
+          };
+        });
+
+        // 1. Sauvegarde dans le document général de la course
+        await updateDoc(doc(db, "courses", course.id), {
+          participants: updatedParticipants
+        });
+
+        // 2. Sauvegarde dans l'historique de chaque pilote
+        for (const p of updatedParticipants) {
+          if (p.uid) {
+            await updateDoc(doc(db, "users", p.uid, "raceHistory_s10", course.id), {
+              position: p.position,
+              penaltyMs: p.penaltyMs,
+              points: p.points
+            });
+          }
+        }
+
+        if(window.showToast) window.showToast("✅ Modifications sauvegardées avec succès.", "success");
+        loadCourses(); // On recharge pour fermer l'onglet et nettoyer l'interface
+      } catch(err) {
+        console.error(err);
+        if(window.showToast) window.showToast("❌ Erreur de sauvegarde.", "error");
+        btn.disabled = false;
+        btn.textContent = "💾 Sauvegarder les modifications";
+      }
+    });
+  }
+  
+  // Premier appel pour dessiner le tableau
+  draw();
 }
 
 /* ---------------- Classement manuel (UI) ---------------- */
