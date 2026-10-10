@@ -430,7 +430,9 @@ async function saveImportedResults() {
       
       const tr = document.querySelector(`tr[data-idx="${race.rows.indexOf(r)}"]`);
       const domPoints = tr ? Number(tr.querySelector(".points-input").value) : null;
-      const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), 1, r.position);
+      
+      // LA MODIFICATION EST ICI : suppression du "1" (split) dans l'appel
+      const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), r.position);
 
       withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, status: "OK" });
     }
