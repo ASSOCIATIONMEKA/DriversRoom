@@ -479,20 +479,63 @@ async function loadResults() {
 
 async function renderRaceClassification(raceId, container, raceMeta) {
   try {
-    const courseDoc = await getDoc(doc(db, "courses", raceId)); if (!courseDoc.exists()) { container.innerHTML = "<em>Aucune donnée.</em>"; return; }
-    await ensureSignupCache(); const c = courseDoc.data() || {}; const participants = Array.isArray(c.participants) ? c.participants.slice() : [];
-    if (!participants.length) { container.innerHTML = "<em>Aucun pilote.</em>"; return; }
-    participants.sort((a, b) => (Number(pick(a, ["position"])) || 9999) - (Number(pick(b, ["position"])) || 9999));
-    const leader = participants[0]; let globalBestMs = null;
-    for (const p of participants) { const bm = pickBestLapMs(p); if (bm != null && (globalBestMs == null || bm < globalBestMs)) globalBestMs = bm; }
-    let html = `<strong>Classement — ${escapeHtml(c.name || "Course")}</strong><br><br><div style="overflow:auto"><table class="race-table"><thead><tr><th>Nom</th><th>Prénom</th><th>Voiture</th><th>Best lap</th><th>Gap leader</th><th>Points</th></tr></thead><tbody>`;
-    participants.forEach((p, index) => {
-      const { first, last } = splitNameParts(p); const uid = pickUid(p); const bestMs = pickBestLapMs(p); const pts = p.points ?? 0;
-      const rowClass = index === 0 ? "podium-1" : index === 1 ? "podium-2" : index === 2 ? "podium-3" : "";
-      html += `<tr class="${rowClass}"><td class="pilot-name-cell" data-uid="${escapeHtml(uid)}">${escapeHtml(last.toUpperCase())}</td><td>${escapeHtml(first)}</td><td>${escapeHtml(pickCar(p))}</td><td class="${globalBestMs && bestMs === globalBestMs ? 'bestlap-global':''}">${bestMs ? msToClock(bestMs) : '—'}</td><td>${escapeHtml(computeGapLeaderText(p, leader))}</td><td>${pts}</td></tr>`;
+    container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement du classement...</div>`;
+    
+    // Récupération directe du document global de la course dans Firestore
+    const raceDoc = await getDoc(doc(db, "courses", raceId));
+    if (!raceDoc.exists()) {
+      container.innerHTML = `<p class="muted-note">Classement indisponible.</p>`;
+      return;
+    }
+    
+    const data = raceDoc.data();
+    const participants = data.participants || [];
+    
+    // Tri par position pour s'assurer que l'ordre est correct
+    participants.sort((a, b) => (a.position || 99) - (b.position || 99));
+
+    let html = `
+      <div style="overflow-x: auto;">
+        <table class="race-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;">
+              <th style="padding: 10px;">#</th>
+              <th style="padding: 10px;">Pilote</th>
+              <th style="padding: 10px;">Voiture</th>
+              <th style="padding: 10px;">Best lap</th>
+              <th style="padding: 10px;">Gap leader</th>
+              <th style="padding: 10px; text-align: center;">Pénalité</th>
+              <th style="padding: 10px; text-align: right;">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    participants.forEach(p => {
+      // Conversion des millisecondes de pénalité en secondes lisibles
+      const penaltySec = Math.round((p.penaltyMs || 0) / 1000);
+      const penaltyDisplay = penaltySec > 0 ? `+${penaltySec}s` : "—";
+      const penaltyColor = penaltySec > 0 ? "#ef4444" : "var(--text-muted)";
+
+      html += `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+          <td style="padding: 10px; font-weight: bold; color: var(--accent-primary);">${p.position}</td>
+          <td style="padding: 10px; font-weight: 600; color: #fff;">${escapeHtml(p.name)}</td>
+          <td style="padding: 10px; color: var(--text-secondary);">${escapeHtml(p.car || "—")}</td>
+          <td style="padding: 10px;">${formatMs(p.bestLapMs)}</td>
+          <td style="padding: 10px;">${p.position === 1 ? "Leader" : (p.gapText || "—")}</td>
+          <td style="padding: 10px; text-align: center; color: ${penaltyColor}; font-weight: ${penaltySec > 0 ? 'bold' : 'normal'};">${penaltyDisplay}</td>
+          <td style="padding: 10px; text-align: right; font-weight: bold; color: var(--text-primary);">${p.points ?? 0}</td>
+        </tr>
+      `;
     });
-    container.innerHTML = html + `</tbody></table></div>`; setupPilotNameHover(container); applyHelmetsIn(container);
-  } catch (e) { container.innerHTML = "<em>Erreur.</em>"; }
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("Erreur chargement classement public:", err);
+    container.innerHTML = `<p class="muted-note">Erreur lors du chargement du classement.</p>`;
+  }
 }
 
 /* ======================== STATS & INFOS ======================== */
