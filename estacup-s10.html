@@ -573,8 +573,20 @@
         <!-- RÉCLAMATIONS -->
         <div id="champ-sub-reclamations" class="champ-subsection hidden">
           <h3>Dépôt de Réclamation</h3>
-          <div class="course-box">
-            <p class="muted-note" style="margin-bottom:10px;">
+          
+          <!-- Message affiché quand les réclamations sont FERMÉES -->
+          <div id="reclamClosedMsg" class="course-box" style="display: none; background: rgba(239, 68, 68, 0.1); border-color: #ef4444;">
+            <h4 style="color: #f87171; margin-top: 0; margin-bottom: 10px;">🔒 Formulaire fermé</h4>
+            <p style="margin-bottom: 5px; color: #e2e8f0;">Le dépôt de réclamation n'est actuellement pas disponible.</p>
+            <p style="font-size: 0.9rem; color: #cbd5e1; margin: 0;"><strong>Rappel du processus :</strong> Les réclamations ouvrent le jour de la course (mardi à 20h00) et se clôturent strictement le samedi suivant à 16h00.</p>
+          </div>
+
+          <!-- Formulaire affiché quand les réclamations sont OUVERTES -->
+          <div id="reclamFormContainer" class="course-box">
+            <!-- Bannière d'alerte deadline -->
+            <div id="reclamDeadlineAlert" style="display: none; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #fde68a; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem;"></div>
+            
+            <p class="muted-note" style="margin-bottom:15px;">
               Merci de remplir <strong>tous</strong> les champs ci-dessous. Le lien vers la vidéo <strong>YouTube</strong> est obligatoire.
             </p>
             <label for="reclamDate">Date de la course :</label>
@@ -591,6 +603,7 @@
             <input id="reclamVideo" type="url" placeholder="https://youtu.be/..." />
             <button id="submitReclam">📨 Envoyer la réclamation</button>
           </div>
+          
           <div id="reclamHistory" style="margin-top:20px;"></div>
         </div>
 
