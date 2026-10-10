@@ -781,11 +781,13 @@ async function loadIncidentHistory() {
     // Événement pour supprimer un incident et recréditer les points
     document.querySelectorAll(".btn-delete-incident").forEach(btn => {
       btn.addEventListener("click", async (e) => {
-        if(!(await showConfirm("Êtes-vous sûr de vouloir supprimer cet incident ?\n\nLes points de M-Safety retirés ou ajoutés seront automatiquement restaurés pour tous les pilotes impactés."))) return;
-        
-        const btnEl = e.currentTarget;
+        // CORRECTION : On sauvegarde les infos du bouton AVANT la pause de la pop-up
+        const btnEl = btn;
         const id = btnEl.getAttribute("data-id");
         const pilotes = JSON.parse(btnEl.getAttribute("data-pilotes") || "[]");
+
+        // Affichage de la pop-up de confirmation
+        if(!(await showConfirm("Êtes-vous sûr de vouloir supprimer cet incident ?\n\nLes points de M-Safety retirés ou ajoutés seront automatiquement restaurés pour tous les pilotes impactés."))) return;
 
         btnEl.disabled = true;
         btnEl.textContent = "Suppression en cours...";
@@ -800,11 +802,13 @@ async function loadIncidentHistory() {
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
               const curPts = userSnap.data().licensePoints ?? 10;
-              const pointsPris = p.before - p.after; // ex: 8 - 7 = 1 (on lui a pris 1 point)
+              const pointsPris = p.before - p.after; // ex: 8 - 6 = 2 (on lui a pris 2 points)
               await updateDoc(userRef, { licensePoints: curPts + pointsPris });
             }
           }
           if(typeof window.showToast === "function") window.showToast("✅ Incident supprimé et M-Safety restauré.", "success");
+          
+          // Recharge la liste pour faire disparaître l'incident
           loadIncidentHistory();
         } catch(err) {
           console.error("Erreur suppression incident:", err);
