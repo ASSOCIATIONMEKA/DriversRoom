@@ -1158,6 +1158,7 @@
       }
 
       window.showRestrictedFeatures();
+      if (typeof window.updateReclamationsUI === "function") window.updateReclamationsUI();
     };
 
     window.showRestrictedFeatures = function() {
