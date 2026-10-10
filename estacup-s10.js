@@ -1960,13 +1960,13 @@ async function renderLiverySection() {
 /* ======================== RÉCLAMATIONS ======================== */
 
 const RECLAMATIONS_RACES_LIST = [
-  { id: "prologue", title: "Prologue", dateObj: new Date("2026-09-22T20:00:00") },
-  { id: "manche1", title: "Manche 1", dateObj: new Date("2026-10-06T20:00:00") },
-  { id: "manche2", title: "Manche 2", dateObj: new Date("2026-10-20T20:00:00") },
-  { id: "manche3", title: "Manche 3", dateObj: new Date("2026-11-24T20:00:00") },
-  { id: "manche4", title: "Manche 4", dateObj: new Date("2026-12-08T20:00:00") },
-  { id: "manche5", title: "Manche 5", dateObj: new Date("2027-01-19T20:00:00") },
-  { id: "manche6", title: "Manche 6", dateObj: new Date("2027-02-02T20:00:00") }
+  { id: "prologue", title: "Prologue", track: "Silverstone", dateObj: new Date("2026-09-22T20:00:00") },
+  { id: "manche1", title: "Manche 1", track: "Brno", dateObj: new Date("2026-10-06T20:00:00") },
+  { id: "manche2", title: "Manche 2", track: "Fuji / Okayama", dateObj: new Date("2026-10-20T20:00:00") },
+  { id: "manche3", title: "Manche 3", track: "Valence", dateObj: new Date("2026-11-24T20:00:00") },
+  { id: "manche4", title: "Manche 4", track: "Sydney", dateObj: new Date("2026-12-08T20:00:00") },
+  { id: "manche5", title: "Manche 5", track: "Road America / Montréal", dateObj: new Date("2027-01-19T20:00:00") },
+  { id: "manche6", title: "Manche 6", track: "Interlagos", dateObj: new Date("2027-02-02T20:00:00") }
 ];
 
 window.updateReclamationsUI = function() {
@@ -1990,7 +1990,6 @@ window.updateReclamationsUI = function() {
     }
   }
 
-  // --- VÉRIFICATION DU MODE ADMIN ---
   const adminToggle = document.getElementById("adminViewToggle");
   const adminContainer = document.getElementById("adminViewToggleContainer");
   const isEffectiveAdmin = adminToggle && adminToggle.checked && adminContainer && !adminContainer.classList.contains("hidden");
@@ -1999,20 +1998,27 @@ window.updateReclamationsUI = function() {
     container.style.display = "block";
     closedMsg.style.display = "none";
     
+    // --- MISE À JOUR DU TITRE DE LA COURSE ---
+    const titleEl = document.getElementById("reclamActiveRaceTitle");
+    if (titleEl) {
+      if (activeRace) {
+        titleEl.innerHTML = `🏎️ Course concernée : <strong style="color: #fff;">${activeRace.title} (${activeRace.track})</strong>`;
+        // On stocke la date discrètement dans la balise HTML pour l'envoyer dans Firebase plus tard
+        titleEl.dataset.raceDate = activeRace.dateObj.toISOString().split('T')[0];
+      } else {
+        titleEl.innerHTML = `🏎️ Course concernée : <strong style="color: #fff;">Non définie (Forcée par l'Admin)</strong>`;
+        titleEl.dataset.raceDate = new Date().toISOString().split('T')[0]; // Date du jour
+      }
+    }
+
     if (!activeRace && isEffectiveAdmin) {
-      // Affichage spécifique si fermé mais forcé par l'admin
       if (alertBox) {
         alertBox.innerHTML = `🛠️ <strong>Mode Admin :</strong> Le formulaire est fermé pour les pilotes, mais il vous est accessible.`;
         alertBox.style.display = "block";
       }
     } else if (activeRace) {
-      // Affichage normal quand ouvert
-      const dateInput = document.getElementById("reclamDate");
-      if (dateInput && !dateInput.value) {
-          dateInput.value = activeRace.dateObj.toISOString().split('T')[0];
-      }
       if (alertBox) {
-          alertBox.innerHTML = `⚠️ <strong>Attention :</strong> Les réclamations pour la <strong>${activeRace.title}</strong> sont ouvertes. Vous avez jusqu'au <strong>samedi à 16h00</strong> pour soumettre votre dossier.`;
+          alertBox.innerHTML = `⚠️ <strong>Rappel :</strong> Les réclamations pour la <strong>${activeRace.title}</strong> sont ouvertes jusqu'au <strong>samedi à 16h00</strong>.`;
           alertBox.style.display = "block";
       }
     }
@@ -2023,6 +2029,27 @@ window.updateReclamationsUI = function() {
     if (alertBox) alertBox.style.display = "none";
   }
 };
+
+// --- LOGIQUE DU BANDEAU GLISSANT (SPRINT/PRINCIPALE) ---
+const btnSprint = document.getElementById("btnTypeSprint");
+const btnMain = document.getElementById("btnTypeMain");
+const slider = document.getElementById("reclamTypeSlider");
+const inputType = document.getElementById("reclamRaceType");
+
+if (btnSprint && btnMain && slider && inputType) {
+  btnSprint.addEventListener("click", () => {
+    slider.style.left = "4px";
+    btnSprint.style.color = "white";
+    btnMain.style.color = "#94a3b8";
+    inputType.value = "Sprint";
+  });
+  btnMain.addEventListener("click", () => {
+    slider.style.left = "50%";
+    btnMain.style.color = "white";
+    btnSprint.style.color = "#94a3b8";
+    inputType.value = "Principale";
+  });
+}
 
 // 1. Écouteur pour l'envoi du formulaire
 const btnSubmitReclam = document.getElementById("submitReclam");
@@ -2051,16 +2078,18 @@ if (btnSubmitReclam) {
       if (window.showToast) window.showToast("🔒 Le formulaire de réclamation est actuellement fermé.", "error");
       return;
     }
-    // -------------------------------------------
 
-    const rDate = document.getElementById("reclamDate").value;
-    const rSplit = document.getElementById("reclamSplit").value;
+    // --- RÉCUPÉRATION DES NOUVELLES DONNÉES AUTOMATIQUES ---
+    const titleEl = document.getElementById("reclamActiveRaceTitle");
+    const rDate = titleEl ? titleEl.dataset.raceDate : new Date().toISOString().split('T')[0];
+    const rTypeCourse = document.getElementById("reclamRaceType").value; // "Sprint" ou "Principale"
+    
     const rDesc = document.getElementById("reclamDesc").value.trim();
     const rVideo = document.getElementById("reclamVideo").value.trim();
 
     // Vérification des champs
-    if (!rDate || !rSplit || !rDesc || !rVideo) {
-      if (window.showToast) window.showToast("⚠️ Veuillez remplir tous les champs obligatoires.", "warning");
+    if (!rDesc || !rVideo) {
+      if (window.showToast) window.showToast("⚠️ Veuillez remplir la description et le lien vidéo.", "warning");
       return;
     }
 
@@ -2078,20 +2107,18 @@ if (btnSubmitReclam) {
       await addDoc(collection(db, "estacup_s10_reclamations"), {
         uid: currentUid,
         piloteName: document.getElementById("fullName")?.textContent || "Pilote inconnu",
-        dateCourse: rDate,
-        split: rSplit,
+        dateCourse: rDate, // Générée automatiquement
+        split: rTypeCourse, // Envoyé en tant que Split pour que le pannel Admin groupe correctement ("Sprint" ou "Principale")
         description: rDesc,
         videoUrl: rVideo,
-        status: "en attente", // Statut par défaut
+        status: "en attente",
         isTreated: false,
         createdAt: new Date()
       });
 
       if (window.showToast) window.showToast("✅ Réclamation envoyée avec succès !", "success");
       
-      // Réinitialisation du formulaire
-      document.getElementById("reclamDate").value = "";
-      document.getElementById("reclamSplit").value = "";
+      // Réinitialisation des champs de texte
       document.getElementById("reclamDesc").value = "";
       document.getElementById("reclamVideo").value = "";
 
