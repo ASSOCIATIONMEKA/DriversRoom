@@ -495,8 +495,32 @@ async function loadCourses() {
 
   document.querySelectorAll(".delete-course").forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?"))) return;
-      await deleteDoc(doc(db, "courses", btn.dataset.id)); 
+      if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?\n(Cela nettoiera également l'historique de tous les pilotes participants)"))) return;
+      
+      const courseId = btn.dataset.id;
+      btn.disabled = true;
+      btn.textContent = "Suppression...";
+      
+      try {
+        // 1. On récupère la liste des pilotes ayant participé
+        const courseSnap = await getDoc(doc(db, "courses", courseId));
+        if (courseSnap.exists()) {
+           const participants = courseSnap.data().participants || [];
+           // 2. On supprime l'historique dans le profil de chaque pilote
+           for (const p of participants) {
+              if (p.uid) {
+                 await deleteDoc(doc(db, "users", p.uid, "raceHistory_s10", courseId));
+              }
+           }
+        }
+        // 3. On supprime la course principale
+        await deleteDoc(doc(db, "courses", courseId)); 
+        if(window.showToast) window.showToast("✅ Course supprimée avec succès.", "success");
+      } catch(err) {
+        console.error("Erreur lors de la suppression:", err);
+        if(window.showToast) window.showToast("❌ Erreur de suppression.", "error");
+      }
+      
       loadCourses();
     });
   });
