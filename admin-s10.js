@@ -279,7 +279,8 @@ function renderPreviewTables() {
       }
     });
 
-    let html = `<div class="course-box" style="margin-top:10px"><h4 style="color:#fde68a;">${escapeHtml(title)}</h4><div style="overflow:auto"><table class="race-table"><thead><tr><th>#</th><th>Nom</th><th>Prénom</th><th>Équipe</th><th>Voiture</th><th>Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
+    // Suppression des colonnes Équipe et Voiture + Ajout width 100%
+    let html = `<div class="course-box" style="margin-top:10px; width: 100%; padding: 1.5rem;"><h4 style="color:#fde68a; margin-bottom: 1rem;">${escapeHtml(title)}</h4><div style="overflow-x:auto;"><table class="race-table" style="width: 100%; min-width: 800px;"><thead><tr><th style="width: 50px;">#</th><th>Nom</th><th>Prénom</th><th style="width: 120px;">Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
     const groups = new Map();
     rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
     
@@ -312,23 +313,22 @@ function renderPreviewTables() {
         const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : totalCalculated;
         
         // Affichage stylisé des bonus sous l'input
-        const bonusHtml = bonusTexts.length > 0 ? `<div style="font-size:0.75rem; color:#a855f7; line-height:1.3; text-align:right; margin-top: 4px;">${bonusTexts.join("<br>")}</div>` : "";
+        const bonusHtml = bonusTexts.length > 0 ? `<div style="font-size:0.75rem; color:#a855f7; line-height:1.3; text-align:left; margin-top: 4px;">${bonusTexts.join("<br>")}</div>` : "";
         const bestLapStyle = (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) ? 'color:#a855f7; font-weight:bold;' : '';
 
+        // Ligne de tableau épurée (sans Équipe ni Voiture)
         html += `<tr data-idx="${idx}">
-          <td>${r.position}</td>
-          <td>${escapeHtml(r.lastName)}</td>
-          <td>${escapeHtml(r.firstName)}</td>
-          <td>${escapeHtml(r.team)}</td>
-          <td>${escapeHtml(r.carBrand)}</td>
-          <td style="vertical-align: top;">
-            <input class="points-input" type="number" style="width:80px;text-align:right; margin-bottom: 0;" value="${pointsVal}">
+          <td style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem;">${r.position}</td>
+          <td style="font-weight: 700;">${escapeHtml(r.lastName)}</td>
+          <td style="color: var(--text-secondary);">${escapeHtml(r.firstName)}</td>
+          <td style="vertical-align: middle;">
+            <input class="points-input" type="number" style="width:80px; text-align:center; margin-bottom: 0; padding: 0.5rem;" value="${pointsVal}">
             ${bonusHtml}
           </td>
           <td style="${bestLapStyle}">${formatMs(r.bestLapMs)}</td>
           <td>${g}</td>
           <td>${r._gapText || "—"}</td>
-          <td>${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td>
+          <td style="color: ${r.basePenaltyMs + (r.editPenaltyMs || 0) > 0 ? '#ef4444' : 'inherit'}; font-weight: ${r.basePenaltyMs + (r.editPenaltyMs || 0) > 0 ? 'bold' : 'normal'};">${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td>
         </tr>`;
       });
       html += `</tbody>`;
