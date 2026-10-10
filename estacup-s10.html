@@ -610,8 +610,47 @@
               </div>
             </div>
 
+            <!-- NOUVEAU : Type d'incident -->
+            <label for="reclamIncidentType">Type d'incident :</label>
+            <select id="reclamIncidentType" required style="margin-bottom: 1.5rem;">
+              <option value="" disabled selected>-- Sélectionnez le type d'incident --</option>
+              <option value="Contact/Collision">💥 Contact / Collision</option>
+              <option value="Divebomb">💣 Plongeon (Divebomb) au freinage</option>
+              <option value="Unsafe rejoin">⚠️ Retour en piste dangereux</option>
+              <option value="Pushing off track">🚗 Poussette hors piste</option>
+              <option value="Moving under braking">🐍 Changement de ligne au freinage / Weaving</option>
+              <option value="Ignoring blue flags">🟦 Non-respect des drapeaux bleus</option>
+              <option value="Ignoring yellow flags">🟨 Non-respect des drapeaux jaunes</option>
+              <option value="Track limits advantage">✂️ Avantage pris hors-piste</option>
+              <option value="Pitlane infringement">🛑 Infraction dans la voie des stands</option>
+              <option value="Unsportsmanlike conduct">🤬 Comportement anti-sportif</option>
+              <option value="Other">❓ Autre</option>
+            </select>
+
+            <!-- NOUVEAU : Tour de l'incident -->
+            <label for="reclamLap">Tour de l'incident :</label>
+            <input type="number" id="reclamLap" placeholder="Ex: 14" min="1" required style="margin-bottom: 1.5rem;" />
+
+            <!-- NOUVEAU : Pilotes impliqués -->
+            <label>Pilotes impliqués (Max 5) :</label>
+            <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-bottom: 1.5rem;">
+              <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="reclamAmIInvolved" checked style="width: 18px; height: 18px; accent-color: #38bdf8; margin: 0; cursor: pointer;">
+                <label for="reclamAmIInvolved" style="margin: 0; color: #cbd5e1; cursor: pointer; font-size: 0.95rem;">Je suis directement impliqué dans l'incident</label>
+              </div>
+              
+              <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="reclamAddPilotInput" placeholder="Nom ou N° de l'autre pilote..." style="margin-bottom: 0; flex: 1;" />
+                <button type="button" id="btnReclamAddPilot" style="padding: 10px 15px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; box-shadow: none; border-radius: 6px;">Ajouter</button>
+              </div>
+              
+              <div id="reclamPilotsList" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 30px;">
+                <!-- Les tags pilotes s'afficheront ici -->
+              </div>
+            </div>
+
             <label for="reclamDesc">Description de l'incident :</label>
-            <textarea id="reclamDesc" placeholder="Décrivez précisément l'incident (tour, virage, pilotes impliqués, etc.)" rows="5"></textarea>
+            <textarea id="reclamDesc" placeholder="Décrivez le contexte de l'incident..." rows="5"></textarea>
             
             <label for="reclamVideo">Lien de la vidéo YouTube (obligatoire) :</label>
             <input id="reclamVideo" type="url" placeholder="https://youtu.be/..." />
