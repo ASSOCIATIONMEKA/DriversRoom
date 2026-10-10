@@ -1981,33 +1981,43 @@ window.updateReclamationsUI = function() {
   for (const race of RECLAMATIONS_RACES_LIST) {
     const raceStart = new Date(race.dateObj.getTime());
     const raceEnd = new Date(race.dateObj.getTime());
-    raceEnd.setDate(raceEnd.getDate() + 4); // Ajoute 4 jours (arrive au Samedi)
+    raceEnd.setDate(raceEnd.getDate() + 4); // +4 jours = samedi
     raceEnd.setHours(16, 0, 0, 0); // Fermeture à 16h00 pile
 
-    // Si on est dans la fenêtre d'ouverture
     if (now >= raceStart && now <= raceEnd) {
       activeRace = race;
       break;
     }
   }
 
-  if (activeRace) {
+  // --- VÉRIFICATION DU MODE ADMIN ---
+  const adminToggle = document.getElementById("adminViewToggle");
+  const adminContainer = document.getElementById("adminViewToggleContainer");
+  const isEffectiveAdmin = adminToggle && adminToggle.checked && adminContainer && !adminContainer.classList.contains("hidden");
+
+  if (activeRace || isEffectiveAdmin) {
     container.style.display = "block";
     closedMsg.style.display = "none";
     
-    // Auto-remplissage de la date de la course
-    const dateInput = document.getElementById("reclamDate");
-    if (dateInput && !dateInput.value) {
-        dateInput.value = activeRace.dateObj.toISOString().split('T')[0];
-    }
-    
-    // Affichage de l'alerte
-    if (alertBox) {
-        alertBox.innerHTML = `⚠️ <strong>Attention :</strong> Les réclamations pour la <strong>${activeRace.title}</strong> sont ouvertes. Vous avez jusqu'au <strong>samedi à 16h00</strong> pour soumettre votre dossier.`;
+    if (!activeRace && isEffectiveAdmin) {
+      // Affichage spécifique si fermé mais forcé par l'admin
+      if (alertBox) {
+        alertBox.innerHTML = `🛠️ <strong>Mode Admin :</strong> Le formulaire est fermé pour les pilotes, mais il vous est accessible.`;
         alertBox.style.display = "block";
+      }
+    } else if (activeRace) {
+      // Affichage normal quand ouvert
+      const dateInput = document.getElementById("reclamDate");
+      if (dateInput && !dateInput.value) {
+          dateInput.value = activeRace.dateObj.toISOString().split('T')[0];
+      }
+      if (alertBox) {
+          alertBox.innerHTML = `⚠️ <strong>Attention :</strong> Les réclamations pour la <strong>${activeRace.title}</strong> sont ouvertes. Vous avez jusqu'au <strong>samedi à 16h00</strong> pour soumettre votre dossier.`;
+          alertBox.style.display = "block";
+      }
     }
   } else {
-    // Si la période est passée ou pas encore commencée
+    // Fermé pour les pilotes
     container.style.display = "none";
     closedMsg.style.display = "block";
     if (alertBox) alertBox.style.display = "none";
@@ -2019,28 +2029,30 @@ const btnSubmitReclam = document.getElementById("submitReclam");
 if (btnSubmitReclam) {
   btnSubmitReclam.addEventListener("click", async () => {
     
-    // --- VÉRIFICATION DE LA DEADLINE AU CLIC (DÉBUT DE L'AJOUT) ---
+    // --- VÉRIFICATION DE LA DEADLINE AU CLIC ---
     const now = new Date();
     let isActive = false;
     for (const race of RECLAMATIONS_RACES_LIST) {
       const raceStart = new Date(race.dateObj.getTime());
       const raceEnd = new Date(race.dateObj.getTime());
-      raceEnd.setDate(raceEnd.getDate() + 4); // +4 jours = samedi
-      raceEnd.setHours(16, 0, 0, 0); // Fermeture à 16h00
-      
+      raceEnd.setDate(raceEnd.getDate() + 4);
+      raceEnd.setHours(16, 0, 0, 0);
       if (now >= raceStart && now <= raceEnd) {
-        isActive = true; 
-        break;
+        isActive = true; break;
       }
     }
-    
-    if (!isActive) {
-      if (window.showToast) window.showToast("🔒 Le formulaire de réclamation est actuellement fermé.", "error");
-      return; // On arrête tout, l'envoi est bloqué
-    }
-    // --- FIN DE L'AJOUT ---
 
-    // La suite de ton code d'origine ne change pas :
+    // Autoriser si c'est un admin actif
+    const adminToggle = document.getElementById("adminViewToggle");
+    const adminContainer = document.getElementById("adminViewToggleContainer");
+    const isEffectiveAdmin = adminToggle && adminToggle.checked && adminContainer && !adminContainer.classList.contains("hidden");
+
+    if (!isActive && !isEffectiveAdmin) {
+      if (window.showToast) window.showToast("🔒 Le formulaire de réclamation est actuellement fermé.", "error");
+      return;
+    }
+    // -------------------------------------------
+
     const rDate = document.getElementById("reclamDate").value;
     const rSplit = document.getElementById("reclamSplit").value;
     const rDesc = document.getElementById("reclamDesc").value.trim();
@@ -2083,7 +2095,6 @@ if (btnSubmitReclam) {
       document.getElementById("reclamDesc").value = "";
       document.getElementById("reclamVideo").value = "";
 
-      // Rechargement immédiat de l'historique
       if (typeof loadReclamHistory === "function") loadReclamHistory();
 
     } catch (error) {
