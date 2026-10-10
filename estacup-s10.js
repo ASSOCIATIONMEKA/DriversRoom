@@ -512,18 +512,21 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     `;
 
     participants.forEach(p => {
-      // Conversion des millisecondes de pénalité en secondes lisibles
+      // Conversion sécurisée des millisecondes en secondes
       const penaltySec = Math.round((p.penaltyMs || 0) / 1000);
       const penaltyDisplay = penaltySec > 0 ? `+${penaltySec}s` : "—";
       const penaltyColor = penaltySec > 0 ? "#ef4444" : "var(--text-muted)";
+
+      // Utilisation d'une fonction interne simple pour formater le temps si formatMs n'est pas dispo
+      const bestLapStr = typeof formatMs === "function" ? formatMs(p.bestLapMs) : (p.bestLapMs ? `${p.bestLapMs}ms` : "—");
 
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
           <td style="padding: 10px; font-weight: bold; color: var(--accent-primary);">${p.position}</td>
           <td style="padding: 10px; font-weight: 600; color: #fff;">${escapeHtml(p.name)}</td>
           <td style="padding: 10px; color: var(--text-secondary);">${escapeHtml(p.car || "—")}</td>
-          <td style="padding: 10px;">${formatMs(p.bestLapMs)}</td>
-          <td style="padding: 10px;">${p.position === 1 ? "Leader" : (p.gapText || "—")}</td>
+          <td style="padding: 10px;">${bestLapStr}</td>
+          <td style="padding: 10px;">${p.position === 1 ? "Leader" : (p._gapText || "—")}</td>
           <td style="padding: 10px; text-align: center; color: ${penaltyColor}; font-weight: ${penaltySec > 0 ? 'bold' : 'normal'};">${penaltyDisplay}</td>
           <td style="padding: 10px; text-align: right; font-weight: bold; color: var(--text-primary);">${p.points ?? 0}</td>
         </tr>
