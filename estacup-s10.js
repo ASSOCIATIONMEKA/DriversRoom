@@ -435,7 +435,6 @@ function computeGapLeaderText(p, leader) {
 }
 
 /* ======================== RÉSULTATS ======================== */
-/* ======================== RÉSULTATS ======================== */
 async function loadResults() {
   const ul = $("raceHistory"); if (!ul) return;
   try {
@@ -507,7 +506,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     const raceNameStr = (data.name || "").toLowerCase();
     let isSprint = data.isSprint === true || raceNameStr.includes("sprint");
     if (raceNameStr.includes("principale") || raceNameStr.includes("main")) {
-        isSprint = false; // Force la principale si le titre l'indique (corrige les erreurs de BDD)
+        isSprint = false; // Force la principale si le titre l'indique
     }
 
     let html = `
@@ -533,7 +532,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       const penaltyDisplay = penaltySec > 0 ? `+${penaltySec}s` : "—";
       const penaltyColor = penaltySec > 0 ? "#ef4444" : "var(--text-muted)";
 
-      // 2. FORMATAGE DU CHRONO (msToClock) ET HIGHLIGHT DU MEILLEUR TOUR
+      // 2. FORMATAGE DU CHRONO ET HIGHLIGHT DU MEILLEUR TOUR
       const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
       const bestLapStr = p.bestLapMs ? msToClock(p.bestLapMs) : "—";
       const bestLapStyle = isBestLap ? "color: #a855f7; font-weight: bold;" : "";
@@ -541,47 +540,42 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       // 3. RECALCUL DU GAP LEADER
       const gapText = p.position === 1 ? "Leader" : computeGapLeaderText(p, leader);
 
-      // 4. APPLICATION STRICTE DU BARÈME DU RÈGLEMENT (S10)
+      // 4. APPLICATION STRICTE DU BARÈME
+      const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
+      const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+      
       let basePoints = 0;
       if (isSprint) {
-        const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
         basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
       } else {
-        const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
         basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
       }
 
-      // 5. AJOUT DES BONUS VISUELS (+1 et +2)
-      let hasPole = false;
+      // 5. DÉTECTION ROBUSTE DE LA POLE
+      // On calcule le score théorique normal pour cette position
+      const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
       
-      // Détection de la pole depuis les points enregistrés en base
-      const baseSprintCheck = p.position <= 20 ? [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1][p.position - 1] : 0;
-      const baseMainCheck = p.position <= 20 ? [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2][p.position - 1] : 1;
-
-      // Vérifie si la BDD contient le +2 de la pole (même si la BDD a enregistré le mauvais barème)
-      if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
-          p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
-        hasPole = true;
+      // Si la base de données a exactement ce score + 2, alors c'est la pole !
+      let hasPole = false;
+      if (p.points === expectedIfCorrect + 2) {
+          hasPole = true;
       }
 
-      let displayPoints = `${basePoints}`;
-      if (isBestLap) {
-        displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
-      }
-      if (hasPole) {
-        displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
-      }
+      // 6. CONSTRUCTION DES BADGES ET DU SCORE FINAL
+      let bonusTags = "";
+      if (isBestLap) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
+      if (hasPole) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
 
-      // Sécurité : si l'admin a modifié les points avec une valeur totalement hors barème (ex: pénalité manuelle de points au championnat)
-      const isStandardScore = [
-          baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
-          baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
-      ].includes(p.points);
+      let displayPoints = "";
+      
+      // On compare le score BDD pour savoir s'il faut forcer le barème ou afficher une pénalité manuelle
+      const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
 
-      if (p.points !== undefined && p.points !== null && !isStandardScore) {
-          displayPoints = `${p.points}`;
-          if (isBestLap) displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
-          if (hasPole) displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
+      if (isStandardScore || p.points === undefined || p.points === null) {
+          displayPoints = `${basePoints}${bonusTags}`;
+      } else {
+          // Si le score est totalement inhabituel (l'admin a appliqué une pénalité de points via le panel)
+          displayPoints = `${p.points}${bonusTags}`;
       }
 
       html += `
@@ -604,6 +598,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     container.innerHTML = `<p class="muted-note">Erreur lors du chargement du classement.</p>`;
   }
 }
+
 /* ======================== STATS & INFOS ======================== */
 async function computePilotStats(uid) {
   if (!uid) return { starts: 0, bestPos: null, wins: 0, top3: 0, top5: 0, top10: 0, avgPos: null };
