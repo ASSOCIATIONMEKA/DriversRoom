@@ -488,8 +488,14 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     }
     
     const data = raceDoc.data();
-    const participants = data.participants || [];
+    let participants = data.participants || [];
     
+    // 1. EXCLUSION DE LA SAFETY CAR (Mercedes AMG GT Black Series)
+    participants = participants.filter(p => {
+        const carName = (p.car || "").toLowerCase();
+        return !carName.includes("mercedes amg gt black series sc");
+    });
+
     // Tri par position pour s'assurer que l'ordre est correct
     participants.sort((a, b) => (a.position || 99) - (b.position || 99));
 
@@ -516,6 +522,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;">
               <th style="padding: 10px;">#</th>
               <th style="padding: 10px;">Pilote</th>
+              <th style="padding: 10px;">Équipe</th>
               <th style="padding: 10px;">Voiture</th>
               <th style="padding: 10px;">Best lap</th>
               <th style="padding: 10px;">Gap leader</th>
@@ -552,10 +559,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       }
 
       // 5. DÉTECTION ROBUSTE DE LA POLE
-      // On calcule le score théorique normal pour cette position
       const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
-      
-      // Si la base de données a exactement ce score + 2, alors c'est la pole !
       let hasPole = false;
       if (p.points === expectedIfCorrect + 2) {
           hasPole = true;
@@ -567,22 +571,29 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       if (hasPole) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
 
       let displayPoints = "";
-      
-      // On compare le score BDD pour savoir s'il faut forcer le barème ou afficher une pénalité manuelle
       const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
 
       if (isStandardScore || p.points === undefined || p.points === null) {
           displayPoints = `${basePoints}${bonusTags}`;
       } else {
-          // Si le score est totalement inhabituel (l'admin a appliqué une pénalité de points via le panel)
           displayPoints = `${p.points}${bonusTags}`;
       }
+
+      // 7. FORMATAGE VOITURE ET ÉQUIPE
+      let displayCar = p.car || "—";
+      if (displayCar.toLowerCase().includes("rss formula rss 3")) {
+          displayCar = "FIA F3";
+      }
+      
+      const displayTeam = (p.team && p.team.trim() !== "" && p.team.toLowerCase() !== "indépendant" && p.team.toLowerCase() !== "sans équipe") ? p.team : "Indépendant";
+      const teamColor = displayTeam === "Indépendant" ? "var(--text-muted)" : "var(--text-secondary)";
 
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
           <td style="padding: 10px; font-weight: bold; color: var(--accent-primary);">${p.position}</td>
           <td style="padding: 10px; font-weight: 600; color: #fff;">${escapeHtml(p.name)}</td>
-          <td style="padding: 10px; color: var(--text-secondary);">${escapeHtml(p.car || "—")}</td>
+          <td style="padding: 10px; color: ${teamColor}; font-size: 0.95em;">${escapeHtml(displayTeam)}</td>
+          <td style="padding: 10px; color: var(--text-muted); font-size: 0.9em;">${escapeHtml(displayCar)}</td>
           <td style="padding: 10px; ${bestLapStyle}">${bestLapStr}</td>
           <td style="padding: 10px;">${gapText}</td>
           <td style="padding: 10px; text-align: center; color: ${penaltyColor}; font-weight: ${penaltySec > 0 ? 'bold' : 'normal'};">${penaltyDisplay}</td>
