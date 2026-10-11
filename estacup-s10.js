@@ -503,8 +503,12 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       }
     });
 
-    // Déterminer si c'est une course Sprint ou Principale
-    const isSprint = data.isSprint === true || (data.name && data.name.toLowerCase().includes("sprint"));
+    // DÉTERMINER SI C'EST SPRINT OU PRINCIPALE DE FAÇON ROBUSTE
+    const raceNameStr = (data.name || "").toLowerCase();
+    let isSprint = data.isSprint === true || raceNameStr.includes("sprint");
+    if (raceNameStr.includes("principale") || raceNameStr.includes("main")) {
+        isSprint = false; // Force la principale si le titre l'indique (corrige les erreurs de BDD)
+    }
 
     let html = `
       <div style="overflow-x: auto;">
@@ -548,38 +552,36 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       }
 
       // 5. AJOUT DES BONUS VISUELS (+1 et +2)
-      let expectedTotal = basePoints;
-      let bonusTags = "";
+      let hasPole = false;
+      
+      // Détection de la pole depuis les points enregistrés en base
+      const baseSprintCheck = p.position <= 20 ? [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1][p.position - 1] : 0;
+      const baseMainCheck = p.position <= 20 ? [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2][p.position - 1] : 1;
 
-      // Bonus Meilleur Tour
+      // Vérifie si la BDD contient le +2 de la pole (même si la BDD a enregistré le mauvais barème)
+      if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
+          p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
+        hasPole = true;
+      }
+
+      let displayPoints = `${basePoints}`;
       if (isBestLap) {
-        expectedTotal += 1;
-        bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
+        displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
+      }
+      if (hasPole) {
+        displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
       }
 
-      // Bonus Pole Position (On le déduit si les points enregistrés en BDD le contiennent)
-      if (p.points === expectedTotal + 2) {
-        expectedTotal += 2;
-        bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
-      }
+      // Sécurité : si l'admin a modifié les points avec une valeur totalement hors barème (ex: pénalité manuelle de points au championnat)
+      const isStandardScore = [
+          baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
+          baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
+      ].includes(p.points);
 
-      // 6. DÉTERMINATION DE L'AFFICHAGE FINAL DES POINTS
-      let displayPoints = "";
-      // Si le total calculé correspond bien à la base de données (scénario nominal)
-      if (p.points === expectedTotal) {
-        displayPoints = `${basePoints}${bonusTags}`;
-      } else {
-        // S'il y a un décalage (l'admin a mis des points manuels imprévus, ou une pénalité de points au championnat)
-        if (p.points !== undefined && p.points !== null) {
+      if (p.points !== undefined && p.points !== null && !isStandardScore) {
           displayPoints = `${p.points}`;
-          // On affiche quand même une petite étoile si c'est le best lap, par principe
-          if (isBestLap) {
-            displayPoints += ` <span style="color: #a855f7; font-size: 0.9em;" title="Meilleur tour">✨</span>`;
-          }
-        } else {
-          // Au cas où la BDD n'aurait pas du tout de points pour le pilote
-          displayPoints = `${basePoints}${bonusTags}`;
-        }
+          if (isBestLap) displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
+          if (hasPole) displayPoints += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
       }
 
       html += `
@@ -602,7 +604,6 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     container.innerHTML = `<p class="muted-note">Erreur lors du chargement du classement.</p>`;
   }
 }
-
 /* ======================== STATS & INFOS ======================== */
 async function computePilotStats(uid) {
   if (!uid) return { starts: 0, bestPos: null, wins: 0, top3: 0, top5: 0, top10: 0, avgPos: null };
