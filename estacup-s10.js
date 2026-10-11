@@ -480,7 +480,10 @@ async function renderRaceClassification(raceId, container, raceMeta) {
   try {
     container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement du classement...</div>`;
     
-    // Récupération directe du document global de la course dans Firestore
+    // 1. CHARGEMENT DU CACHE DES INSCRIPTIONS POUR FAIRE LE RACCORD
+    await ensureSignupCache();
+
+    // 2. Récupération directe du document global de la course dans Firestore
     const raceDoc = await getDoc(doc(db, "courses", raceId));
     if (!raceDoc.exists()) {
       container.innerHTML = `<p class="muted-note">Classement indisponible.</p>`;
@@ -490,7 +493,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     const data = raceDoc.data();
     let participants = data.participants || [];
     
-    // 1. EXCLUSION DE LA SAFETY CAR (Mercedes AMG GT Black Series)
+    // EXCLUSION DE LA SAFETY CAR (Mercedes AMG GT Black Series)
     participants = participants.filter(p => {
         const carName = (p.car || "").toLowerCase();
         return !carName.includes("mercedes amg gt black series sc");
@@ -534,20 +537,20 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     `;
 
     participants.forEach(p => {
-      // 1. GESTION DES PÉNALITÉS
+      // GESTION DES PÉNALITÉS
       const penaltySec = Math.round((p.penaltyMs || 0) / 1000);
       const penaltyDisplay = penaltySec > 0 ? `+${penaltySec}s` : "—";
       const penaltyColor = penaltySec > 0 ? "#ef4444" : "var(--text-muted)";
 
-      // 2. FORMATAGE DU CHRONO ET HIGHLIGHT DU MEILLEUR TOUR
+      // FORMATAGE DU CHRONO ET HIGHLIGHT DU MEILLEUR TOUR
       const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
       const bestLapStr = p.bestLapMs ? msToClock(p.bestLapMs) : "—";
       const bestLapStyle = isBestLap ? "color: #a855f7; font-weight: bold;" : "";
 
-      // 3. RECALCUL DU GAP LEADER
+      // RECALCUL DU GAP LEADER
       const gapText = p.position === 1 ? "Leader" : computeGapLeaderText(p, leader);
 
-      // 4. APPLICATION STRICTE DU BARÈME
+      // APPLICATION STRICTE DU BARÈME
       const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
       const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
       
@@ -558,14 +561,14 @@ async function renderRaceClassification(raceId, container, raceMeta) {
         basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
       }
 
-      // 5. DÉTECTION ROBUSTE DE LA POLE
+      // DÉTECTION ROBUSTE DE LA POLE
       const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
       let hasPole = false;
       if (p.points === expectedIfCorrect + 2) {
           hasPole = true;
       }
 
-      // 6. CONSTRUCTION DES BADGES ET DU SCORE FINAL
+      // CONSTRUCTION DES BADGES ET DU SCORE FINAL
       let bonusTags = "";
       if (isBestLap) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
       if (hasPole) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
@@ -579,19 +582,34 @@ async function renderRaceClassification(raceId, container, raceMeta) {
           displayPoints = `${p.points}${bonusTags}`;
       }
 
-      // 7. FORMATAGE VOITURE ET ÉQUIPE
+      // FORMATAGE VOITURE
       let displayCar = p.car || "—";
       if (displayCar.toLowerCase().includes("rss formula rss 3")) {
           displayCar = "FIA F3";
       }
       
-      const displayTeam = (p.team && p.team.trim() !== "" && p.team.toLowerCase() !== "indépendant" && p.team.toLowerCase() !== "sans équipe") ? p.team : "Indépendant";
+      // RACCORD AVEC LA LISTE DES ENGAGÉS (Équipe et Numéro)
+      const signupInfo = signupCache.get(p.uid);
+      let realTeam = p.team;
+      let raceNumberDisplay = "";
+      
+      if (signupInfo) {
+          // Si le cache a une équipe, on l'utilise
+          if (signupInfo.teamName) realTeam = signupInfo.teamName;
+          
+          // Récupération du numéro de course officiel pour l'affichage
+          if (signupInfo.raceNumber) {
+             raceNumberDisplay = `<span style="color: #38bdf8; font-size: 0.85em; margin-right: 8px;">#${signupInfo.raceNumber}</span>`;
+          }
+      }
+      
+      const displayTeam = (realTeam && realTeam.trim() !== "" && realTeam.toLowerCase() !== "indépendant" && realTeam.toLowerCase() !== "sans équipe") ? realTeam : "Indépendant";
       const teamColor = displayTeam === "Indépendant" ? "var(--text-muted)" : "var(--text-secondary)";
 
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
           <td style="padding: 10px; font-weight: bold; color: var(--accent-primary);">${p.position}</td>
-          <td style="padding: 10px; font-weight: 600; color: #fff;">${escapeHtml(p.name)}</td>
+          <td style="padding: 10px; font-weight: 600; color: #fff;">${raceNumberDisplay}${escapeHtml(p.name)}</td>
           <td style="padding: 10px; color: ${teamColor}; font-size: 0.95em;">${escapeHtml(displayTeam)}</td>
           <td style="padding: 10px; color: var(--text-muted); font-size: 0.9em;">${escapeHtml(displayCar)}</td>
           <td style="padding: 10px; ${bestLapStyle}">${bestLapStr}</td>
