@@ -2525,7 +2525,6 @@ async function loadEstacupPilotStandings() {
   const useJoker = $("jokerTogglePilots")?.checked || false;
 
   try {
-    // 1. Récupérer les pilotes validés ET leurs licences (via la collection users)
     const [signupsSnap, usersSnap] = await Promise.all([
       getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true))),
       getDocs(collection(db, "users"))
@@ -2541,7 +2540,7 @@ async function loadEstacupPilotStandings() {
       const uData = usersMap.get(uid) || {};
       
       const licence = (uData.licenseClass || uData.licenceClass || uData.license || "Rookie").trim();
-      let licColor = "#10b981"; // Rookie
+      let licColor = "#10b981"; 
       if (licence.toLowerCase() === "pro") licColor = "#ef4444"; 
       if (licence.toLowerCase() === "challenger") licColor = "#f59e0b"; 
 
@@ -2559,21 +2558,18 @@ async function loadEstacupPilotStandings() {
       });
     });
 
-    // 2. Récupérer les résultats de course (hors prologue) + Filtre Saison 10
     const coursesSnap = await getDocs(query(collection(db, "courses"), where("estacup", "==", true)));
     const races = [];
     coursesSnap.forEach(d => {
       const c = d.data();
       const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
       
-      // On ne prend que les courses à partir d'août 2026 (S10)
       if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
          if (c.name && c.name.toLowerCase().includes("prologue")) return; 
          races.push({ id: d.id, ...c });
       }
     });
 
-    // 3. Déterminer les manches ayant été courues (Correction : Prise en charge de "Round X" et "Manche X")
     const roundsSet = new Set();
     races.forEach(r => {
       let rName = r.round || "Inconnu";
@@ -2592,7 +2588,6 @@ async function loadEstacupPilotStandings() {
 
     const standardRounds = ["Manche 1", "Manche 2", "Manche 3", "Manche 4", "Manche 5", "Manche 6"];
 
-    // 4. Assigner les points robustement (Calcul dynamique pour contrer les erreurs BDD)
     races.forEach(r => {
       const raceNameStr = (r.name || "").toLowerCase();
       let isSprint = r.isSprint === true || raceNameStr.includes("sprint");
@@ -2600,54 +2595,70 @@ async function loadEstacupPilotStandings() {
           isSprint = false;
       }
 
-      let bestLapValue = Infinity;
+      // DÉ-DOUBLONNEUR AUTOMATIQUE ET FILTRE SAFETY CAR
+      const uniqueParticipants = new Map();
       if (Array.isArray(r.participants)) {
         r.participants.forEach(p => {
-          if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
-            bestLapValue = p.bestLapMs;
+          if (!p.uid) return;
+          const carName = (p.car || "").toLowerCase();
+          if (carName.includes("mercedes amg gt black series sc")) return;
+          
+          if (!uniqueParticipants.has(p.uid) || p.position < uniqueParticipants.get(p.uid).position) {
+            uniqueParticipants.set(p.uid, p);
           }
         });
       }
+      const cleanParticipants = Array.from(uniqueParticipants.values());
+
+      let bestLapValue = Infinity;
+      cleanParticipants.forEach(p => {
+        if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
+          bestLapValue = p.bestLapMs;
+        }
+      });
 
       const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
       const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
 
-      if (Array.isArray(r.participants)) {
-        r.participants.forEach(p => {
-          if (pilots.has(p.uid)) {
-            const pilot = pilots.get(p.uid);
-            
-            const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
-            let basePoints = 0;
-            if (isSprint) {
-              basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
-            } else {
-              basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
-            }
-
-            const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
-            let hasPole = false;
-            if (p.points === expectedIfCorrect + 2) {
-                hasPole = true;
-            }
-
-            let finalPoints = 0;
-            const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
-
-            if (isStandardScore || p.points === undefined || p.points === null) {
-                finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
-            } else {
-                finalPoints = Number(p.points) || 0; // Prise en compte d'une éventuelle pénalité manuelle admin
-            }
-
-            // On cumule la course 1 et la course 2 pour la même manche
-            pilot.scores[r.cleanRound] = (pilot.scores[r.cleanRound] || 0) + finalPoints;
+      cleanParticipants.forEach(p => {
+        if (pilots.has(p.uid)) {
+          const pilot = pilots.get(p.uid);
+          
+          const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
+          let basePoints = 0;
+          if (isSprint) {
+            basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+          } else {
+            basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
           }
-        });
-      }
+
+          // DÉTECTION DES BONUS ET CALCUL FINAL SÉCURISÉ
+          const baseSprintCheck = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+          const baseMainCheck = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+
+          let hasPole = false;
+          if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
+              p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
+              hasPole = true;
+          }
+
+          let finalPoints = 0;
+          const isStandardScore = [
+              baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
+              baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
+          ].includes(p.points);
+
+          if (isStandardScore || p.points === undefined || p.points === null) {
+              finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
+          } else {
+              finalPoints = Number(p.points) || 0; 
+          }
+
+          pilot.scores[r.cleanRound] = (pilot.scores[r.cleanRound] || 0) + finalPoints;
+        }
+      });
     });
 
-    // 5. Calcul des totaux et gestion du Joker
     const pilotList = Array.from(pilots.values());
     let hasAnyRaces = roundsSet.size > 0;
 
@@ -2675,7 +2686,6 @@ async function loadEstacupPilotStandings() {
       p.totalPoints = total;
     });
 
-    // 6. Tri et répartition des listes
     if (!hasAnyRaces) {
       pilotList.sort((a, b) => a.lastName.localeCompare(b.lastName));
     } else {
@@ -2686,7 +2696,6 @@ async function loadEstacupPilotStandings() {
     const listChallenger = pilotList.filter(p => p.licence.toLowerCase() === "challenger");
     const listRookie = pilotList.filter(p => p.licence.toLowerCase() === "rookie");
 
-    // 7. Fonction de génération du tableau HTML
     const generateTable = (list) => {
       let html = `
         <div style="overflow-x: auto; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid var(--border-primary); margin-top: 1rem;">
@@ -2754,9 +2763,7 @@ async function loadEstacupPilotStandings() {
     let finalHtml = `
       <div style="display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap;">
         <button onclick="window.switchRankTab('general')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'general' ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'general' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'general' ? '#38bdf8' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Global</button>
-        
         <button onclick="window.switchRankTab('challenger')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'challenger' ? '#f59e0b' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'challenger' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'challenger' ? '#f59e0b' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Catégorie Challenger</button>
-        
         <button onclick="window.switchRankTab('rookie')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'rookie' ? '#10b981' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'rookie' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'rookie' ? '#10b981' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Catégorie Rookie</button>
       </div>
     `;
@@ -2808,7 +2815,6 @@ async function loadEstacupTeamStandings() {
       const c = d.data();
       const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
       
-      // Filtre S10
       if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
          if (c.name && c.name.toLowerCase().includes("prologue")) return;
 
@@ -2823,7 +2829,6 @@ async function loadEstacupTeamStandings() {
          else if (nameLow.includes("manche 6") || nameLow.includes("round 6")) rName = "Manche 6";
          
          roundsSet.add(rName);
-
          if (!roundResults[rName]) roundResults[rName] = {};
 
          let isSprint = c.isSprint === true || nameLow.includes("sprint");
@@ -2831,17 +2836,28 @@ async function loadEstacupTeamStandings() {
              isSprint = false;
          }
 
-         let bestLapValue = Infinity;
+         const uniqueParticipants = new Map();
          if (Array.isArray(c.participants)) {
            c.participants.forEach(p => {
-             if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
-               bestLapValue = p.bestLapMs;
+             if (!p.uid) return;
+             const carName = (p.car || "").toLowerCase();
+             if (carName.includes("mercedes amg gt black series sc")) return;
+             
+             if (!uniqueParticipants.has(p.uid) || p.position < uniqueParticipants.get(p.uid).position) {
+               uniqueParticipants.set(p.uid, p);
              }
            });
          }
+         const cleanParticipants = Array.from(uniqueParticipants.values());
 
-         if (Array.isArray(c.participants)) {
-           c.participants.forEach(p => {
+         let bestLapValue = Infinity;
+         cleanParticipants.forEach(p => {
+           if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
+             bestLapValue = p.bestLapMs;
+           }
+         });
+
+         cleanParticipants.forEach(p => {
              const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
              let basePoints = 0;
              if (isSprint) {
@@ -2850,14 +2866,20 @@ async function loadEstacupTeamStandings() {
                basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
              }
 
-             const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+             const baseSprintCheck = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+             const baseMainCheck = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+
              let hasPole = false;
-             if (p.points === expectedIfCorrect + 2) {
+             if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
+                 p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
                  hasPole = true;
              }
 
              let finalPoints = 0;
-             const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
+             const isStandardScore = [
+                 baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
+                 baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
+             ].includes(p.points);
 
              if (isStandardScore || p.points === undefined || p.points === null) {
                  finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
@@ -2865,10 +2887,8 @@ async function loadEstacupTeamStandings() {
                  finalPoints = Number(p.points) || 0; 
              }
 
-             // Cumul de la course sprint et principale pour l'équipe
              roundResults[rName][p.uid] = (roundResults[rName][p.uid] || 0) + finalPoints;
-           });
-         }
+         });
       }
     });
 
@@ -2887,7 +2907,6 @@ async function loadEstacupTeamStandings() {
         });
         pilotPts.sort((a,b) => b-a);
         
-        // Seuls les 2 meilleurs résultats de l'équipe par manche comptent
         const pts = (pilotPts[0] || 0) + (pilotPts[1] || 0);
         t.scores[rnd] = pts;
       });
