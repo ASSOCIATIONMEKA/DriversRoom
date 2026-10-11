@@ -2584,14 +2584,55 @@ async function loadEstacupPilotStandings() {
 
     const standardRounds = ["Manche 1", "Manche 2", "Manche 3", "Manche 4", "Manche 5", "Manche 6"];
 
-    // 4. Assigner les points
+    // 4. Assigner les points robustement (Calcul dynamique pour contrer les erreurs BDD)
     races.forEach(r => {
+      const raceNameStr = (r.name || "").toLowerCase();
+      let isSprint = r.isSprint === true || raceNameStr.includes("sprint");
+      if (raceNameStr.includes("principale") || raceNameStr.includes("main")) {
+          isSprint = false;
+      }
+
+      let bestLapValue = Infinity;
+      if (Array.isArray(r.participants)) {
+        r.participants.forEach(p => {
+          if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
+            bestLapValue = p.bestLapMs;
+          }
+        });
+      }
+
+      const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
+      const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+
       if (Array.isArray(r.participants)) {
         r.participants.forEach(p => {
           if (pilots.has(p.uid)) {
             const pilot = pilots.get(p.uid);
-            const pts = Number(p.points) || 0;
-            pilot.scores[r.cleanRound] = (pilot.scores[r.cleanRound] || 0) + pts;
+            
+            const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
+            let basePoints = 0;
+            if (isSprint) {
+              basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+            } else {
+              basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+            }
+
+            const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+            let hasPole = false;
+            if (p.points === expectedIfCorrect + 2) {
+                hasPole = true;
+            }
+
+            let finalPoints = 0;
+            const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
+
+            if (isStandardScore || p.points === undefined || p.points === null) {
+                finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
+            } else {
+                finalPoints = Number(p.points) || 0; // Prise en compte d'une éventuelle pénalité manuelle admin
+            }
+
+            pilot.scores[r.cleanRound] = (pilot.scores[r.cleanRound] || 0) + finalPoints;
           }
         });
       }
@@ -2700,9 +2741,7 @@ async function loadEstacupPilotStandings() {
       return html;
     };
 
-    // 8. Rendu de l'interface (Onglets + Tableau sélectionné)
     const activeTab = window.activeRankTab;
-
     let finalHtml = `
       <div style="display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap;">
         <button onclick="window.switchRankTab('general')" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid ${activeTab === 'general' ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; background: ${activeTab === 'general' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(15,23,42,0.6)'}; color: ${activeTab === 'general' ? '#38bdf8' : '#e2e8f0'}; cursor: pointer; font-weight: 600; transition: all 0.2s;">Global</button>
@@ -2753,6 +2792,9 @@ async function loadEstacupTeamStandings() {
     const roundsSet = new Set();
     const roundResults = {}; 
 
+    const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
+    const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+
     coursesSnap.forEach(d => {
       const c = d.data();
       if (c.name && c.name.toLowerCase().includes("prologue")) return;
@@ -2768,9 +2810,47 @@ async function loadEstacupTeamStandings() {
 
       if (!roundResults[rName]) roundResults[rName] = {};
 
+      const raceNameStr = (c.name || "").toLowerCase();
+      let isSprint = c.isSprint === true || raceNameStr.includes("sprint");
+      if (raceNameStr.includes("principale") || raceNameStr.includes("main")) {
+          isSprint = false;
+      }
+
+      let bestLapValue = Infinity;
       if (Array.isArray(c.participants)) {
         c.participants.forEach(p => {
-          roundResults[rName][p.uid] = (roundResults[rName][p.uid] || 0) + (Number(p.points) || 0);
+          if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
+            bestLapValue = p.bestLapMs;
+          }
+        });
+      }
+
+      if (Array.isArray(c.participants)) {
+        c.participants.forEach(p => {
+          const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
+          let basePoints = 0;
+          if (isSprint) {
+            basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+          } else {
+            basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+          }
+
+          const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+          let hasPole = false;
+          if (p.points === expectedIfCorrect + 2) {
+              hasPole = true;
+          }
+
+          let finalPoints = 0;
+          const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
+
+          if (isStandardScore || p.points === undefined || p.points === null) {
+              finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
+          } else {
+              finalPoints = Number(p.points) || 0; 
+          }
+
+          roundResults[rName][p.uid] = (roundResults[rName][p.uid] || 0) + finalPoints;
         });
       }
     });
