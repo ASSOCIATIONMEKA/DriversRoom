@@ -2539,6 +2539,7 @@ async function loadEstacupPilotStandings() {
       const c = d.data();
       const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
       
+      // On ne prend que les courses S10
       if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
          if (c.name && c.name.toLowerCase().includes("prologue")) return; 
          races.push({ id: d.id, ...c });
@@ -2570,7 +2571,7 @@ async function loadEstacupPilotStandings() {
           isSprint = false;
       }
 
-      // DÉ-DOUBLONNEUR AUTOMATIQUE ET FILTRE SAFETY CAR
+      // DÉ-DOUBLONNEUR ET FILTRE SAFETY CAR
       const uniqueParticipants = new Map();
       if (Array.isArray(r.participants)) {
         r.participants.forEach(p => {
@@ -2607,21 +2608,16 @@ async function loadEstacupPilotStandings() {
             basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
           }
 
-          // DÉTECTION DES BONUS ET CALCUL FINAL SÉCURISÉ
-          const baseSprintCheck = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
-          const baseMainCheck = p.position <= 20 ? ptsMain[p.position - 1] : 1;
-
-          let hasPole = false;
-          if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
-              p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
-              hasPole = true;
+          const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+          
+          // LECTURE DE LA POLE
+          let hasPole = p.hasPole === true;
+          if (p.hasPole === undefined) {
+              if (p.points === expectedIfCorrect + 2) hasPole = true;
           }
 
           let finalPoints = 0;
-          const isStandardScore = [
-              baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
-              baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
-          ].includes(p.points);
+          const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
 
           if (isStandardScore || p.points === undefined || p.points === null) {
               finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
@@ -2841,20 +2837,16 @@ async function loadEstacupTeamStandings() {
                basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
              }
 
-             const baseSprintCheck = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
-             const baseMainCheck = p.position <= 20 ? ptsMain[p.position - 1] : 1;
-
-             let hasPole = false;
-             if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
-                 p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
-                 hasPole = true;
+             const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+             
+             // LECTURE DE LA POLE
+             let hasPole = p.hasPole === true;
+             if (p.hasPole === undefined) {
+                 if (p.points === expectedIfCorrect + 2) hasPole = true;
              }
 
              let finalPoints = 0;
-             const isStandardScore = [
-                 baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
-                 baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
-             ].includes(p.points);
+             const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
 
              if (isStandardScore || p.points === undefined || p.points === null) {
                  finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
