@@ -480,10 +480,10 @@ async function renderRaceClassification(raceId, container, raceMeta) {
   try {
     container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement du classement...</div>`;
     
-    // 1. CHARGEMENT DU CACHE DES INSCRIPTIONS POUR FAIRE LE RACCORD
+    // CHARGEMENT DU CACHE DES INSCRIPTIONS POUR FAIRE LE RACCORD
     await ensureSignupCache();
 
-    // 2. Récupération directe du document global de la course dans Firestore
+    // Récupération directe du document global de la course dans Firestore
     const raceDoc = await getDoc(doc(db, "courses", raceId));
     if (!raceDoc.exists()) {
       container.innerHTML = `<p class="muted-note">Classement indisponible.</p>`;
@@ -491,13 +491,21 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     }
     
     const data = raceDoc.data();
-    let participants = data.participants || [];
+    let rawParticipants = data.participants || [];
     
-    // EXCLUSION DE LA SAFETY CAR (Mercedes AMG GT Black Series)
-    participants = participants.filter(p => {
+    // 1. EXCLUSION DE LA SAFETY CAR ET DÉDOUBLONNAGE AUTOMATIQUE
+    const uniqueParticipants = new Map();
+    rawParticipants.forEach(p => {
+        if (!p.uid) return;
         const carName = (p.car || "").toLowerCase();
-        return !carName.includes("mercedes amg gt black series sc");
+        if (carName.includes("mercedes amg gt black series sc")) return;
+        
+        // Si le pilote n'est pas encore dans la liste OU s'il a une meilleure position, on le garde
+        if (!uniqueParticipants.has(p.uid) || p.position < uniqueParticipants.get(p.uid).position) {
+            uniqueParticipants.set(p.uid, p);
+        }
     });
+    let participants = Array.from(uniqueParticipants.values());
 
     // Tri par position pour s'assurer que l'ordre est correct
     participants.sort((a, b) => (a.position || 99) - (b.position || 99));
@@ -561,10 +569,13 @@ async function renderRaceClassification(raceId, container, raceMeta) {
         basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
       }
 
-      // DÉTECTION ROBUSTE DE LA POLE
-      const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+      // DÉTECTION ROBUSTE DE LA POLE & DU BUG D'IMPORT
+      const baseSprintCheck = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+      const baseMainCheck = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+
       let hasPole = false;
-      if (p.points === expectedIfCorrect + 2) {
+      if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
+          p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
           hasPole = true;
       }
 
@@ -574,9 +585,13 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       if (hasPole) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
 
       let displayPoints = "";
-      const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
+      const isStandardScore = [
+          baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
+          baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
+      ].includes(p.points);
 
       if (isStandardScore || p.points === undefined || p.points === null) {
+          // Si le score DB est un score buggé de l'ancien import (ex: 20 sur une Principale), on FORCE la correction à 35
           displayPoints = `${basePoints}${bonusTags}`;
       } else {
           displayPoints = `${p.points}${bonusTags}`;
@@ -594,10 +609,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       let raceNumberDisplay = "";
       
       if (signupInfo) {
-          // Si le cache a une équipe, on l'utilise
           if (signupInfo.teamName) realTeam = signupInfo.teamName;
-          
-          // Récupération du numéro de course officiel pour l'affichage
           if (signupInfo.raceNumber) {
              raceNumberDisplay = `<span style="color: #38bdf8; font-size: 0.85em; margin-right: 8px;">#${signupInfo.raceNumber}</span>`;
           }
