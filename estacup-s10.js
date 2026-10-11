@@ -547,13 +547,39 @@ async function renderRaceClassification(raceId, container, raceMeta) {
         basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
       }
 
-      // 5. AJOUT DES BONUS
-      let finalPoints = basePoints;
-      if (isBestLap) finalPoints += 1; // Bonus meilleur tour (+1)
+      // 5. AJOUT DES BONUS VISUELS (+1 et +2)
+      let expectedTotal = basePoints;
+      let bonusTags = "";
 
-      // Restauration du Bonus Pole Q2 (+2) s'il avait été sauvegardé en base de données par l'Admin
-      if (p.points === finalPoints + 2) {
-          finalPoints += 2;
+      // Bonus Meilleur Tour
+      if (isBestLap) {
+        expectedTotal += 1;
+        bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
+      }
+
+      // Bonus Pole Position (On le déduit si les points enregistrés en BDD le contiennent)
+      if (p.points === expectedTotal + 2) {
+        expectedTotal += 2;
+        bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
+      }
+
+      // 6. DÉTERMINATION DE L'AFFICHAGE FINAL DES POINTS
+      let displayPoints = "";
+      // Si le total calculé correspond bien à la base de données (scénario nominal)
+      if (p.points === expectedTotal) {
+        displayPoints = `${basePoints}${bonusTags}`;
+      } else {
+        // S'il y a un décalage (l'admin a mis des points manuels imprévus, ou une pénalité de points au championnat)
+        if (p.points !== undefined && p.points !== null) {
+          displayPoints = `${p.points}`;
+          // On affiche quand même une petite étoile si c'est le best lap, par principe
+          if (isBestLap) {
+            displayPoints += ` <span style="color: #a855f7; font-size: 0.9em;" title="Meilleur tour">✨</span>`;
+          }
+        } else {
+          // Au cas où la BDD n'aurait pas du tout de points pour le pilote
+          displayPoints = `${basePoints}${bonusTags}`;
+        }
       }
 
       html += `
@@ -564,7 +590,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
           <td style="padding: 10px; ${bestLapStyle}">${bestLapStr}</td>
           <td style="padding: 10px;">${gapText}</td>
           <td style="padding: 10px; text-align: center; color: ${penaltyColor}; font-weight: ${penaltySec > 0 ? 'bold' : 'normal'};">${penaltyDisplay}</td>
-          <td style="padding: 10px; text-align: right; font-weight: bold; color: var(--text-primary);">${finalPoints}</td>
+          <td style="padding: 10px; text-align: right; font-weight: bold; color: var(--text-primary); white-space: nowrap;">${displayPoints}</td>
         </tr>
       `;
     });
