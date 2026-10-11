@@ -248,6 +248,10 @@ function setupResultsUI() {
   const btnSubmit = document.getElementById("submitJsonResults");
   if(btnSubmit) btnSubmit.addEventListener("click", saveImportedResults);
 
+  // NOUVEAU : Met à jour la prévisualisation automatiquement si on change le poleman
+  const poleSelect = document.getElementById("poleSitterSelect");
+  if(poleSelect) poleSelect.addEventListener("change", renderPreviewTables);
+
   const defaultMode = document.querySelector('input[name="inputMode"]:checked');
   if(defaultMode) {
       defaultMode.dispatchEvent(new Event("change"));
@@ -262,7 +266,6 @@ function renderPreviewTables() {
   const titleBase = buildBaseName();
   const makeTitle = (label) => `${titleBase} • ${label}`;
 
-  // Récupération de l'UID du poleman sélectionné dans le menu
   const poleSitterUid = document.getElementById("poleSitterSelect")?.value;
 
   const makeTable = (title, rows) => {
@@ -270,11 +273,8 @@ function renderPreviewTables() {
     recomputePositions(rows);
     const isSprint = /Sprint/i.test(title);
     const isMain = /Principale/i.test(title);
-    
-    // Ajout d'un préfixe unique pour séparer les tableaux à la sauvegarde
     const tableIdPrefix = isSprint ? "sprint" : "main";
 
-    // --- RECHERCHE DU MEILLEUR TOUR DE LA COURSE ---
     let bestLapValue = Infinity;
     rows.forEach(r => {
       if (r.bestLapMs && r.bestLapMs > 0 && r.bestLapMs < bestLapValue) {
@@ -290,35 +290,31 @@ function renderPreviewTables() {
       html += `<tbody>`;
       groups.get(g).forEach(({ r, idx }) => {
         
-        // --- CALCUL DES POINTS ET BONUS ---
         let basePoints = getDefaultPoints(isSprint, r.position);
         let bonus = 0;
         let bonusTexts = [];
 
-        // Bonus Meilleur Tour (+1)
         if (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) {
             bonus += 1;
             bonusTexts.push("Meilleur Tour (+1)");
         }
 
-        // Bonus Pole Position (+2 appliqué uniquement sur la Principale)
         const matchedUid = ImportState.nameMap.get(buildKey(r.lastName, r.firstName))?.uid;
+        let isPole = false;
         if (!isSprint && matchedUid && matchedUid === poleSitterUid) {
             bonus += 2;
+            isPole = true;
             bonusTexts.push("Pole Q2 (+2)");
         }
 
-        // On additionne les points de base et les bonus
         const totalCalculated = basePoints + bonus;
-        
-        // Si une valeur manuelle a été entrée, elle prime, sinon c'est le calcul auto
         const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : totalCalculated;
         
         const bonusHtml = bonusTexts.length > 0 ? `<div style="font-size:0.75rem; color:#a855f7; line-height:1.3; text-align:left; margin-top: 4px;">${bonusTexts.join("<br>")}</div>` : "";
         const bestLapStyle = (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) ? 'color:#a855f7; font-weight:bold;' : '';
 
-        // AJOUT DE L'IDENTIFIANT data-racetype POUR NE PLUS CROISER LES DONNÉES SPRINT/MAIN
-        html += `<tr data-racetype="${tableIdPrefix}" data-idx="${idx}">
+        // AJOUT DE L'ATTRIBUT data-haspole
+        html += `<tr data-racetype="${tableIdPrefix}" data-idx="${idx}" data-haspole="${isPole}">
           <td style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem;">${r.position}</td>
           <td style="font-weight: 700;">${escapeHtml(r.lastName)}</td>
           <td style="color: var(--text-secondary);">${escapeHtml(r.firstName)}</td>
@@ -360,27 +356,25 @@ async function saveImportedResults() {
   for (const race of races) {
     recomputePositions(race.rows);
     const withUid = [];
-    
-    // Identification de la table cible (sprint ou main)
     const tableIdPrefix = race.key.includes("sprint") ? "sprint" : "main";
 
     for (const r of race.rows) {
       const map = ImportState.nameMap.get(buildKey(r.lastName, r.firstName)); if (!map?.uid) continue;
       
-      // RÉCUPÉRATION CORRIGÉE : on cible explicitement le bon tableau pour récupérer les points
       const tr = document.querySelector(`tr[data-racetype="${tableIdPrefix}"][data-idx="${race.rows.indexOf(r)}"]`);
       const domPoints = tr ? Number(tr.querySelector(".points-input").value) : null;
+      const hasPole = tr ? tr.dataset.haspole === "true" : false; // LECTURE DE LA POLE
       
       const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), r.position);
 
-      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, status: "OK" });
+      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, hasPole: hasPole, status: "OK" });
     }
 
     const raceId = `${baseTs + (incr++)}_${race.key}`;
     const displayName = `${baseName} • ${race.label}`;
 
     for (const p of withUid) {
-      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: true });
+      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, hasPole: p.hasPole, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: true });
     }
 
     await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
