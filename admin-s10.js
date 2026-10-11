@@ -270,6 +270,9 @@ function renderPreviewTables() {
     recomputePositions(rows);
     const isSprint = /Sprint/i.test(title);
     const isMain = /Principale/i.test(title);
+    
+    // Ajout d'un préfixe unique pour séparer les tableaux à la sauvegarde
+    const tableIdPrefix = isSprint ? "sprint" : "main";
 
     // --- RECHERCHE DU MEILLEUR TOUR DE LA COURSE ---
     let bestLapValue = Infinity;
@@ -279,7 +282,6 @@ function renderPreviewTables() {
       }
     });
 
-    // Suppression des colonnes Équipe et Voiture + Ajout width 100%
     let html = `<div class="course-box" style="margin-top:10px; width: 100%; padding: 1.5rem;"><h4 style="color:#fde68a; margin-bottom: 1rem;">${escapeHtml(title)}</h4><div style="overflow-x:auto;"><table class="race-table" style="width: 100%; min-width: 800px;"><thead><tr><th style="width: 50px;">#</th><th>Nom</th><th>Prénom</th><th style="width: 120px;">Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
     const groups = new Map();
     rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
@@ -301,7 +303,7 @@ function renderPreviewTables() {
 
         // Bonus Pole Position (+2 appliqué uniquement sur la Principale)
         const matchedUid = ImportState.nameMap.get(buildKey(r.lastName, r.firstName))?.uid;
-        if (isMain && matchedUid && matchedUid === poleSitterUid) {
+        if (!isSprint && matchedUid && matchedUid === poleSitterUid) {
             bonus += 2;
             bonusTexts.push("Pole Q2 (+2)");
         }
@@ -312,12 +314,11 @@ function renderPreviewTables() {
         // Si une valeur manuelle a été entrée, elle prime, sinon c'est le calcul auto
         const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : totalCalculated;
         
-        // Affichage stylisé des bonus sous l'input
         const bonusHtml = bonusTexts.length > 0 ? `<div style="font-size:0.75rem; color:#a855f7; line-height:1.3; text-align:left; margin-top: 4px;">${bonusTexts.join("<br>")}</div>` : "";
         const bestLapStyle = (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) ? 'color:#a855f7; font-weight:bold;' : '';
 
-        // Ligne de tableau épurée (sans Équipe ni Voiture)
-        html += `<tr data-idx="${idx}">
+        // AJOUT DE L'IDENTIFIANT data-racetype POUR NE PLUS CROISER LES DONNÉES SPRINT/MAIN
+        html += `<tr data-racetype="${tableIdPrefix}" data-idx="${idx}">
           <td style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem;">${r.position}</td>
           <td style="font-weight: 700;">${escapeHtml(r.lastName)}</td>
           <td style="color: var(--text-secondary);">${escapeHtml(r.firstName)}</td>
@@ -342,6 +343,50 @@ function renderPreviewTables() {
   
   root.innerHTML = html || `<p class="muted-note" style="text-align:center;">Aucune donnée valide à afficher.</p>`;
   block.style.display = "block";
+}
+
+async function saveImportedResults() {
+  const baseName = buildBaseName(); 
+  const raceDate = document.getElementById("raceDate")?.valueAsDate || new Date();
+  if (!baseName || !document.getElementById("estcRoundText")?.value?.trim()) { 
+     if(window.showToast) window.showToast("⚠️ Formulaire incomplet. Veuillez préciser le round et le circuit.", "warning"); return; 
+  }
+  
+  const races = [];
+  if (ImportState.parsed.S1.sprint.length) races.push({ key: "S1_sprint", label: "Sprint", split: 1, rows: ImportState.parsed.S1.sprint });
+  if (ImportState.parsed.S1.main.length) races.push({ key: "S1_main", label: "Course Principale", split: 1, rows: ImportState.parsed.S1.main });
+
+  const baseTs = Date.now(); let incr = 0;
+  for (const race of races) {
+    recomputePositions(race.rows);
+    const withUid = [];
+    
+    // Identification de la table cible (sprint ou main)
+    const tableIdPrefix = race.key.includes("sprint") ? "sprint" : "main";
+
+    for (const r of race.rows) {
+      const map = ImportState.nameMap.get(buildKey(r.lastName, r.firstName)); if (!map?.uid) continue;
+      
+      // RÉCUPÉRATION CORRIGÉE : on cible explicitement le bon tableau pour récupérer les points
+      const tr = document.querySelector(`tr[data-racetype="${tableIdPrefix}"][data-idx="${race.rows.indexOf(r)}"]`);
+      const domPoints = tr ? Number(tr.querySelector(".points-input").value) : null;
+      
+      const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), r.position);
+
+      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, status: "OK" });
+    }
+
+    const raceId = `${baseTs + (incr++)}_${race.key}`;
+    const displayName = `${baseName} • ${race.label}`;
+
+    for (const p of withUid) {
+      await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: true });
+    }
+
+    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
+  }
+  if(window.showToast) window.showToast("✅ Importation terminée !", "success"); 
+  await loadCourses();
 }
 
 async function handleAnalyzeJson() {
