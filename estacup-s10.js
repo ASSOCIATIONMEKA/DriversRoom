@@ -479,11 +479,8 @@ async function loadResults() {
 async function renderRaceClassification(raceId, container, raceMeta) {
   try {
     container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement du classement...</div>`;
-    
-    // CHARGEMENT DU CACHE DES INSCRIPTIONS POUR FAIRE LE RACCORD
     await ensureSignupCache();
 
-    // Récupération directe du document global de la course dans Firestore
     const raceDoc = await getDoc(doc(db, "courses", raceId));
     if (!raceDoc.exists()) {
       container.innerHTML = `<p class="muted-note">Classement indisponible.</p>`;
@@ -493,24 +490,18 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     const data = raceDoc.data();
     let rawParticipants = data.participants || [];
     
-    // 1. EXCLUSION DE LA SAFETY CAR ET DÉDOUBLONNAGE AUTOMATIQUE
     const uniqueParticipants = new Map();
     rawParticipants.forEach(p => {
         if (!p.uid) return;
         const carName = (p.car || "").toLowerCase();
         if (carName.includes("mercedes amg gt black series sc")) return;
-        
-        // Si le pilote n'est pas encore dans la liste OU s'il a une meilleure position, on le garde
         if (!uniqueParticipants.has(p.uid) || p.position < uniqueParticipants.get(p.uid).position) {
             uniqueParticipants.set(p.uid, p);
         }
     });
     let participants = Array.from(uniqueParticipants.values());
-
-    // Tri par position pour s'assurer que l'ordre est correct
     participants.sort((a, b) => (a.position || 99) - (b.position || 99));
 
-    // DÉTERMINER LE LEADER ET LE MEILLEUR TOUR DE LA COURSE
     const leader = participants.find(p => p.position === 1) || participants[0];
     let bestLapValue = Infinity;
     participants.forEach(p => {
@@ -519,12 +510,9 @@ async function renderRaceClassification(raceId, container, raceMeta) {
       }
     });
 
-    // DÉTERMINER SI C'EST SPRINT OU PRINCIPALE DE FAÇON ROBUSTE
     const raceNameStr = (data.name || "").toLowerCase();
     let isSprint = data.isSprint === true || raceNameStr.includes("sprint");
-    if (raceNameStr.includes("principale") || raceNameStr.includes("main")) {
-        isSprint = false; // Force la principale si le titre l'indique
-    }
+    if (raceNameStr.includes("principale") || raceNameStr.includes("main")) isSprint = false;
 
     let html = `
       <div style="overflow-x: auto;">
@@ -545,74 +533,50 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     `;
 
     participants.forEach(p => {
-      // GESTION DES PÉNALITÉS
       const penaltySec = Math.round((p.penaltyMs || 0) / 1000);
       const penaltyDisplay = penaltySec > 0 ? `+${penaltySec}s` : "—";
       const penaltyColor = penaltySec > 0 ? "#ef4444" : "var(--text-muted)";
 
-      // FORMATAGE DU CHRONO ET HIGHLIGHT DU MEILLEUR TOUR
       const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
       const bestLapStr = p.bestLapMs ? msToClock(p.bestLapMs) : "—";
       const bestLapStyle = isBestLap ? "color: #a855f7; font-weight: bold;" : "";
-
-      // RECALCUL DU GAP LEADER
       const gapText = p.position === 1 ? "Leader" : computeGapLeaderText(p, leader);
 
-      // APPLICATION STRICTE DU BARÈME
       const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
       const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+      let basePoints = isSprint ? (p.position <= 20 ? ptsSprint[p.position - 1] : 0) : (p.position <= 20 ? ptsMain[p.position - 1] : 1);
+
+      const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
       
-      let basePoints = 0;
-      if (isSprint) {
-        basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
-      } else {
-        basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+      // LECTURE DIRECTE DE LA POLE EN BASE DE DONNÉES !
+      let hasPole = p.hasPole === true;
+      if (p.hasPole === undefined) {
+          if (p.points === expectedIfCorrect + 2) hasPole = true;
       }
 
-      // DÉTECTION ROBUSTE DE LA POLE & DU BUG D'IMPORT
-      const baseSprintCheck = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
-      const baseMainCheck = p.position <= 20 ? ptsMain[p.position - 1] : 1;
-
-      let hasPole = false;
-      if (p.points === baseSprintCheck + 2 || p.points === baseSprintCheck + 3 ||
-          p.points === baseMainCheck + 2 || p.points === baseMainCheck + 3) {
-          hasPole = true;
-      }
-
-      // CONSTRUCTION DES BADGES ET DU SCORE FINAL
       let bonusTags = "";
       if (isBestLap) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
       if (hasPole) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Pole Position Q2">+2</span>`;
 
       let displayPoints = "";
-      const isStandardScore = [
-          baseSprintCheck, baseSprintCheck+1, baseSprintCheck+2, baseSprintCheck+3,
-          baseMainCheck, baseMainCheck+1, baseMainCheck+2, baseMainCheck+3
-      ].includes(p.points);
+      const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
 
       if (isStandardScore || p.points === undefined || p.points === null) {
-          // Si le score DB est un score buggé de l'ancien import (ex: 20 sur une Principale), on FORCE la correction à 35
           displayPoints = `${basePoints}${bonusTags}`;
       } else {
           displayPoints = `${p.points}${bonusTags}`;
       }
 
-      // FORMATAGE VOITURE
       let displayCar = p.car || "—";
-      if (displayCar.toLowerCase().includes("rss formula rss 3")) {
-          displayCar = "FIA F3";
-      }
+      if (displayCar.toLowerCase().includes("rss formula rss 3")) displayCar = "FIA F3";
       
-      // RACCORD AVEC LA LISTE DES ENGAGÉS (Équipe et Numéro)
       const signupInfo = signupCache.get(p.uid);
       let realTeam = p.team;
       let raceNumberDisplay = "";
       
       if (signupInfo) {
           if (signupInfo.teamName) realTeam = signupInfo.teamName;
-          if (signupInfo.raceNumber) {
-             raceNumberDisplay = `<span style="color: #38bdf8; font-size: 0.85em; margin-right: 8px;">#${signupInfo.raceNumber}</span>`;
-          }
+          if (signupInfo.raceNumber) raceNumberDisplay = `<span style="color: #38bdf8; font-size: 0.85em; margin-right: 8px;">#${signupInfo.raceNumber}</span>`;
       }
       
       const displayTeam = (realTeam && realTeam.trim() !== "" && realTeam.toLowerCase() !== "indépendant" && realTeam.toLowerCase() !== "sans équipe") ? realTeam : "Indépendant";
@@ -635,8 +599,7 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     html += `</tbody></table></div>`;
     container.innerHTML = html;
   } catch (err) {
-    console.error("Erreur chargement classement public:", err);
-    container.innerHTML = `<p class="muted-note">Erreur lors du chargement du classement.</p>`;
+    console.error("Erreur chargement classement:", err);
   }
 }
 
