@@ -494,6 +494,18 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     // Tri par position pour s'assurer que l'ordre est correct
     participants.sort((a, b) => (a.position || 99) - (b.position || 99));
 
+    // DÉTERMINER LE LEADER ET LE MEILLEUR TOUR DE LA COURSE
+    const leader = participants.find(p => p.position === 1) || participants[0];
+    let bestLapValue = Infinity;
+    participants.forEach(p => {
+      if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
+        bestLapValue = p.bestLapMs;
+      }
+    });
+
+    // Déterminer si c'est une course Sprint ou Principale
+    const isSprint = data.isSprint === true || (data.name && data.name.toLowerCase().includes("sprint"));
+
     let html = `
       <div style="overflow-x: auto;">
         <table class="race-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
@@ -512,23 +524,47 @@ async function renderRaceClassification(raceId, container, raceMeta) {
     `;
 
     participants.forEach(p => {
-      // Conversion sécurisée des millisecondes en secondes
+      // 1. GESTION DES PÉNALITÉS
       const penaltySec = Math.round((p.penaltyMs || 0) / 1000);
       const penaltyDisplay = penaltySec > 0 ? `+${penaltySec}s` : "—";
       const penaltyColor = penaltySec > 0 ? "#ef4444" : "var(--text-muted)";
 
-      // Utilisation d'une fonction interne simple pour formater le temps si formatMs n'est pas dispo
-      const bestLapStr = typeof formatMs === "function" ? formatMs(p.bestLapMs) : (p.bestLapMs ? `${p.bestLapMs}ms` : "—");
+      // 2. FORMATAGE DU CHRONO (msToClock) ET HIGHLIGHT DU MEILLEUR TOUR
+      const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
+      const bestLapStr = p.bestLapMs ? msToClock(p.bestLapMs) : "—";
+      const bestLapStyle = isBestLap ? "color: #a855f7; font-weight: bold;" : "";
+
+      // 3. RECALCUL DU GAP LEADER
+      const gapText = p.position === 1 ? "Leader" : computeGapLeaderText(p, leader);
+
+      // 4. APPLICATION STRICTE DU BARÈME DU RÈGLEMENT (S10)
+      let basePoints = 0;
+      if (isSprint) {
+        const ptsSprint = [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
+        basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+      } else {
+        const ptsMain = [35, 30, 27, 24, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+        basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+      }
+
+      // 5. AJOUT DES BONUS
+      let finalPoints = basePoints;
+      if (isBestLap) finalPoints += 1; // Bonus meilleur tour (+1)
+
+      // Restauration du Bonus Pole Q2 (+2) s'il avait été sauvegardé en base de données par l'Admin
+      if (p.points === finalPoints + 2) {
+          finalPoints += 2;
+      }
 
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
           <td style="padding: 10px; font-weight: bold; color: var(--accent-primary);">${p.position}</td>
           <td style="padding: 10px; font-weight: 600; color: #fff;">${escapeHtml(p.name)}</td>
           <td style="padding: 10px; color: var(--text-secondary);">${escapeHtml(p.car || "—")}</td>
-          <td style="padding: 10px;">${bestLapStr}</td>
-          <td style="padding: 10px;">${p.position === 1 ? "Leader" : (p._gapText || "—")}</td>
+          <td style="padding: 10px; ${bestLapStyle}">${bestLapStr}</td>
+          <td style="padding: 10px;">${gapText}</td>
           <td style="padding: 10px; text-align: center; color: ${penaltyColor}; font-weight: ${penaltySec > 0 ? 'bold' : 'normal'};">${penaltyDisplay}</td>
-          <td style="padding: 10px; text-align: right; font-weight: bold; color: var(--text-primary);">${p.points ?? 0}</td>
+          <td style="padding: 10px; text-align: right; font-weight: bold; color: var(--text-primary);">${finalPoints}</td>
         </tr>
       `;
     });
