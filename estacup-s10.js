@@ -2559,25 +2559,33 @@ async function loadEstacupPilotStandings() {
       });
     });
 
-    // 2. Récupérer les résultats de course (hors prologue)
+    // 2. Récupérer les résultats de course (hors prologue) + Filtre Saison 10
     const coursesSnap = await getDocs(query(collection(db, "courses"), where("estacup", "==", true)));
     const races = [];
     coursesSnap.forEach(d => {
       const c = d.data();
-      if (c.name && c.name.toLowerCase().includes("prologue")) return; 
-      races.push({ id: d.id, ...c });
+      const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
+      
+      // On ne prend que les courses à partir d'août 2026 (S10)
+      if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
+         if (c.name && c.name.toLowerCase().includes("prologue")) return; 
+         races.push({ id: d.id, ...c });
+      }
     });
 
-    // 3. Déterminer les manches ayant été courues
+    // 3. Déterminer les manches ayant été courues (Correction : Prise en charge de "Round X" et "Manche X")
     const roundsSet = new Set();
     races.forEach(r => {
       let rName = r.round || "Inconnu";
-      if (r.name.toLowerCase().includes("manche 1")) rName = "Manche 1";
-      else if (r.name.toLowerCase().includes("manche 2")) rName = "Manche 2";
-      else if (r.name.toLowerCase().includes("manche 3")) rName = "Manche 3";
-      else if (r.name.toLowerCase().includes("manche 4")) rName = "Manche 4";
-      else if (r.name.toLowerCase().includes("manche 5")) rName = "Manche 5";
-      else if (r.name.toLowerCase().includes("manche 6")) rName = "Manche 6";
+      const nameLow = (r.name || "").toLowerCase();
+      
+      if (nameLow.includes("manche 1") || nameLow.includes("round 1")) rName = "Manche 1";
+      else if (nameLow.includes("manche 2") || nameLow.includes("round 2")) rName = "Manche 2";
+      else if (nameLow.includes("manche 3") || nameLow.includes("round 3")) rName = "Manche 3";
+      else if (nameLow.includes("manche 4") || nameLow.includes("round 4")) rName = "Manche 4";
+      else if (nameLow.includes("manche 5") || nameLow.includes("round 5")) rName = "Manche 5";
+      else if (nameLow.includes("manche 6") || nameLow.includes("round 6")) rName = "Manche 6";
+      
       r.cleanRound = rName;
       roundsSet.add(rName);
     });
@@ -2632,6 +2640,7 @@ async function loadEstacupPilotStandings() {
                 finalPoints = Number(p.points) || 0; // Prise en compte d'une éventuelle pénalité manuelle admin
             }
 
+            // On cumule la course 1 et la course 2 pour la même manche
             pilot.scores[r.cleanRound] = (pilot.scores[r.cleanRound] || 0) + finalPoints;
           }
         });
@@ -2797,61 +2806,69 @@ async function loadEstacupTeamStandings() {
 
     coursesSnap.forEach(d => {
       const c = d.data();
-      if (c.name && c.name.toLowerCase().includes("prologue")) return;
+      const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
+      
+      // Filtre S10
+      if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
+         if (c.name && c.name.toLowerCase().includes("prologue")) return;
 
-      let rName = c.round || "Inconnu";
-      if (c.name.toLowerCase().includes("manche 1")) rName = "Manche 1";
-      else if (c.name.toLowerCase().includes("manche 2")) rName = "Manche 2";
-      else if (c.name.toLowerCase().includes("manche 3")) rName = "Manche 3";
-      else if (c.name.toLowerCase().includes("manche 4")) rName = "Manche 4";
-      else if (c.name.toLowerCase().includes("manche 5")) rName = "Manche 5";
-      else if (c.name.toLowerCase().includes("manche 6")) rName = "Manche 6";
-      roundsSet.add(rName);
+         let rName = c.round || "Inconnu";
+         const nameLow = (c.name || "").toLowerCase();
+         
+         if (nameLow.includes("manche 1") || nameLow.includes("round 1")) rName = "Manche 1";
+         else if (nameLow.includes("manche 2") || nameLow.includes("round 2")) rName = "Manche 2";
+         else if (nameLow.includes("manche 3") || nameLow.includes("round 3")) rName = "Manche 3";
+         else if (nameLow.includes("manche 4") || nameLow.includes("round 4")) rName = "Manche 4";
+         else if (nameLow.includes("manche 5") || nameLow.includes("round 5")) rName = "Manche 5";
+         else if (nameLow.includes("manche 6") || nameLow.includes("round 6")) rName = "Manche 6";
+         
+         roundsSet.add(rName);
 
-      if (!roundResults[rName]) roundResults[rName] = {};
+         if (!roundResults[rName]) roundResults[rName] = {};
 
-      const raceNameStr = (c.name || "").toLowerCase();
-      let isSprint = c.isSprint === true || raceNameStr.includes("sprint");
-      if (raceNameStr.includes("principale") || raceNameStr.includes("main")) {
-          isSprint = false;
-      }
+         let isSprint = c.isSprint === true || nameLow.includes("sprint");
+         if (nameLow.includes("principale") || nameLow.includes("main")) {
+             isSprint = false;
+         }
 
-      let bestLapValue = Infinity;
-      if (Array.isArray(c.participants)) {
-        c.participants.forEach(p => {
-          if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
-            bestLapValue = p.bestLapMs;
-          }
-        });
-      }
+         let bestLapValue = Infinity;
+         if (Array.isArray(c.participants)) {
+           c.participants.forEach(p => {
+             if (p.bestLapMs && p.bestLapMs > 0 && p.bestLapMs < bestLapValue) {
+               bestLapValue = p.bestLapMs;
+             }
+           });
+         }
 
-      if (Array.isArray(c.participants)) {
-        c.participants.forEach(p => {
-          const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
-          let basePoints = 0;
-          if (isSprint) {
-            basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
-          } else {
-            basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
-          }
+         if (Array.isArray(c.participants)) {
+           c.participants.forEach(p => {
+             const isBestLap = p.bestLapMs === bestLapValue && bestLapValue !== Infinity;
+             let basePoints = 0;
+             if (isSprint) {
+               basePoints = p.position <= 20 ? ptsSprint[p.position - 1] : 0;
+             } else {
+               basePoints = p.position <= 20 ? ptsMain[p.position - 1] : 1;
+             }
 
-          const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
-          let hasPole = false;
-          if (p.points === expectedIfCorrect + 2) {
-              hasPole = true;
-          }
+             const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
+             let hasPole = false;
+             if (p.points === expectedIfCorrect + 2) {
+                 hasPole = true;
+             }
 
-          let finalPoints = 0;
-          const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
+             let finalPoints = 0;
+             const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
 
-          if (isStandardScore || p.points === undefined || p.points === null) {
-              finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
-          } else {
-              finalPoints = Number(p.points) || 0; 
-          }
+             if (isStandardScore || p.points === undefined || p.points === null) {
+                 finalPoints = basePoints + (isBestLap ? 1 : 0) + (hasPole ? 2 : 0);
+             } else {
+                 finalPoints = Number(p.points) || 0; 
+             }
 
-          roundResults[rName][p.uid] = (roundResults[rName][p.uid] || 0) + finalPoints;
-        });
+             // Cumul de la course sprint et principale pour l'équipe
+             roundResults[rName][p.uid] = (roundResults[rName][p.uid] || 0) + finalPoints;
+           });
+         }
       }
     });
 
@@ -2870,7 +2887,7 @@ async function loadEstacupTeamStandings() {
         });
         pilotPts.sort((a,b) => b-a);
         
-        // Seuls les 2 meilleurs résultats par manche comptent pour l'équipe
+        // Seuls les 2 meilleurs résultats de l'équipe par manche comptent
         const pts = (pilotPts[0] || 0) + (pilotPts[1] || 0);
         t.scores[rnd] = pts;
       });
