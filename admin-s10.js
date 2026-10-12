@@ -374,12 +374,10 @@ function renderPreviewTables() {
 
   block.style.display = "block";
 }
+
 async function handleAnalyzeJson() {
   ImportState.isEstacup = true;
   ImportState.splitCount = 1;
-  ImportState.roundText = document.getElementById("estcRoundText")?.value?.trim() || "";
-  ImportState.circuit = document.getElementById("raceCircuit")?.value?.trim() || "";
-  ImportState.date = document.getElementById("raceDate")?.valueAsDate || new Date();
 
   const btn = document.getElementById("analyzeJson");
   if(btn) { btn.disabled = true; btn.textContent = "Analyse..."; }
@@ -392,6 +390,37 @@ async function handleAnalyzeJson() {
     if(btn) { btn.disabled = false; btn.textContent = "Analyser les fichiers"; }
     return;
   }
+
+  // --- AUTODÉTECTION DATE ET CIRCUIT DEPUIS LE JSON ---
+  const sourceJson = jMainS1 || jSprintS1;
+  if (sourceJson) {
+    // Autodétection de la Date
+    if (sourceJson.Date) {
+      const parsedDate = new Date(sourceJson.Date);
+      if (!isNaN(parsedDate)) {
+        const dateInput = document.getElementById("raceDate");
+        if (dateInput && !dateInput.value) { // Remplit si vide
+          dateInput.valueAsDate = parsedDate;
+        }
+      }
+    }
+    // Autodétection du Circuit
+    const trackName = sourceJson.TrackName || sourceJson.Track || sourceJson.track || "";
+    if (trackName) {
+       // Nettoyage des préfixes habituels de mods (ex: "ks_silverstone" -> "Silverstone")
+       let cleanTrack = trackName.replace(/^(ks_|acu_|rt_)/i, "").replace(/_/g, " ");
+       cleanTrack = cleanTrack.charAt(0).toUpperCase() + cleanTrack.slice(1);
+       const circuitInput = document.getElementById("raceCircuit");
+       if (circuitInput && !circuitInput.value) { // Remplit si vide
+          circuitInput.value = cleanTrack;
+       }
+    }
+  }
+
+  // On récupère les valeurs des inputs (saisies manuellement ou auto-détectées)
+  ImportState.roundText = document.getElementById("estcRoundText")?.value?.trim() || "";
+  ImportState.circuit = document.getElementById("raceCircuit")?.value?.trim() || "";
+  ImportState.date = document.getElementById("raceDate")?.valueAsDate || new Date();
   
   ImportState.parsed.S1 = { sprint: extractResultsGeneric(jSprintS1), main: extractResultsGeneric(jMainS1) };
   
