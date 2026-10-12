@@ -1305,6 +1305,22 @@ async function loadEstacupForm(userData) {
             updatedAt: new Date()
           });
 
+          // --- WEBHOOK DISCORD INSCRIPTION ---
+          await sendDiscordWebhook({
+            title: "📝 Nouvelle inscription en attente !",
+            color: 3694024, // Code couleur Bleu (#38bdf8)
+            description: `**${fName} ${lName}** vient de soumettre son inscription pour l'ESTACUP S10.`,
+            fields: [
+              { name: "Numéro", value: `#${num}`, inline: true },
+              { name: "Équipe", value: team === "" ? "Indépendant" : team, inline: true },
+              { name: "Paiement", value: status === "adherent" ? "Adhérent MEKA" : "Frais 5€", inline: true },
+              { name: "Livrée", value: liveryChoice, inline: true },
+              { name: "Steam ID", value: steam, inline: false }
+            ],
+            footer: { text: "ESTACUP Driver's Room" },
+            timestamp: new Date().toISOString()
+          });
+
           if (window.showToast) window.showToast("✅ Inscription transmise avec succès ! En attente de validation.", "success");
           loadEstacupForm(userData);
           setupMekaQuestionnaire(userData);
@@ -2388,6 +2404,22 @@ if (btnSubmitReclam) {
         status: "en attente",
         isTreated: false,
         createdAt: new Date()
+      });
+
+      // --- WEBHOOK DISCORD RÉCLAMATION ---
+      await sendDiscordWebhook({
+        title: "⚖️ Nouvelle Réclamation Soumise",
+        color: 15105570, // Code couleur Orange/Rouge (#e67e22)
+        description: `Une nouvelle réclamation a été déposée par **${document.getElementById("fullName")?.textContent || "Pilote"}** pour la **${rTypeCourse}**.`,
+        fields: [
+          { name: "Type d'incident", value: rIncidentType, inline: true },
+          { name: "Tour concerné", value: `Tour ${rLap}`, inline: true },
+          { name: "Pilotes impliqués", value: finalPilots.join(", ") || "Non spécifiés", inline: false },
+          { name: "Description", value: rDesc.substring(0, 1024), inline: false }, // Limite Discord à 1024 caractères
+          { name: "Preuve vidéo", value: `[Cliquer ici pour voir la vidéo](${rVideo})`, inline: false }
+        ],
+        footer: { text: "Panel Admin S10 requis pour traiter" },
+        timestamp: new Date().toISOString()
       });
 
       if (window.showToast) window.showToast("✅ Réclamation envoyée avec succès !", "success");
