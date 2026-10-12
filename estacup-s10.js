@@ -20,6 +20,22 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 /* ======================== Utils ======================== */
+/* --- WEBHOOK DISCORD --- */
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1559253406260924426/lkl_Fw3JhcLLk6lnQcDQx5fGw4imfSY6kwBHkD_viBVXXLiiPrTihpoIg2xT8LKOSoz_";
+
+async function sendDiscordWebhook(embed) {
+  if (!DISCORD_WEBHOOK_URL) return;
+  try {
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+  } catch (e) {
+    console.error("Erreur d'envoi du Webhook Discord :", e);
+  }
+}
+
 const $ = (id) => document.getElementById(id);
 const isNum = (x) => typeof x === "number" && isFinite(x);
 const clamp = (x,min,max)=>Math.max(min,Math.min(max,x));
