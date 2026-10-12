@@ -548,11 +548,8 @@ async function renderRaceClassification(raceId, container, raceMeta) {
 
       const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
       
-      // LECTURE DIRECTE DE LA POLE EN BASE DE DONNÉES !
+      // LECTURE STRICTE DE LA POLE EN BASE DE DONNÉES
       let hasPole = p.hasPole === true;
-      if (p.hasPole === undefined) {
-          if (p.points === expectedIfCorrect + 2) hasPole = true;
-      }
 
       let bonusTags = "";
       if (isBestLap) bonusTags += `<span style="color: #a855f7; font-weight: bold; font-size: 0.9em; margin-left: 4px;" title="Meilleur tour en course">+1</span>`;
@@ -2610,11 +2607,8 @@ async function loadEstacupPilotStandings() {
 
           const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
           
-          // LECTURE DE LA POLE
+          // LECTURE DE LA POLE STRICTE
           let hasPole = p.hasPole === true;
-          if (p.hasPole === undefined) {
-              if (p.points === expectedIfCorrect + 2) hasPole = true;
-          }
 
           let finalPoints = 0;
           const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
@@ -2839,11 +2833,8 @@ async function loadEstacupTeamStandings() {
 
              const expectedIfCorrect = basePoints + (isBestLap ? 1 : 0);
              
-             // LECTURE DE LA POLE
+             // LECTURE DE LA POLE STRICTE
              let hasPole = p.hasPole === true;
-             if (p.hasPole === undefined) {
-                 if (p.points === expectedIfCorrect + 2) hasPole = true;
-             }
 
              let finalPoints = 0;
              const isStandardScore = (p.points === expectedIfCorrect) || (p.points === expectedIfCorrect + 2);
