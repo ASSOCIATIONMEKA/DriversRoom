@@ -284,7 +284,7 @@ function renderPreviewTables() {
       }
     });
 
-    let html = `<div class="course-box" style="margin-top:10px; width: 100%; padding: 1.5rem;"><h4 style="color:#fde68a; margin-bottom: 1rem;">${escapeHtml(title)}</h4><div style="overflow-x:auto;"><table class="race-table" style="width: 100%; min-width: 800px;"><thead><tr><th style="width: 50px;">#</th><th>Nom</th><th>Prénom</th><th style="width: 120px;">Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Total pénalité</th></tr></thead>`;
+    let html = `<div class="course-box" style="margin-top:10px; width: 100%; padding: 1.5rem;"><h4 style="color:#fde68a; margin-bottom: 1rem;">${escapeHtml(title)}</h4><div style="overflow-x:auto;"><table class="race-table" style="width: 100%; min-width: 800px;"><thead><tr><th style="width: 50px;">#</th><th>Nom</th><th>Prénom</th><th style="width: 120px;">Points</th><th>Best lap</th><th>Laps</th><th>Gap leader</th><th>Pénalité (s)</th></tr></thead>`;
     const groups = new Map();
     rows.forEach((r, idx) => { const g = r._effLaps || 0; if (!groups.has(g)) groups.set(g, []); groups.get(g).push({ r, idx }); });
     
@@ -318,23 +318,25 @@ function renderPreviewTables() {
         // Si une valeur manuelle a été entrée, elle prime, sinon c'est le calcul auto
         const pointsVal = Number.isFinite(r._pointsManual) ? r._pointsManual : totalCalculated;
         
-        // Affichage stylisé des bonus sous l'input
         const bonusHtml = bonusTexts.length > 0 ? `<div style="font-size:0.75rem; color:#a855f7; line-height:1.3; text-align:left; margin-top: 4px;">${bonusTexts.join("<br>")}</div>` : "";
         const bestLapStyle = (r.bestLapMs === bestLapValue && bestLapValue !== Infinity) ? 'color:#a855f7; font-weight:bold;' : '';
 
-        // AJOUT DE L'ATTRIBUT data-haspole ET data-racetype
+        const penaltySec = Math.round((r.basePenaltyMs + (r.editPenaltyMs || 0)) / 1000);
+
         html += `<tr data-racetype="${tableIdPrefix}" data-idx="${idx}" data-haspole="${isPole}">
           <td style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem;">${r.position}</td>
           <td style="font-weight: 700;">${escapeHtml(r.lastName)}</td>
           <td style="color: var(--text-secondary);">${escapeHtml(r.firstName)}</td>
           <td style="vertical-align: middle;">
-            <input class="points-input" type="number" style="width:80px; text-align:center; margin-bottom: 0; padding: 0.5rem;" value="${pointsVal}">
+            <input class="points-input" type="number" style="width:80px; text-align:center; margin-bottom: 0; padding: 0.5rem; background: #020617; border: 1px solid #334155; color: #fff; border-radius: 6px;" value="${pointsVal}">
             ${bonusHtml}
           </td>
           <td style="${bestLapStyle}">${formatMs(r.bestLapMs)}</td>
           <td>${g}</td>
           <td>${r._gapText || "—"}</td>
-          <td style="color: ${r.basePenaltyMs + (r.editPenaltyMs || 0) > 0 ? '#ef4444' : 'inherit'}; font-weight: ${r.basePenaltyMs + (r.editPenaltyMs || 0) > 0 ? 'bold' : 'normal'};">${formatMs(r.basePenaltyMs + (r.editPenaltyMs || 0))}</td>
+          <td style="vertical-align: middle;">
+            <input class="penalty-input" data-idx="${idx}" data-racetype="${tableIdPrefix}" type="number" style="width:70px; text-align:center; margin-bottom: 0; padding: 0.5rem; background: #020617; border: 1px solid #334155; border-radius: 6px; color: ${penaltySec > 0 ? '#ef4444' : '#fff'}; font-weight: ${penaltySec > 0 ? 'bold' : 'normal'};" value="${penaltySec}">
+          </td>
         </tr>`;
       });
       html += `</tbody>`;
@@ -347,9 +349,31 @@ function renderPreviewTables() {
   if (ImportState.parsed.S1.main.length) html += makeTable(makeTitle("Course Principale"), ImportState.parsed.S1.main);
   
   root.innerHTML = html || `<p class="muted-note" style="text-align:center;">Aucune donnée valide à afficher.</p>`;
+  
+  // ÉVÉNEMENTS : Mise à jour des pénalités à la volée
+  root.querySelectorAll('.penalty-input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const isSprint = e.target.dataset.racetype === "sprint";
+      const rows = isSprint ? ImportState.parsed.S1.sprint : ImportState.parsed.S1.main;
+      const newSec = parseInt(e.target.value, 10) || 0;
+      rows[idx].editPenaltyMs = (newSec * 1000) - rows[idx].basePenaltyMs;
+      renderPreviewTables(); // Recalcule les positions et redessine
+    });
+  });
+
+  // ÉVÉNEMENTS : Persistance des modifications manuelles des points
+  root.querySelectorAll('.points-input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.closest('tr').dataset.idx, 10);
+      const isSprint = e.target.closest('tr').dataset.racetype === "sprint";
+      const rows = isSprint ? ImportState.parsed.S1.sprint : ImportState.parsed.S1.main;
+      rows[idx]._pointsManual = parseInt(e.target.value, 10) || 0;
+    });
+  });
+
   block.style.display = "block";
 }
-
 async function handleAnalyzeJson() {
   ImportState.isEstacup = true;
   ImportState.splitCount = 1;
@@ -442,8 +466,20 @@ async function saveImportedResults() {
       
       const finalPoints = Number.isFinite(domPoints) ? domPoints : getDefaultPoints(race.key.includes("sprint"), r.position);
 
-      withUid.push({ uid: map.uid, name: `${r.firstName} ${r.lastName}`, position: r.position, team: r.team, car: r.car, bestLapMs: r.bestLapMs, totalMs: r.adjTotalMs, penaltyMs: r.basePenaltyMs, laps: r.laps, points: finalPoints, hasPole: hasPole, status: "OK" });
-    }
+      withUid.push({ 
+        uid: map.uid, 
+        name: `${r.firstName} ${r.lastName}`, 
+        position: r.position, 
+        team: r.team, 
+        car: r.car, 
+        bestLapMs: r.bestLapMs, 
+        totalMs: r.adjTotalMs, 
+        penaltyMs: r.basePenaltyMs + (r.editPenaltyMs || 0), // Prends en compte les modifs
+        laps: r.laps, 
+        points: finalPoints, 
+        hasPole: hasPole, 
+        status: "OK" 
+      });
 
     const raceId = `${baseTs + (incr++)}_${race.key}`;
     const displayName = `${baseName} • ${race.label}`;
