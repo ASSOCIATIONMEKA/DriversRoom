@@ -480,6 +480,7 @@ async function saveImportedResults() {
         hasPole: hasPole, 
         status: "OK" 
       });
+    }
 
     const raceId = `${baseTs + (incr++)}_${race.key}`;
     const displayName = `${baseName} • ${race.label}`;
