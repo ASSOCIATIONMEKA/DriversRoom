@@ -1209,7 +1209,6 @@
     let isAdmin = false;
     let isUserValidated = false;
     let userTeamName = "";
-
     let isMaintMode = false;
     let adminViewActive = true;
 
@@ -1299,14 +1298,13 @@
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
       
-      // On gère d'abord l'état déconnecté pour ne pas bloquer l'interface
+      // On gère correctement l'état connecté/déconnecté
       if (!user) {
         currentUserName = "Visiteur";
         isAdmin = false;
         isUserValidated = false;
         userTeamName = "";
       } else {
-        // L'utilisateur est connecté, on récupère ses données
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
@@ -1337,8 +1335,7 @@
         }
       }
 
-      // --- LA SUITE DU SCRIPT S'EXÉCUTE QUE L'ON SOIT CONNECTÉ OU NON ---
-
+      // LA SUITE EST EXÉCUTÉE DANS TOUS LES CAS (connecté ou non)
       const toggleContainer = document.getElementById("adminViewToggleContainer");
       if (isAdmin) {
         if (toggleContainer) toggleContainer.classList.remove("hidden");
@@ -1366,7 +1363,7 @@
         const btnEdit = document.getElementById("btnEditReglement");
         if (btnEdit) btnEdit.classList.remove("hidden");
       }
-
+      
       const btnEdit = document.getElementById("btnEditReglement");
       const btnCancel = document.getElementById("btnCancelReglement");
       const btnSave = document.getElementById("btnSaveReglement");
@@ -1375,24 +1372,18 @@
       const textarea = document.getElementById("reglementTextarea");
       const content = document.getElementById("reglementContent");
 
-      if (btnEdit) {
+      if (btnEdit && btnCancel && btnSave) {
         btnEdit.addEventListener("click", () => {
           textarea.value = content.dataset.rawMarkdown || "";
           readMode.classList.add("hidden");
           editMode.classList.remove("hidden");
           btnEdit.classList.add("hidden");
         });
-      }
-
-      if (btnCancel) {
         btnCancel.addEventListener("click", () => {
           editMode.classList.add("hidden");
           readMode.classList.remove("hidden");
           btnEdit.classList.remove("hidden");
         });
-      }
-
-      if (btnSave) {
         btnSave.addEventListener("click", async () => {
           const newMarkdown = textarea.value.trim();
           btnSave.disabled = true;
@@ -1439,7 +1430,7 @@
       deadline.setHours(16, 0, 0, 0);
       const isLocked = now >= deadline;
 
-      // --- 1. AJOUT DE L'EXCEPTION VUE ADMIN ---
+      // Exception Vue Admin
       const effectiveAdmin = isAdmin && adminViewActive;
 
       // On bloque si on est à plus de 7 jours ET qu'on n'est PAS admin
@@ -1453,7 +1444,7 @@
         return;
       }
 
-      // --- 2. AJOUT DE L'AVERTISSEMENT VISUEL POUR L'ADMIN ---
+      // Avertissement visuel pour l'admin
       let adminWarningHtml = "";
       if (diffDays > 7 && effectiveAdmin) {
         adminWarningHtml = `
@@ -1471,7 +1462,6 @@
       const mancheNom = parts[0] || "Manche";
       const circuitNom = parts[1] || "";
 
-      // 🔒 GESTION DE L'AFFICHAGE DES BOUTONS SI LA DEADLINE EST PASSÉE
       let actionsHtml = "";
       if (isLocked) {
         actionsHtml = `
@@ -1488,7 +1478,6 @@
           </div>`;
       }
 
-      // --- 3. INJECTION DE L'AVERTISSEMENT JUSTE AVANT LE FORMULAIRE ---
       container.innerHTML = `
         ${adminWarningHtml}
         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
@@ -1531,7 +1520,6 @@
           const data = docSnap.data();
           let status = data.status;
 
-          // ⚠️ AUTO-REFUS DES INCERTAINS À 16H00
           if (isLocked && status === "tentative") {
             status = "absent";
             if (currentUser && docSnap.id === currentUser.uid) {
@@ -1586,3 +1574,42 @@
         }
       });
     }
+
+    window.togglePresence = async function(raceId, status) {
+      if (!currentUser) {
+        if(typeof window.showToast === "function") window.showToast("⚠ Vous devez être connecté pour indiquer votre présence.", "warning");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const now = new Date();
+      let nextRace = racesList.find(r => r.id === raceId);
+      if (nextRace) {
+        const deadline = new Date(nextRace.dateObj.getTime());
+        deadline.setHours(16, 0, 0, 0);
+        if (now >= deadline) {
+          if(typeof window.showToast === "function") window.showToast("🔒 Les inscriptions sont closes depuis 16h00.", "error");
+          return;
+        }
+      }
+
+      try {
+        const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists() && docSnap.data().status === status) {
+          await deleteDoc(docRef);
+        } else {
+          await setDoc(docRef, {
+            userId: currentUser.uid,
+            userName: currentUserName,
+            status: status,
+            timestamp: new Date()
+          });
+        }
+      } catch (err) {
+        console.error("Erreur lors de la modification de la présence :", err);
+        if(typeof window.showToast === "function") window.showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
+      }
+    };
+  </script>
