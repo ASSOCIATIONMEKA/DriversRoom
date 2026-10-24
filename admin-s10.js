@@ -825,264 +825,130 @@ function computeEloUpdates(rankingArr, ratingsMap, K = 32) {
   return out;
 }
 
-/* ---------------- Incidents & Pénalités ---------------- */
+/* ======================== RÉCLAMATIONS ======================== */
 
-let activeClaimId = null; // Variable pour lier une réclamation à un incident
-
-// Met à jour l'affichage des pilotes sélectionnés pour un incident
-function updateIncidentList() {
-  const container = document.getElementById("incidentPilotsList");
-  if (!container) return;
-  container.innerHTML = "";
-  
-  selectedPilots.forEach((p, index) => {
-    const div = document.createElement("div");
-    div.style.display = "flex";
-    div.style.alignItems = "center";
-    div.style.gap = "10px";
-    div.style.marginBottom = "10px";
-    div.style.background = "rgba(255,255,255,0.05)";
-    div.style.padding = "10px";
-    div.style.borderRadius = "8px";
-
-    div.innerHTML = `
-      <span style="flex:1; font-weight:bold;">${p.name}</span>
-      <div style="display:flex; align-items:center; gap:5px;">
-        <span>Pts avant:</span>
-        <input type="number" value="${p.before}" readonly style="width:60px; background:#333; color:#fff; border:1px solid #555; border-radius:4px; padding:4px;">
-      </div>
-      <div style="display:flex; align-items:center; gap:5px;">
-        <span>Après:</span>
-        <input type="number" class="incident-after-input" data-index="${index}" value="${p.after}" style="width:60px; background:#222; color:#fff; border:1px solid #38bdf8; border-radius:4px; padding:4px;">
-      </div>
-      <button type="button" class="btn-remove-incident-pilot" data-index="${index}" style="background:#ef4444; color:#fff; border:none; border-radius:4px; cursor:pointer; padding:4px 8px;">X</button>
-    `;
-    container.appendChild(div);
-  });
-
-  // Gestion de la suppression d'un pilote de la liste
-  document.querySelectorAll(".btn-remove-incident-pilot").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const idx = e.target.getAttribute("data-index");
-      selectedPilots.splice(idx, 1);
-      updateIncidentList();
-    });
-  });
-
-  // Gestion du changement des points "Après"
-  document.querySelectorAll(".incident-after-input").forEach(input => {
-    input.addEventListener("input", (e) => {
-      const idx = e.target.getAttribute("data-index");
-      selectedPilots[idx].after = parseInt(e.target.value, 10) || 0;
-    });
-  });
-}
-
-// Ajout d'un pilote depuis le menu déroulant
-const pilotSelect = document.getElementById("incidentPilotSelect");
-if (pilotSelect) {
-  pilotSelect.addEventListener("change", async (e) => {
-    const uid = e.target.value;
-    if (!uid) return;
-    const name = e.target.options[e.target.selectedIndex].text;
+// 1. Soumission du formulaire de réclamation
+const reclamForm = document.getElementById("reclamForm");
+if (reclamForm) {
+  reclamForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
     
-    // Éviter les doublons
-    if (selectedPilots.some(p => p.uid === uid)) {
-      e.target.value = "";
-      return;
+    const submitBtn = document.getElementById("btnSubmitReclam");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="spinner"></div> Envoi...';
     }
 
     try {
-      const snap = await getDoc(doc(db, "users", uid));
-      let curPts = 10;
-      if (snap.exists()) {
-        curPts = snap.data().licensePoints ?? 10;
+      if (!currentUid) throw new Error("Vous devez être connecté pour soumettre une réclamation.");
+
+      // Récupération des valeurs du formulaire (Adapte les ID selon ton HTML si besoin)
+      const split = document.getElementById("reclamSplit")?.value || "";
+      const lap = document.getElementById("reclamLap")?.value || "";
+      const dateCourse = document.getElementById("reclamDate")?.value || "";
+      const incidentType = document.getElementById("reclamDesc")?.value || "";
+      
+      // Récupération des pilotes impliqués
+      let involvedPilots = [];
+      const involvedPilotsSelect = document.getElementById("reclamPilots");
+      if (involvedPilotsSelect) {
+        Array.from(involvedPilotsSelect.selectedOptions).forEach(opt => {
+          involvedPilots.push(opt.text);
+        });
       }
-      selectedPilots.push({
-        uid: uid,
-        name: name,
-        before: curPts,
-        after: curPts - 1 // Par défaut -1 point
-      });
-      updateIncidentList();
-      e.target.value = ""; // Reset du select
-    } catch (err) {
-      console.error(err);
-      if (typeof window.showToast === "function") window.showToast("Erreur lors de l'ajout du pilote", "error");
-    }
-  });
-}
 
-// Soumission du formulaire d'incident
-const btnSubmitIncident = document.getElementById("btnSubmitIncident");
-if (btnSubmitIncident) {
-  btnSubmitIncident.addEventListener("click", async () => {
-    const desc = document.getElementById("incidentDescription")?.value.trim();
-    if (!desc || selectedPilots.length === 0) {
-      if (typeof window.showToast === "function") window.showToast("Veuillez sélectionner au moins un pilote et saisir une description.", "error");
-      return;
-    }
-
-    btnSubmitIncident.disabled = true;
-    btnSubmitIncident.textContent = "Enregistrement...";
-
-    try {
       const payload = {
-        description: desc,
-        pilots: selectedPilots,
+        uid: currentUid,
+        split: split,
+        lap: lap,
+        dateCourse: dateCourse,
+        involvedPilots: involvedPilots,
+        incidentType: incidentType,
+        status: "en attente", // Statut initial
+        isTreated: false,
         createdAt: serverTimestamp()
       };
 
-      // 1. Ajouter l'incident
-      await addDoc(collection(db, "incidents"), payload);
-
-      // 2. Mettre à jour les points des pilotes
-      for (const p of selectedPilots) {
-        await updateDoc(doc(db, "users", p.uid), {
-          licensePoints: p.after
-        });
+      await addDoc(collection(db, "estacup_s10_reclamations"), payload);
+      
+      if (typeof window.showToast === "function") {
+        window.showToast("Réclamation envoyée avec succès !", "success");
+      }
+      
+      reclamForm.reset();
+      
+      // Recharger l'historique directement après l'envoi
+      if (typeof window.loadReclamHistory === "function") {
+        window.loadReclamHistory();
       }
 
-      // 3. Fermer la réclamation si un incident y est lié
-      if (activeClaimId) {
-        await updateDoc(doc(db, "estacup_s10_reclamations", activeClaimId), { 
-          isTreated: true, 
-          status: "traité" 
-        });
-        activeClaimId = null;
-        if (typeof loadReclamations === "function") loadReclamations();
+    } catch (error) {
+      console.error("Erreur lors de la soumission de la réclamation :", error);
+      if (typeof window.showToast === "function") {
+        window.showToast("Erreur : " + error.message, "error");
       }
-
-      if (typeof window.showToast === "function") window.showToast("Incident enregistré avec succès.", "success");
-
-      // Reset
-      document.getElementById("incidentDescription").value = "";
-      selectedPilots = [];
-      updateIncidentList();
-
-    } catch (err) {
-      console.error(err);
-      if (typeof window.showToast === "function") window.showToast("Erreur lors de l'enregistrement.", "error");
     } finally {
-      btnSubmitIncident.disabled = false;
-      btnSubmitIncident.textContent = "Enregistrer l'incident";
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Soumettre la réclamation';
+      }
     }
   });
 }
 
-// Chargement et gestion des Réclamations
-window.loadReclamations = async function() {
-  const tbody = document.querySelector("#tableReclamations tbody");
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Chargement...</td></tr>`;
+
+// 2. Affichage de l'historique et du statut des réclamations du pilote
+window.loadReclamHistory = async function() {
+  const container = document.getElementById("reclamHistory");
+  if (!container || !currentUid) return;
+
+  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Recherche de vos réclamations...</div>`;
 
   try {
-    const q = query(collection(db, "estacup_s10_reclamations"));
+    const q = query(collection(db, "estacup_s10_reclamations"), where("uid", "==", currentUid));
     const snap = await getDocs(q);
-    
+
     if (snap.empty) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Aucune réclamation trouvée.</td></tr>`;
+      container.innerHTML = `<p class="muted-note">Vous n'avez soumis aucune réclamation.</p>`;
       return;
     }
 
-    let html = "";
+    let html = `<h4 style="color: var(--accent-primary); margin-bottom: 15px;">Suivi de vos réclamations</h4>`;
     const recs = [];
-    snap.forEach(d => recs.push({ id: d.id, ...d.data() }));
-
+    snap.forEach(d => recs.push({id: d.id, ...d.data()}));
+    
     // Tri par date décroissante
-    recs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    recs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
     recs.forEach(r => {
-      const isTreated = r.isTreated === true;
-      const statusLabel = isTreated ? '✅ Traitée' : (r.status === 'en cours' ? '🛠️ En cours' : '⏳ En attente');
-      
-      let pilotesHTML = "";
-      if (r.involvedPilots && r.involvedPilots.length > 0) {
-        pilotesHTML = r.involvedPilots.map(p => `<span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-right:4px;">${escapeHtml(p)}</span>`).join("");
-      } else {
-        pilotesHTML = "-";
+      let statusText = "Non traité";
+      let statusColor = "#f59e0b"; // Orange (En attente)
+
+      if (r.status === "en cours") {
+        statusText = "En cours de traitement";
+        statusColor = "#38bdf8"; // Bleu
+      } else if (r.status === "traité" || r.isTreated) {
+        statusText = "Traité";
+        statusColor = "#10b981"; // Vert
       }
 
       html += `
-        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${isTreated ? 'rgba(16, 185, 129, 0.05)' : (r.status === 'en cours' ? 'rgba(56, 189, 248, 0.05)' : 'transparent')}">
-          <td>${r.dateCourse || "-"}</td>
-          <td>${escapeHtml(r.split || "-")}</td>
-          <td>${escapeHtml(r.lap || "-")}</td>
-          <td>${pilotesHTML}</td>
-          <td><div style="max-height:80px; overflow-y:auto; font-size:0.85rem; color:#cbd5e1;">${escapeHtml(r.incidentType || "-")}</div></td>
-          <td><span style="font-weight:bold; font-size:0.85rem; color:${isTreated ? '#10b981' : (r.status === 'en cours' ? '#38bdf8' : '#f59e0b')};">${statusLabel}</span></td>
-          <td>
-            ${!isTreated ? `
-              <button class="btn-process-reclam" data-id="${r.id}" data-course="${r.dateCourse || ''}" data-pilotes='${JSON.stringify(r.involvedPilots || [])}' style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;">
-                🛠️ Ouvrir l'incident
-              </button>
-            ` : `<span style="color:#64748b; font-size:0.85rem;">Clôturé</span>`}
-          </td>
-        </tr>
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${statusColor}; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+            <strong style="color: #fff;">${escapeHtml(r.split || "Split Inconnu")} - Tour ${escapeHtml(r.lap || "?")}</strong>
+            <span style="background: rgba(255,255,255,0.05); border: 1px solid ${statusColor}; color: ${statusColor}; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: bold;">
+              ${statusText}
+            </span>
+          </div>
+          <p style="margin: 0; color: #cbd5e1; font-size: 0.9rem;"><strong>Incident :</strong> ${escapeHtml(r.incidentType || "Non renseigné")}</p>
+        </div>
       `;
     });
-    tbody.innerHTML = html;
 
-    // Événement d'ouverture et de liaison de la réclamation avec le formulaire d'incident
-    document.querySelectorAll(".btn-process-reclam").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const id = e.target.getAttribute("data-id");
-        const pilotesNames = JSON.parse(e.target.getAttribute("data-pilotes") || "[]");
-
-        e.target.disabled = true; 
-        e.target.textContent = "Ouverture...";
-
-        try {
-          // 1. Passer la réclamation "en cours"
-          await updateDoc(doc(db, "estacup_s10_reclamations", id), { status: "en cours" });
-          activeClaimId = id;
-          loadReclamations();
-
-          // 2. Pré-remplir le formulaire d'incident
-          selectedPilots = [];
-          const select = document.getElementById("incidentPilotSelect");
-          
-          for (const pName of pilotesNames) {
-            const cleanName = pName.replace("👤", "").trim();
-            let matchedUid = null;
-            
-            Array.from(select.options).forEach(opt => {
-              if (opt.text.includes(cleanName) || cleanName.includes(opt.text)) matchedUid = opt.value;
-            });
-
-            if (matchedUid && !selectedPilots.some(p => p.uid === matchedUid)) {
-              const snap = await getDoc(doc(db, "users", matchedUid));
-              if (snap.exists()) {
-                const curPts = snap.data().licensePoints ?? 10;
-                selectedPilots.push({ uid: matchedUid, name: cleanName, before: curPts, after: curPts - 1 });
-              }
-            }
-          }
-          updateIncidentList();
-
-          // 3. Pré-remplir le format de description
-          const descField = document.getElementById("incidentDescription");
-          if (descField) {
-            descField.value = "Pénalité sur la course : +0s\n" +
-                              "Pénalité sur la licence : -1 Point(s) M-Safety par pilote\n" +
-                              "Description du choix : ";
-          }
-
-          // 4. Scroller vers le formulaire pour faciliter l'UX
-          if (select) select.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        } catch (error) {
-          console.error(error);
-          if (typeof window.showToast === "function") window.showToast("❌ Erreur d'ouverture.", "error");
-          e.target.disabled = false; 
-          e.target.textContent = "🛠️ Ouvrir l'incident";
-        }
-      });
-    });
-
-  } catch (err) {
-    console.error("Erreur loadReclamations:", err);
-    tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Erreur de chargement</td></tr>`;
+    container.innerHTML = html;
+  } catch (e) {
+    console.error("Erreur historique réclamations:", e);
+    container.innerHTML = `<p class="impact-bad" style="color: #ef4444;">Erreur lors du chargement de l'historique.</p>`;
   }
 };
 
