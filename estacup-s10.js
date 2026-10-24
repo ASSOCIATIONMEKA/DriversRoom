@@ -2116,82 +2116,143 @@ async function renderLiverySection() {
 
 /* ======================== RÉCLAMATIONS ======================== */
 
-const RECLAMATIONS_RACES_LIST = [
-  { id: "prologue", title: "Prologue", track: "Silverstone", dateObj: new Date("2026-09-22T20:00:00") },
-  { id: "manche1", title: "Manche 1", track: "Brno", dateObj: new Date("2026-10-06T20:00:00") },
-  { id: "manche2", title: "Manche 2", track: "Fuji / Okayama", dateObj: new Date("2026-10-20T20:00:00") },
-  { id: "manche3", title: "Manche 3", track: "Valence", dateObj: new Date("2026-11-24T20:00:00") },
-  { id: "manche4", title: "Manche 4", track: "Sydney", dateObj: new Date("2026-12-08T20:00:00") },
-  { id: "manche5", title: "Manche 5", track: "Road America / Montréal", dateObj: new Date("2027-01-19T20:00:00") },
-  { id: "manche6", title: "Manche 6", track: "Interlagos", dateObj: new Date("2027-02-02T20:00:00") }
-];
-
-window.updateReclamationsUI = function() {
-  const container = document.getElementById("reclamFormContainer");
-  const closedMsg = document.getElementById("reclamClosedMsg");
-  const alertBox = document.getElementById("reclamDeadlineAlert");
-  if (!container || !closedMsg) return;
-
-  const now = new Date();
-  let activeRace = null;
-
-  for (const race of RECLAMATIONS_RACES_LIST) {
-    const raceStart = new Date(race.dateObj.getTime());
-    const raceEnd = new Date(race.dateObj.getTime());
-    raceEnd.setDate(raceEnd.getDate() + 4); // +4 jours = samedi
-    raceEnd.setHours(16, 0, 0, 0); // Fermeture à 16h00 pile
-
-    if (now >= raceStart && now <= raceEnd) {
-      activeRace = race;
-      break;
-    }
-  }
-
-  const adminToggle = document.getElementById("adminViewToggle");
-  const adminContainer = document.getElementById("adminViewToggleContainer");
-  const isEffectiveAdmin = adminToggle && adminToggle.checked && adminContainer && !adminContainer.classList.contains("hidden");
-
-  if (activeRace || isEffectiveAdmin) {
-    container.style.display = "block";
-    // Initialisation du nom du pilote pour le système d'implication
-    const nameEl = document.getElementById("fullName");
-    currentPilotNameForReclam = nameEl ? nameEl.textContent : "Pilote";
-    if (typeof window.renderReclamPilots === "function") window.renderReclamPilots();
-    // Charger la liste déroulante des pilotes
-    if (typeof window.populateReclamPilotsSelect === "function") window.populateReclamPilotsSelect();
-    closedMsg.style.display = "none";
+// 1. Soumission du formulaire de réclamation
+const reclamForm = document.getElementById("reclamForm");
+if (reclamForm) {
+  reclamForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
     
-    // --- MISE À JOUR DU TITRE DE LA COURSE ---
-    const titleEl = document.getElementById("reclamActiveRaceTitle");
-    if (titleEl) {
-      if (activeRace) {
-        titleEl.innerHTML = `🏎️ Course concernée : <strong style="color: #fff;">${activeRace.title} (${activeRace.track})</strong>`;
-        // On stocke la date discrètement dans la balise HTML pour l'envoyer dans Firebase plus tard
-        titleEl.dataset.raceDate = activeRace.dateObj.toISOString().split('T')[0];
-      } else {
-        titleEl.innerHTML = `🏎️ Course concernée : <strong style="color: #fff;">Non définie (Forcée par l'Admin)</strong>`;
-        titleEl.dataset.raceDate = new Date().toISOString().split('T')[0]; // Date du jour
-      }
+    const submitBtn = document.getElementById("btnSubmitReclam");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="spinner"></div> Envoi...';
     }
 
-    if (!activeRace && isEffectiveAdmin) {
-      if (alertBox) {
-        alertBox.innerHTML = `🛠️ <strong>Mode Admin :</strong> Le formulaire est fermé pour les pilotes, mais il vous est accessible.`;
-        alertBox.style.display = "block";
+    try {
+      if (!currentUid) throw new Error("Vous devez être connecté pour soumettre une réclamation.");
+
+      // Récupération des valeurs du formulaire (Adapte les ID selon ton HTML si besoin)
+      const split = document.getElementById("reclamSplit")?.value || "";
+      const lap = document.getElementById("reclamLap")?.value || "";
+      const dateCourse = document.getElementById("reclamDate")?.value || "";
+      const incidentType = document.getElementById("reclamDesc")?.value || "";
+      
+      // Récupération des pilotes impliqués
+      let involvedPilots = [];
+      const involvedPilotsSelect = document.getElementById("reclamPilots");
+      if (involvedPilotsSelect) {
+        Array.from(involvedPilotsSelect.selectedOptions).forEach(opt => {
+          involvedPilots.push(opt.text);
+        });
       }
-    } else if (activeRace) {
-      if (alertBox) {
-          alertBox.innerHTML = `⚠️ <strong>Rappel :</strong> Les réclamations pour la <strong>${activeRace.title}</strong> sont ouvertes jusqu'au <strong>samedi à 16h00</strong>.`;
-          alertBox.style.display = "block";
+
+      const payload = {
+        uid: currentUid,
+        split: split,
+        lap: lap,
+        dateCourse: dateCourse,
+        involvedPilots: involvedPilots,
+        incidentType: incidentType,
+        status: "en attente", // Statut initial
+        isTreated: false,
+        createdAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, "estacup_s10_reclamations"), payload);
+      
+      if (typeof window.showToast === "function") {
+        window.showToast("Réclamation envoyée avec succès !", "success");
+      }
+      
+      reclamForm.reset();
+      
+      // Recharger l'historique directement après l'envoi
+      if (typeof window.loadReclamHistory === "function") {
+        window.loadReclamHistory();
+      }
+
+    } catch (error) {
+      console.error("Erreur lors de la soumission de la réclamation :", error);
+      if (typeof window.showToast === "function") {
+        window.showToast("Erreur : " + error.message, "error");
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Soumettre la réclamation';
       }
     }
-  } else {
-    // Fermé pour les pilotes
-    container.style.display = "none";
-    closedMsg.style.display = "block";
-    if (alertBox) alertBox.style.display = "none";
+  });
+}
+
+
+// 2. Affichage de l'historique et du statut des réclamations du pilote
+window.loadReclamHistory = async function() {
+  const container = document.getElementById("reclamHistory");
+  if (!container || !currentUid) return;
+
+  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Recherche de vos réclamations...</div>`;
+
+  try {
+    const q = query(collection(db, "estacup_s10_reclamations"), where("uid", "==", currentUid));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      container.innerHTML = `<p class="muted-note">Vous n'avez soumis aucune réclamation.</p>`;
+      return;
+    }
+
+    let html = `<h4 style="color: var(--accent-primary); margin-bottom: 15px;">Suivi de vos réclamations</h4>`;
+    const recs = [];
+    snap.forEach(d => recs.push({id: d.id, ...d.data()}));
+    
+    // Tri par date décroissante
+    recs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    recs.forEach(r => {
+      let statusText = "Non traité";
+      let statusColor = "#f59e0b"; // Orange (En attente)
+
+      if (r.status === "en cours") {
+        statusText = "En cours de traitement";
+        statusColor = "#38bdf8"; // Bleu
+      } else if (r.status === "traité" || r.isTreated) {
+        statusText = "Traité";
+        statusColor = "#10b981"; // Vert
+      }
+
+      html += `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${statusColor}; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+            <strong style="color: #fff;">${escapeHtml(r.split || "Split Inconnu")} - Tour ${escapeHtml(r.lap || "?")}</strong>
+            <span style="background: rgba(255,255,255,0.05); border: 1px solid ${statusColor}; color: ${statusColor}; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: bold;">
+              ${statusText}
+            </span>
+          </div>
+          <p style="margin: 0; color: #cbd5e1; font-size: 0.9rem;"><strong>Incident :</strong> ${escapeHtml(r.incidentType || "Non renseigné")}</p>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (e) {
+    console.error("Erreur historique réclamations:", e);
+    container.innerHTML = `<p class="impact-bad" style="color: #ef4444;">Erreur lors du chargement de l'historique.</p>`;
   }
 };
+
+// Fonction utilitaire pour échapper le HTML (si non déclarée ailleurs)
+if (typeof escapeHtml !== "function") {
+  window.escapeHtml = function(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+}
 
 // Fonction pour récupérer la grille et remplir le menu déroulant
 window.populateReclamPilotsSelect = async function() {
