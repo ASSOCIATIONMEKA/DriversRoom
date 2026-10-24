@@ -1826,32 +1826,48 @@ async function loadReclamations() {
       });
     });
 
-    // Événement : Supprimer une réclamation
+    // Événement : Supprimer une réclamation (Confirmation intégrée UI)
     document.querySelectorAll(".btn-delete-reclam").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        // e.target.closest permet de s'assurer qu'on cible bien le bouton même si on clique sur l'émoji
+      btn.addEventListener("click", (e) => {
         const targetBtn = e.target.closest(".btn-delete-reclam");
         if (!targetBtn) return;
-        
         const id = targetBtn.getAttribute("data-id");
         
-        if (confirm("Êtes-vous sûr de vouloir supprimer définitivement cette réclamation ?")) {
-          targetBtn.disabled = true;
-          targetBtn.style.opacity = "0.5";
-          
+        // On cache le bouton poubelle temporairement
+        targetBtn.style.display = "none";
+        
+        // On crée l'encart de confirmation HTML
+        const confirmBox = document.createElement("div");
+        confirmBox.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 4px 10px; border-radius: 6px; margin-left: 5px;";
+        confirmBox.innerHTML = `
+          <span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">Supprimer ?</span>
+          <button class="btn-yes" style="background: #ef4444; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Oui</button>
+          <button class="btn-no" style="background: #64748b; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">Non</button>
+        `;
+        
+        // On insère l'encart juste après le bouton poubelle
+        targetBtn.parentNode.insertBefore(confirmBox, targetBtn.nextSibling);
+        
+        // Action OUI (Suppression)
+        confirmBox.querySelector(".btn-yes").addEventListener("click", async () => {
+          confirmBox.innerHTML = `<span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">Suppression en cours...</span>`;
           try {
             await deleteDoc(doc(db, "estacup_s10_reclamations", id));
-            if (typeof window.showToast === "function") window.showToast("🗑️ Réclamation supprimée avec succès.", "success");
-            
-            // On recharge la liste pour faire disparaître la réclamation
+            if (typeof window.showToast === "function") window.showToast("🗑️ Réclamation supprimée.", "success");
             loadReclamations(); 
           } catch (error) {
-            console.error("Erreur lors de la suppression de la réclamation:", error);
-            if (typeof window.showToast === "function") window.showToast("❌ Erreur de suppression.", "error");
-            targetBtn.disabled = false;
-            targetBtn.style.opacity = "1";
+            console.error("Erreur:", error);
+            if (typeof window.showToast === "function") window.showToast("❌ Erreur.", "error");
+            confirmBox.remove();
+            targetBtn.style.display = ""; // Réaffiche la poubelle en cas d'erreur
           }
-        }
+        });
+        
+        // Action NON (Annulation)
+        confirmBox.querySelector(".btn-no").addEventListener("click", () => {
+          confirmBox.remove();
+          targetBtn.style.display = ""; // Réaffiche la poubelle
+        });
       });
     });
 
@@ -2287,28 +2303,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Écouteur global pour la suppression des incidents (Délégation d'événements)
-document.addEventListener("click", async (e) => {
-  // Cherche si l'élément cliqué (ou son parent) est un bouton poubelle d'incident
+// Écouteur global pour la suppression des incidents (Confirmation intégrée UI)
+document.addEventListener("click", (e) => {
   const trashBtn = e.target.closest(".btn-delete-incident, .delete-incident-btn, button[data-id][title='Supprimer']");
   
-  if (trashBtn) {
+  // Si on clique sur une poubelle qui n'est pas déjà masquée
+  if (trashBtn && trashBtn.style.display !== "none") {
     const incidentId = trashBtn.getAttribute("data-id");
+    if (!incidentId) return;
+
+    trashBtn.style.display = "none";
     
-    // Si ce bouton appartient bien à la section des incidents (pour ne pas bloquer d'autres poubelles)
-    if (incidentId && confirm("Êtes-vous sûr de vouloir supprimer cet incident ?")) {
+    const confirmBox = document.createElement("div");
+    confirmBox.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 4px 10px; border-radius: 6px; margin-left: 10px;";
+    confirmBox.innerHTML = `
+      <span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">Sûr ?</span>
+      <button class="btn-yes" style="background: #ef4444; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Oui</button>
+      <button class="btn-no" style="background: #64748b; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">Non</button>
+    `;
+
+    trashBtn.parentNode.insertBefore(confirmBox, trashBtn.nextSibling);
+
+    confirmBox.querySelector(".btn-yes").addEventListener("click", async () => {
+      confirmBox.innerHTML = `<span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">Suppression...</span>`;
       try {
         await deleteDoc(doc(db, "incidents", incidentId));
-        if (typeof window.showToast === "function") window.showToast("🗑️ Incident supprimé avec succès.", "success");
-        
-        // Relancez votre fonction d'affichage des incidents (modifiez ce nom si le vôtre est différent, ex: fetchIncidents, displayIncidents...)
+        if (typeof window.showToast === "function") window.showToast("🗑️ Incident supprimé.", "success");
         if (typeof loadIncidents === "function") {
             loadIncidents();
+        } else if (typeof updateIncidentList === "function") {
+            updateIncidentList();
         }
       } catch (error) {
-        console.error("Erreur lors de la suppression de l'incident:", error);
-        if (typeof window.showToast === "function") window.showToast("❌ Erreur de suppression.", "error");
+        console.error("Erreur de suppression incident:", error);
+        if (typeof window.showToast === "function") window.showToast("❌ Erreur.", "error");
+        confirmBox.remove();
+        trashBtn.style.display = ""; 
       }
-    }
+    });
+
+    confirmBox.querySelector(".btn-no").addEventListener("click", () => {
+      confirmBox.remove();
+      trashBtn.style.display = ""; 
+    });
   }
 });
