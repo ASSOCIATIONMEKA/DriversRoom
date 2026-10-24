@@ -1429,7 +1429,11 @@
       deadline.setHours(16, 0, 0, 0);
       const isLocked = now >= deadline;
 
-      if (diffDays > 7) {
+      // --- 1. AJOUT DE L'EXCEPTION VUE ADMIN ---
+      const effectiveAdmin = isAdmin && adminViewActive;
+
+      // On bloque si on est à plus de 7 jours ET qu'on n'est PAS admin
+      if (diffDays > 7 && !effectiveAdmin) {
         container.innerHTML = `
           <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
             <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">⏳ Aucun formulaire de présence ouvert pour le moment.</p>
@@ -1437,6 +1441,16 @@
           </div>
         `;
         return;
+      }
+
+      // --- 2. AJOUT DE L'AVERTISSEMENT VISUEL POUR L'ADMIN ---
+      let adminWarningHtml = "";
+      if (diffDays > 7 && effectiveAdmin) {
+        adminWarningHtml = `
+          <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #f59e0b; padding: 10px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold;">
+              ⚠️ VUE ADMIN : Ce formulaire est masqué pour les pilotes (ouvre dans ${Math.ceil(diffDays - 7)} jours), mais son affichage est forcé pour vous.
+          </div>
+        `;
       }
 
       if (isAdmin && typeof window.showRestrictedFeatures === "function") {
@@ -1464,7 +1478,9 @@
           </div>`;
       }
 
+      // --- 3. INJECTION DE L'AVERTISSEMENT JUSTE AVANT LE FORMULAIRE ---
       container.innerHTML = `
+        ${adminWarningHtml}
         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
           <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.8rem;">Présence ${mancheNom} S10 — ${circuitNom.toUpperCase()} — ${nextRace.dateStr} ${nextRace.time}</h4>
           
@@ -1560,45 +1576,3 @@
         }
       });
     }
-
-    window.togglePresence = async function(raceId, status) {
-      if (!currentUser) {
-        if(typeof window.showToast === "function") window.showToast("⚠ Vous devez être connecté pour indiquer votre présence.", "warning");
-        window.location.href = "login.html";
-        return;
-      }
-
-      // 🕒 VÉRIFICATION DE LA DEADLINE CÔTÉ BOUTON
-      const now = new Date();
-      let nextRace = racesList.find(r => r.id === raceId);
-      if (nextRace) {
-        const deadline = new Date(nextRace.dateObj.getTime());
-        deadline.setHours(16, 0, 0, 0);
-        if (now >= deadline) {
-          if(typeof window.showToast === "function") window.showToast("🔒 Les inscriptions sont closes depuis 16h00.", "error");
-          return;
-        }
-      }
-
-      try {
-        const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists() && docSnap.data().status === status) {
-          await deleteDoc(docRef);
-        } else {
-          await setDoc(docRef, {
-            userId: currentUser.uid,
-            userName: currentUserName,
-            status: status,
-            timestamp: new Date()
-          });
-        }
-      } catch (err) {
-        console.error("Erreur lors de la modification de la présence :", err);
-        if(typeof window.showToast === "function") window.showToast("❌ Une erreur est survenue. Veuillez réessayer.", "error");
-      }
-    };
-  </script>
-</body>
-</html>
