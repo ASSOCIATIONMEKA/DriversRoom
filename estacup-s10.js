@@ -2447,6 +2447,64 @@ if (btnSubmitReclam) {
   });
 }
 
+window.loadReclamHistory = async function() {
+  const container = document.getElementById("reclamHistory");
+  if (!container || !currentUid) return;
+  
+  container.innerHTML = `<div class="loading-inline"><div class="spinner"></div> Chargement de vos réclamations...</div>`;
+  
+  try {
+    const q = query(collection(db, "estacup_s10_reclamations"), where("uid", "==", currentUid));
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+      container.innerHTML = `<div style="background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); text-align: center;"><p class="muted-note" style="margin: 0;">Vous n'avez soumis aucune réclamation.</p></div>`;
+      return;
+    }
+    
+    let reclamations = [];
+    snap.forEach(d => reclamations.push(d.data()));
+    reclamations.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    
+    let html = `<h4 style="color: var(--accent-primary); margin-top: 10px; margin-bottom: 15px;">Historique de vos réclamations</h4>`;
+    
+    reclamations.forEach(r => {
+      let statusColor = "#f59e0b";
+      let statusLabel = "⏳ Non traité";
+      
+      if (r.status === "En cours de traitement") { 
+          statusColor = "#38bdf8"; 
+          statusLabel = "⚙️ En cours de traitement"; 
+      } else if (r.status === "traité" || r.isTreated) { 
+          statusColor = "#10b981"; 
+          statusLabel = "✅ Traité"; 
+      }
+      
+      html += `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid ${statusColor}; border-left: 4px solid ${statusColor}; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+            <strong style="color: #fff; font-size: 1.1rem;">Course : ${escapeHtml(r.split || 'Course')} (Tour ${escapeHtml(r.lap)})</strong>
+            <span style="background: ${statusColor}22; color: ${statusColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${statusColor};">
+              ${statusLabel}
+            </span>
+          </div>
+          <p style="margin: 0 0 5px 0; font-size: 0.9rem; color: #94a3b8;"><strong>Type :</strong> ${escapeHtml(r.incidentType)}</p>
+          <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #94a3b8;"><strong>Impliqués :</strong> ${escapeHtml((r.involvedPilots || []).join(', '))}</p>
+          <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; color: #cbd5e1; font-size: 0.9rem;">
+            ${escapeHtml(r.description)}
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+    
+  } catch (err) {
+    console.error("Erreur historique réclamations:", err);
+    container.innerHTML = `<p class="impact-bad">Erreur lors du chargement de l'historique.</p>`;
+  }
+};
+
 /* ======================== GLOBE 3D & CALENDRIER ======================== */
 let globeInitialized = false;
 
