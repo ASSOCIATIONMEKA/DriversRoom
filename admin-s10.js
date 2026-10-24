@@ -827,7 +827,6 @@ function computeEloUpdates(rankingArr, ratingsMap, K = 32) {
 
 /* ---------------- Incidents & Pénalités ---------------- */
 
-let selectedPilots = [];
 let activeClaimId = null; // Variable pour lier une réclamation à un incident
 
 // Met à jour l'affichage des pilotes sélectionnés pour un incident
@@ -1099,6 +1098,7 @@ if (typeof escapeHtml !== "function") {
       .replace(/'/g, "&#039;");
   };
 }
+
 /* ======================== HISTORIQUE DES INCIDENTS ======================== */
 async function loadIncidentHistory() {
   const box = document.getElementById("incidentHistory");
