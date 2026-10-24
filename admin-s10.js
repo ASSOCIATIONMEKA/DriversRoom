@@ -1739,7 +1739,7 @@ async function loadReclamations() {
                   </button>
                 ` : ''}
                 ${r.status === 'En cours de traitement' ? `
-                  <button class="btn-resume-reclam" data-id="${r.id}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
+                  <button class="" data-id="${r.id}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
                     🔄 Reprendre la liaison
                   </button>
                 ` : ''}
@@ -1823,6 +1823,35 @@ async function loadReclamations() {
         updateIncidentList();
         document.getElementById("addIncidentPilot").scrollIntoView({ behavior: "smooth", block: "center" });
         if (typeof window.showToast === "function") window.showToast("🔄 Liaison récupérée. Vous pouvez valider l'incident.", "info");
+      });
+    });
+
+    // Événement : Supprimer une réclamation
+    document.querySelectorAll(".btn-delete-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        // e.target.closest permet de s'assurer qu'on cible bien le bouton même si on clique sur l'émoji
+        const targetBtn = e.target.closest(".btn-delete-reclam");
+        if (!targetBtn) return;
+        
+        const id = targetBtn.getAttribute("data-id");
+        
+        if (confirm("Êtes-vous sûr de vouloir supprimer définitivement cette réclamation ?")) {
+          targetBtn.disabled = true;
+          targetBtn.style.opacity = "0.5";
+          
+          try {
+            await deleteDoc(doc(db, "estacup_s10_reclamations", id));
+            if (typeof window.showToast === "function") window.showToast("🗑️ Réclamation supprimée avec succès.", "success");
+            
+            // On recharge la liste pour faire disparaître la réclamation
+            loadReclamations(); 
+          } catch (error) {
+            console.error("Erreur lors de la suppression de la réclamation:", error);
+            if (typeof window.showToast === "function") window.showToast("❌ Erreur de suppression.", "error");
+            targetBtn.disabled = false;
+            targetBtn.style.opacity = "1";
+          }
+        }
       });
     });
 
