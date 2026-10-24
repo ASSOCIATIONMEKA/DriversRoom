@@ -1298,36 +1298,46 @@
 
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
-      if (!user) return;
-
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          currentUserName = data.name || (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) || data.pseudo || user.email;
-          isAdmin = data.admin === true;
-        } else {
+      
+      // On gère d'abord l'état déconnecté pour ne pas bloquer l'interface
+      if (!user) {
+        currentUserName = "Visiteur";
+        isAdmin = false;
+        isUserValidated = false;
+        userTeamName = "";
+      } else {
+        // L'utilisateur est connecté, on récupère ses données
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            currentUserName = data.name || (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) || data.pseudo || user.email;
+            isAdmin = data.admin === true;
+          } else {
+            currentUserName = user.email;
+            isAdmin = false;
+          }
+        } catch(e) {
           currentUserName = user.email;
           isAdmin = false;
         }
-      } catch(e) {
-        currentUserName = user.email;
-        isAdmin = false;
+
+        try {
+          const signupDoc = await getDoc(doc(db, "estacup_s10_signups", user.uid));
+          if (signupDoc.exists()) {
+            const sData = signupDoc.data();
+            isUserValidated = sData.isValidated === true;
+            userTeamName = (sData.teamName || "").trim().toLowerCase();
+          } else {
+            isUserValidated = false;
+            userTeamName = "";
+          }
+        } catch(e) {
+          console.error("Erreur de vérification de l'inscription:", e);
+        }
       }
 
-      try {
-        const signupDoc = await getDoc(doc(db, "estacup_s10_signups", user.uid));
-        if (signupDoc.exists()) {
-          const sData = signupDoc.data();
-          isUserValidated = sData.isValidated === true;
-          userTeamName = (sData.teamName || "").trim().toLowerCase();
-        } else {
-          isUserValidated = false;
-          userTeamName = "";
-        }
-      } catch(e) {
-        console.error("Erreur de vérification de l'inscription:", e);
-      }
+      // --- LA SUITE DU SCRIPT S'EXÉCUTE QUE L'ON SOIT CONNECTÉ OU NON ---
 
       const toggleContainer = document.getElementById("adminViewToggleContainer");
       if (isAdmin) {
