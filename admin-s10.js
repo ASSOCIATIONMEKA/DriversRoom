@@ -31,6 +31,7 @@ const db = getFirestore(app);
 
 /* ---------------- State ---------------- */
 let ranking = [];
+let currentProcessingReclamId = null;
 let selectedPilots = [];
 let courseMap = new Map();
 const selectedUIDs = new Set();
@@ -896,14 +897,19 @@ function updateIncidentList() {
 }
 
 document.getElementById("submitIncident")?.addEventListener("click", async () => {
-  const description = document.getElementById("incidentDescription")?.value.trim();
+  const timePenalty = document.getElementById("incidentTimePenalty")?.value.trim() || "Aucune";
+  const descText = document.getElementById("incidentDescription")?.value.trim();
   const raceId = document.getElementById("incidentRaceSelect")?.value || null;
   const btn = document.getElementById("submitIncident");
 
-  if (!description || selectedPilots.length === 0) { 
+  if (!descText || selectedPilots.length === 0) { 
     if (typeof window.showToast === "function") window.showToast("⚠️ Description et au moins un pilote impacté requis.", "warning"); 
     return; 
   }
+
+  // Formatage final de la description
+  const mSafetyDesc = selectedPilots.map(p => `${p.name} : ${p.before} -> ${p.after} pts`).join(" | ");
+  const description = `Pénalité sur la course : ${timePenalty}\nPénalité sur la licence (M-Safety) : ${mSafetyDesc}\n\nDescription du choix de la pénalité :\n${descText}`;
 
   btn.disabled = true;
   btn.textContent = "Enregistrement en cours...";
@@ -920,6 +926,18 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
 
   try {
     await addDoc(collection(db, "incidents"), payload);
+
+    // Si lié à une réclamation, on la ferme
+    if (currentProcessingReclamId) {
+        await updateDoc(doc(db, "estacup_s10_reclamations", currentProcessingReclamId), { 
+            isTreated: true, 
+            status: "traité" 
+        });
+        currentProcessingReclamId = null;
+        const alertEl = document.getElementById("linkedReclamAlert");
+        if(alertEl) alertEl.style.display = "none";
+        document.getElementById("incidentTimePenalty").value = "";
+    }
 
     for (const p of selectedPilots) {
       await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
@@ -1679,8 +1697,8 @@ async function loadReclamations() {
                 <strong style="color: #fff; font-size: 1.15rem; display: block; margin-bottom: 4px;">Demandeur : ${escapeHtml(r.piloteName)}</strong>
               </div>
               <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="background: ${isTreated ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${borderColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${borderColor};">
-                  ${isTreated ? '✅ Traitée' : '⏳ En attente'}
+                <span style="background: ${r.status === 'traité' || r.isTreated ? 'rgba(16, 185, 129, 0.15)' : (r.status === 'En cours de traitement' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)')}; color: ${r.status === 'traité' || r.isTreated ? '#10b981' : (r.status === 'En cours de traitement' ? '#38bdf8' : '#f59e0b')}; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid ${r.status === 'traité' || r.isTreated ? '#10b981' : (r.status === 'En cours de traitement' ? '#38bdf8' : '#f59e0b')};">
+                  ${r.status === 'traité' || r.isTreated ? '✅ Traitée' : (r.status === 'En cours de traitement' ? '⚙️ En cours' : '⏳ Non traité')}
                 </span>
                 <button class="btn-delete-reclam" data-id="${r.id}" title="Supprimer définitivement" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; padding: 4px 8px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444';">🗑️</button>
               </div>
@@ -1715,10 +1733,13 @@ async function loadReclamations() {
               
               <div style="display: flex; align-items: center; gap: 15px;">
                 <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">Soumise le ${dateSoumission}</span>
-                ${!isTreated ? `
-                  <button class="btn-treat-reclam" data-id="${r.id}" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='#fff';" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'; this.style.color='#10b981';">
-                    ✔️ Marquer comme traitée
+                ${(!r.isTreated && r.status !== 'En cours de traitement') ? `
+                  <button class="btn-start-reclam" data-id="${r.id}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
+                    ⚙️ Ouvrir pour traiter
                   </button>
+                ` : ''}
+                ${r.status === 'En cours de traitement' ? `
+                  <span style="color: #38bdf8; font-size: 0.9rem; font-weight: bold; padding: 8px 15px;">👉 Allez créer l'incident ci-dessous</span>
                 ` : ''}
               </div>
             </div>
@@ -1732,33 +1753,42 @@ async function loadReclamations() {
     html += `</div>`;
     box.innerHTML = html;
 
-    // Événement : Valider une réclamation
-    document.querySelectorAll(".btn-treat-reclam").forEach(btn => {
+    // Événement : Commencer à traiter une réclamation
+    document.querySelectorAll(".btn-start-reclam").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const id = e.target.getAttribute("data-id");
-        e.target.disabled = true; e.target.textContent = "Mise à jour...";
+        const involvedPilots = JSON.parse(e.target.getAttribute("data-pilots") || "[]");
+        
+        e.target.disabled = true; e.target.textContent = "Ouverture...";
         try {
-          await updateDoc(doc(db, "estacup_s10_reclamations", id), { isTreated: true, status: "traité" });
-          if (typeof window.showToast === "function") window.showToast("✅ Réclamation marquée comme traitée.", "success");
+          await updateDoc(doc(db, "estacup_s10_reclamations", id), { status: "En cours de traitement" });
+          if (typeof window.showToast === "function") window.showToast("⚙️ Réclamation en cours de traitement.", "info");
+          
+          currentProcessingReclamId = id;
+          document.getElementById("linkedReclamAlert").style.display = "block";
+          
+          // Ajout automatique des pilotes impliqués dans l'incident
+          selectedPilots = [];
+          for (const pName of involvedPilots) {
+             const lowerName = pName.toLowerCase().replace('👤 ', '').trim();
+             const found = ImportState.usersCache.find(u => lowerName.includes(u.lastName.toLowerCase()));
+             if (found) {
+                const snap = await getDoc(doc(db, "users", found.id));
+                if (snap.exists()) {
+                   const d = snap.data();
+                   if(!selectedPilots.some(sp => sp.uid === found.id)) {
+                       selectedPilots.push({ uid: found.id, name: found.name, before: d.licensePoints ?? 10, after: (d.licensePoints ?? 10) - 1 });
+                   }
+                }
+             }
+          }
+          updateIncidentList();
+          document.getElementById("addIncidentPilot").scrollIntoView({ behavior: "smooth", block: "center" });
+          
           loadReclamations(); 
         } catch (error) {
           if (typeof window.showToast === "function") window.showToast("❌ Erreur.", "error");
-          e.target.disabled = false; e.target.textContent = "✔️ Marquer comme traitée";
-        }
-      });
-    });
-
-    // Événement : Supprimer une réclamation
-    document.querySelectorAll(".btn-delete-reclam").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        if (!(await showConfirm("Êtes-vous sûr de vouloir supprimer définitivement cette réclamation de la base de données ?"))) return;
-        const id = e.currentTarget.getAttribute("data-id");
-        try {
-          await deleteDoc(doc(db, "estacup_s10_reclamations", id));
-          if (typeof window.showToast === "function") window.showToast("🗑️ Réclamation supprimée.", "info");
-          loadReclamations();
-        } catch (error) {
-          if (typeof window.showToast === "function") window.showToast("❌ Erreur de suppression.", "error");
+          e.target.disabled = false; e.target.textContent = "⚙️ Ouvrir pour traiter";
         }
       });
     });
