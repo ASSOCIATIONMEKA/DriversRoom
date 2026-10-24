@@ -208,7 +208,7 @@ function setupNavigation() {
   function showSection(key) {
     sections.forEach((s) => s.classList.add("hidden"));
     document.getElementById(`section-${key}`)?.classList.remove("hidden");
-    if (key === "incidents") { loadReclamations?.(); loadIncidentHistory?.(); loadCourses?.(); loadPilots?.(); }
+    if (key === "") { loadReclamations?.(); loadIncidentHistory?.(); loadCourses?.(); loadPilots?.(); }
     if (key === "estacup") loadEstacupSignups?.();
     if (key === "courses") loadCourses?.();
     if (key === "votes")   loadVotesResults?.();
@@ -827,118 +827,278 @@ function computeEloUpdates(rankingArr, ratingsMap, K = 32) {
 
 /* ---------------- Incidents & Pénalités ---------------- */
 
-// Changement du texte du bouton pour plus de clarté
-const btnAddIncident = document.getElementById("addIncidentPilot");
-if (btnAddIncident) btnAddIncident.textContent = "➕ Ajouter un pilote impacté";
+let selectedPilots = [];
+let activeClaimId = null; // Variable pour lier une réclamation à un incident
 
-btnAddIncident?.addEventListener("click", async () => {
-  const select = document.getElementById("incidentPilotSelect");
-  const uid = select?.value; 
-  if (!uid) return;
-  
-  // Évite d'ajouter deux fois le même pilote
-  if (selectedPilots.some(p => p.uid === uid)) {
-    if (typeof window.showToast === "function") window.showToast("Pilote déjà ajouté.", "warning");
-    return;
-  }
-
-  const snap = await getDoc(doc(db, "users", uid)); 
-  if (!snap.exists()) return;
-  
-  const d = snap.data(); 
-  const name = `${d.firstName || ""} ${d.lastName || ""}`.trim() || uid;
-  const before = d.licensePoints ?? 10; 
-  const after = before - 1; // Pénalité de -1 par défaut
-  
-  selectedPilots.push({ uid, name, before, after }); 
-  updateIncidentList();
-});
-
+// Met à jour l'affichage des pilotes sélectionnés pour un incident
 function updateIncidentList() {
-  const list = document.getElementById("incidentList"); 
-  if (!list) return;
-  list.innerHTML = "";
+  const container = document.getElementById("incidentPilotsList");
+  if (!container) return;
+  container.innerHTML = "";
   
-  selectedPilots.forEach((p, i) => {
-    const li = document.createElement("li");
-    li.style.cssText = "background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05);";
-    
-    const diff = p.after - p.before;
-    const diffColor = diff < 0 ? '#ef4444' : '#10b981';
+  selectedPilots.forEach((p, index) => {
+    const div = document.createElement("div");
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.gap = "10px";
+    div.style.marginBottom = "10px";
+    div.style.background = "rgba(255,255,255,0.05)";
+    div.style.padding = "10px";
+    div.style.borderRadius = "8px";
 
-    li.innerHTML = `
-      <div>
-        <strong style="color: #38bdf8; font-size: 1.05rem;">${escapeHtml(p.name)}</strong>
-        <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 4px;">
-          M-Safety : ${p.before} → <input type="number" value="${p.after}" data-i="${i}" style="width: 60px; text-align: center; font-size: 1rem; padding: 4px; border-radius: 4px; background: #020617; color: ${diffColor}; border: 1px solid #334155; margin: 0 5px;" /> pts
-        </div>
+    div.innerHTML = `
+      <span style="flex:1; font-weight:bold;">${p.name}</span>
+      <div style="display:flex; align-items:center; gap:5px;">
+        <span>Pts avant:</span>
+        <input type="number" value="${p.before}" readonly style="width:60px; background:#333; color:#fff; border:1px solid #555; border-radius:4px; padding:4px;">
       </div>
-      <button type="button" class="remove" data-i="${i}" title="Retirer ce pilote" style="background: rgba(239, 68, 68, 0.15); border: none; color: #ef4444; border-radius: 6px; cursor: pointer; padding: 8px 12px; font-size: 1.1rem; transition: 0.2s;">✖</button>
+      <div style="display:flex; align-items:center; gap:5px;">
+        <span>Après:</span>
+        <input type="number" class="incident-after-input" data-index="${index}" value="${p.after}" style="width:60px; background:#222; color:#fff; border:1px solid #38bdf8; border-radius:4px; padding:4px;">
+      </div>
+      <button type="button" class="btn-remove-incident-pilot" data-index="${index}" style="background:#ef4444; color:#fff; border:none; border-radius:4px; cursor:pointer; padding:4px 8px;">X</button>
     `;
-    list.appendChild(li);
+    container.appendChild(div);
   });
 
-  list.querySelectorAll("input").forEach(inp => inp.addEventListener("input", (e) => {
-    const idx = parseInt(e.target.dataset.i, 10); 
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val)) {
-      selectedPilots[idx].after = val;
-      const diff = val - selectedPilots[idx].before;
-      e.target.style.color = diff < 0 ? '#ef4444' : '#10b981';
-    }
-  }));
+  // Gestion de la suppression d'un pilote de la liste
+  document.querySelectorAll(".btn-remove-incident-pilot").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const idx = e.target.getAttribute("data-index");
+      selectedPilots.splice(idx, 1);
+      updateIncidentList();
+    });
+  });
 
-  list.querySelectorAll(".remove").forEach(btn => btn.addEventListener("click", () => {
-    const idx = parseInt(btn.dataset.i, 10); 
-    selectedPilots.splice(idx, 1); 
-    updateIncidentList();
-  }));
+  // Gestion du changement des points "Après"
+  document.querySelectorAll(".incident-after-input").forEach(input => {
+    input.addEventListener("input", (e) => {
+      const idx = e.target.getAttribute("data-index");
+      selectedPilots[idx].after = parseInt(e.target.value, 10) || 0;
+    });
+  });
 }
 
-document.getElementById("submitIncident")?.addEventListener("click", async () => {
-  const description = document.getElementById("incidentDescription")?.value.trim();
-  const raceId = document.getElementById("incidentRaceSelect")?.value || null;
-  const btn = document.getElementById("submitIncident");
-
-  if (!description || selectedPilots.length === 0) { 
-    if (typeof window.showToast === "function") window.showToast("⚠️ Description et au moins un pilote impacté requis.", "warning"); 
-    return; 
-  }
-
-  btn.disabled = true;
-  btn.textContent = "Enregistrement en cours...";
-
-  const adminName = (document.getElementById("adminName")?.textContent || "").trim();
-  const payload = {
-    date: new Date(),
-    description,
-    courseId: raceId || null,
-    pilotes: selectedPilots.map(p => ({ uid: p.uid, name: p.name, before: p.before, after: p.after })),
-    createdByUid: (auth.currentUser && auth.currentUser.uid) || null,
-    createdByName: adminName || null,
-  };
-
-  try {
-    await addDoc(collection(db, "incidents"), payload);
-
-    for (const p of selectedPilots) {
-      await updateDoc(doc(db, "users", p.uid), { licensePoints: p.after });
+// Ajout d'un pilote depuis le menu déroulant
+const pilotSelect = document.getElementById("incidentPilotSelect");
+if (pilotSelect) {
+  pilotSelect.addEventListener("change", async (e) => {
+    const uid = e.target.value;
+    if (!uid) return;
+    const name = e.target.options[e.target.selectedIndex].text;
+    
+    // Éviter les doublons
+    if (selectedPilots.some(p => p.uid === uid)) {
+      e.target.value = "";
+      return;
     }
 
-    selectedPilots = [];
-    updateIncidentList();
-    document.getElementById("incidentDescription").value = "";
-    if (typeof window.showToast === "function") window.showToast("✅ Incident enregistré et pénalités appliquées.", "success");
-    await loadIncidentHistory();
-  } catch (err) {
-    console.error("Erreur enregistrement incident:", err);
-    if (typeof window.showToast === "function") window.showToast("❌ Erreur lors de l'enregistrement.", "error");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "✅ Enregistrer l'incident";
-  }
-});
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      let curPts = 10;
+      if (snap.exists()) {
+        curPts = snap.data().licensePoints ?? 10;
+      }
+      selectedPilots.push({
+        uid: uid,
+        name: name,
+        before: curPts,
+        after: curPts - 1 // Par défaut -1 point
+      });
+      updateIncidentList();
+      e.target.value = ""; // Reset du select
+    } catch (err) {
+      console.error(err);
+      if (typeof window.showToast === "function") window.showToast("Erreur lors de l'ajout du pilote", "error");
+    }
+  });
+}
 
+// Soumission du formulaire d'incident
+const btnSubmitIncident = document.getElementById("btnSubmitIncident");
+if (btnSubmitIncident) {
+  btnSubmitIncident.addEventListener("click", async () => {
+    const desc = document.getElementById("incidentDescription")?.value.trim();
+    if (!desc || selectedPilots.length === 0) {
+      if (typeof window.showToast === "function") window.showToast("Veuillez sélectionner au moins un pilote et saisir une description.", "error");
+      return;
+    }
+
+    btnSubmitIncident.disabled = true;
+    btnSubmitIncident.textContent = "Enregistrement...";
+
+    try {
+      const payload = {
+        description: desc,
+        pilots: selectedPilots,
+        createdAt: serverTimestamp()
+      };
+
+      // 1. Ajouter l'incident
+      await addDoc(collection(db, "incidents"), payload);
+
+      // 2. Mettre à jour les points des pilotes
+      for (const p of selectedPilots) {
+        await updateDoc(doc(db, "users", p.uid), {
+          licensePoints: p.after
+        });
+      }
+
+      // 3. Fermer la réclamation si un incident y est lié
+      if (activeClaimId) {
+        await updateDoc(doc(db, "estacup_s10_reclamations", activeClaimId), { 
+          isTreated: true, 
+          status: "traité" 
+        });
+        activeClaimId = null;
+        if (typeof loadReclamations === "function") loadReclamations();
+      }
+
+      if (typeof window.showToast === "function") window.showToast("Incident enregistré avec succès.", "success");
+
+      // Reset
+      document.getElementById("incidentDescription").value = "";
+      selectedPilots = [];
+      updateIncidentList();
+
+    } catch (err) {
+      console.error(err);
+      if (typeof window.showToast === "function") window.showToast("Erreur lors de l'enregistrement.", "error");
+    } finally {
+      btnSubmitIncident.disabled = false;
+      btnSubmitIncident.textContent = "Enregistrer l'incident";
+    }
+  });
+}
+
+// Chargement et gestion des Réclamations
+window.loadReclamations = async function() {
+  const tbody = document.querySelector("#tableReclamations tbody");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Chargement...</td></tr>`;
+
+  try {
+    const q = query(collection(db, "estacup_s10_reclamations"));
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Aucune réclamation trouvée.</td></tr>`;
+      return;
+    }
+
+    let html = "";
+    const recs = [];
+    snap.forEach(d => recs.push({ id: d.id, ...d.data() }));
+
+    // Tri par date décroissante
+    recs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    recs.forEach(r => {
+      const isTreated = r.isTreated === true;
+      const statusLabel = isTreated ? '✅ Traitée' : (r.status === 'en cours' ? '🛠️ En cours' : '⏳ En attente');
+      
+      let pilotesHTML = "";
+      if (r.involvedPilots && r.involvedPilots.length > 0) {
+        pilotesHTML = r.involvedPilots.map(p => `<span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-right:4px;">${escapeHtml(p)}</span>`).join("");
+      } else {
+        pilotesHTML = "-";
+      }
+
+      html += `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${isTreated ? 'rgba(16, 185, 129, 0.05)' : (r.status === 'en cours' ? 'rgba(56, 189, 248, 0.05)' : 'transparent')}">
+          <td>${r.dateCourse || "-"}</td>
+          <td>${escapeHtml(r.split || "-")}</td>
+          <td>${escapeHtml(r.lap || "-")}</td>
+          <td>${pilotesHTML}</td>
+          <td><div style="max-height:80px; overflow-y:auto; font-size:0.85rem; color:#cbd5e1;">${escapeHtml(r.incidentType || "-")}</div></td>
+          <td><span style="font-weight:bold; font-size:0.85rem; color:${isTreated ? '#10b981' : (r.status === 'en cours' ? '#38bdf8' : '#f59e0b')};">${statusLabel}</span></td>
+          <td>
+            ${!isTreated ? `
+              <button class="btn-process-reclam" data-id="${r.id}" data-course="${r.dateCourse || ''}" data-pilotes='${JSON.stringify(r.involvedPilots || [])}' style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;">
+                🛠️ Ouvrir l'incident
+              </button>
+            ` : `<span style="color:#64748b; font-size:0.85rem;">Clôturé</span>`}
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+
+    // Événement d'ouverture et de liaison de la réclamation avec le formulaire d'incident
+    document.querySelectorAll(".btn-process-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        const pilotesNames = JSON.parse(e.target.getAttribute("data-pilotes") || "[]");
+
+        e.target.disabled = true; 
+        e.target.textContent = "Ouverture...";
+
+        try {
+          // 1. Passer la réclamation "en cours"
+          await updateDoc(doc(db, "estacup_s10_reclamations", id), { status: "en cours" });
+          activeClaimId = id;
+          loadReclamations();
+
+          // 2. Pré-remplir le formulaire d'incident
+          selectedPilots = [];
+          const select = document.getElementById("incidentPilotSelect");
+          
+          for (const pName of pilotesNames) {
+            const cleanName = pName.replace("👤", "").trim();
+            let matchedUid = null;
+            
+            Array.from(select.options).forEach(opt => {
+              if (opt.text.includes(cleanName) || cleanName.includes(opt.text)) matchedUid = opt.value;
+            });
+
+            if (matchedUid && !selectedPilots.some(p => p.uid === matchedUid)) {
+              const snap = await getDoc(doc(db, "users", matchedUid));
+              if (snap.exists()) {
+                const curPts = snap.data().licensePoints ?? 10;
+                selectedPilots.push({ uid: matchedUid, name: cleanName, before: curPts, after: curPts - 1 });
+              }
+            }
+          }
+          updateIncidentList();
+
+          // 3. Pré-remplir le format de description
+          const descField = document.getElementById("incidentDescription");
+          if (descField) {
+            descField.value = "Pénalité sur la course : +0s\n" +
+                              "Pénalité sur la licence : -1 Point(s) M-Safety par pilote\n" +
+                              "Description du choix : ";
+          }
+
+          // 4. Scroller vers le formulaire pour faciliter l'UX
+          if (select) select.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        } catch (error) {
+          console.error(error);
+          if (typeof window.showToast === "function") window.showToast("❌ Erreur d'ouverture.", "error");
+          e.target.disabled = false; 
+          e.target.textContent = "🛠️ Ouvrir l'incident";
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error("Erreur loadReclamations:", err);
+    tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Erreur de chargement</td></tr>`;
+  }
+};
+
+// Fonction utilitaire pour échapper le HTML (si non déclarée ailleurs)
+if (typeof escapeHtml !== "function") {
+  window.escapeHtml = function(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+}
 /* ======================== HISTORIQUE DES INCIDENTS ======================== */
 async function loadIncidentHistory() {
   const box = document.getElementById("incidentHistory");
