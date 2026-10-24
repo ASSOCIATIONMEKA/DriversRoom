@@ -164,7 +164,15 @@
           <ul id="incidentList" class="incident-list"></ul>
           <label for="incidentRaceSelect" style="margin-top:16px;display:block">Course concernée :</label>
           <select id="incidentRaceSelect"></select>
-          <textarea id="incidentDescription" placeholder="Description de l'incident" rows="3" style="margin-top:10px"></textarea>
+          <div id="linkedReclamAlert" style="display:none; background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; color: #38bdf8; padding: 10px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px;">
+  🔗 Lié à une réclamation en cours de traitement
+</div>
+
+<label for="incidentTimePenalty" style="margin-top:10px; display:block">Pénalité sur la course (Temps ajouté) :</label>
+<input type="text" id="incidentTimePenalty" placeholder="Ex: +5 secondes, +10 secondes, Drop de grid, Aucune..." style="margin-bottom: 10px;">
+
+<label for="incidentDescription" style="display:block">Description du choix de la pénalité :</label>
+<textarea id="incidentDescription" placeholder="Explication de la décision et de l'incident..." rows="3"></textarea>
           <div style="margin-top:10px">
             <button type="button" id="submitIncident" class="btn-validate">✅ Enregistrer l'incident</button>
           </div>
