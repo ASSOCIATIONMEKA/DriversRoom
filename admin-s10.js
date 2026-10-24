@@ -1739,7 +1739,9 @@ async function loadReclamations() {
                   </button>
                 ` : ''}
                 ${r.status === 'En cours de traitement' ? `
-                  <span style="color: #38bdf8; font-size: 0.9rem; font-weight: bold; padding: 8px 15px;">👉 Allez créer l'incident ci-dessous</span>
+                  <button class="btn-resume-reclam" data-id="${r.id}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
+                    🔄 Reprendre la liaison
+                  </button>
                 ` : ''}
               </div>
             </div>
@@ -1790,6 +1792,37 @@ async function loadReclamations() {
           if (typeof window.showToast === "function") window.showToast("❌ Erreur.", "error");
           e.target.disabled = false; e.target.textContent = "⚙️ Ouvrir pour traiter";
         }
+      });
+    });
+
+    // Événement : Reprendre une réclamation après rafraîchissement de la page
+    document.querySelectorAll(".btn-resume-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        const involvedPilots = JSON.parse(e.target.getAttribute("data-pilots") || "[]");
+        
+        // Rétablit l'ID dans la mémoire et affiche l'alerte
+        currentProcessingReclamId = id;
+        document.getElementById("linkedReclamAlert").style.display = "block";
+        
+        // Recharge les pilotes concernés dans le tableau de pénalité
+        selectedPilots = [];
+        for (const pName of involvedPilots) {
+           const lowerName = pName.toLowerCase().replace('👤 ', '').trim();
+           const found = ImportState.usersCache.find(u => lowerName.includes(u.lastName.toLowerCase()));
+           if (found) {
+              const snap = await getDoc(doc(db, "users", found.id));
+              if (snap.exists()) {
+                 const d = snap.data();
+                 if(!selectedPilots.some(sp => sp.uid === found.id)) {
+                     selectedPilots.push({ uid: found.id, name: found.name, before: d.licensePoints ?? 10, after: (d.licensePoints ?? 10) - 1 });
+                 }
+              }
+           }
+        }
+        updateIncidentList();
+        document.getElementById("addIncidentPilot").scrollIntoView({ behavior: "smooth", block: "center" });
+        if (typeof window.showToast === "function") window.showToast("🔄 Liaison récupérée. Vous pouvez valider l'incident.", "info");
       });
     });
 
@@ -2222,5 +2255,31 @@ document.addEventListener("DOMContentLoaded", () => {
               btnSave.textContent = "💾 Enregistrer";
           }
       });
+  }
+});
+
+// Écouteur global pour la suppression des incidents (Délégation d'événements)
+document.addEventListener("click", async (e) => {
+  // Cherche si l'élément cliqué (ou son parent) est un bouton poubelle d'incident
+  const trashBtn = e.target.closest(".btn-delete-incident, .delete-incident-btn, button[data-id][title='Supprimer']");
+  
+  if (trashBtn) {
+    const incidentId = trashBtn.getAttribute("data-id");
+    
+    // Si ce bouton appartient bien à la section des incidents (pour ne pas bloquer d'autres poubelles)
+    if (incidentId && confirm("Êtes-vous sûr de vouloir supprimer cet incident ?")) {
+      try {
+        await deleteDoc(doc(db, "incidents", incidentId));
+        if (typeof window.showToast === "function") window.showToast("🗑️ Incident supprimé avec succès.", "success");
+        
+        // Relancez votre fonction d'affichage des incidents (modifiez ce nom si le vôtre est différent, ex: fetchIncidents, displayIncidents...)
+        if (typeof loadIncidents === "function") {
+            loadIncidents();
+        }
+      } catch (error) {
+        console.error("Erreur lors de la suppression de l'incident:", error);
+        if (typeof window.showToast === "function") window.showToast("❌ Erreur de suppression.", "error");
+      }
+    }
   }
 });
