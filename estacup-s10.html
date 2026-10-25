@@ -1450,7 +1450,7 @@
         return;
       }
 
-      // --- NOUVEAU : Récupération de TOUS les pilotes validés pour la liste "Non répondu" ---
+      // Récupération de TOUS les pilotes validés pour la liste "Non répondu"
       let allRegisteredDrivers = [];
       try {
         const signupsSnap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
@@ -1497,12 +1497,12 @@
           </div>`;
       }
 
-      // --- NOUVEAU DESIGN ERGONOMIQUE (CSS INJECTÉ DIRECTEMENT) ---
+      // --- GRILLE SCROLLABLE MAIS AVEC LISTES À PUCES SIMPLES ---
       container.innerHTML = `
         <style>
           .presence-grid-modern {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             align-items: start; /* Empêche l'étirement des colonnes vides */
             margin-top: 1.5rem;
@@ -1524,41 +1524,23 @@
             font-size: 0.95rem;
           }
           .presence-list-scroll {
-            list-style: none;
-            padding: 0; margin: 0;
+            list-style-type: disc;
+            padding-left: 1.2rem;
+            margin: 0;
             max-height: 250px; /* HAUTEUR MAX FIXÉE */
             overflow-y: auto;  /* SCROLLBAR SI TROP LONG */
             padding-right: 5px;
+            color: #94a3b8;
+          }
+          .presence-list-scroll li {
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
           }
           /* Customisation de la barre de défilement */
           .presence-list-scroll::-webkit-scrollbar { width: 5px; }
           .presence-list-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
           .presence-list-scroll::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 4px; }
           .presence-list-scroll::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.8); }
-
-          /* Design des badges pilotes */
-          .pilot-badge {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 6px 10px;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-            color: #cbd5e1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            transition: all 0.2s;
-          }
-          .pilot-badge:hover { background: rgba(51, 65, 85, 0.8); border-color: rgba(255,255,255,0.1); }
-          .badge-noresp {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed rgba(148, 163, 184, 0.3);
-            color: #64748b;
-          }
-          .badge-present { border-left: 3px solid #10b981; }
-          .badge-absent { border-left: 3px solid #ef4444; }
-          .badge-tentative { border-left: 3px solid #f59e0b; }
         </style>
 
         ${adminWarningHtml}
@@ -1576,22 +1558,22 @@
           <div class="presence-grid-modern">
             <div class="presence-box-modern">
               <h5><span style="color: #10b981;">✅ Acceptés</span> <span id="count-present-${nextRace.id}" style="font-weight:bold;">0/34</span></h5>
-              <ul id="list-present-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge">Aucun</div></li></ul>
+              <ul id="list-present-${nextRace.id}" class="presence-list-scroll"><li>Aucun</li></ul>
             </div>
             
             <div class="presence-box-modern">
               <h5><span style="color: #ef4444;">❌ Absents</span> <span id="count-absent-${nextRace.id}" style="font-weight:bold;">0</span></h5>
-              <ul id="list-absent-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge">Aucun</div></li></ul>
+              <ul id="list-absent-${nextRace.id}" class="presence-list-scroll"><li>Aucun</li></ul>
             </div>
             
             <div class="presence-box-modern">
               <h5><span style="color: #f59e0b;">❓ Incertains</span> <span id="count-tentative-${nextRace.id}" style="font-weight:bold;">0</span></h5>
-              <ul id="list-tentative-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge">Aucun</div></li></ul>
+              <ul id="list-tentative-${nextRace.id}" class="presence-list-scroll"><li>Aucun</li></ul>
             </div>
             
             <div class="presence-box-modern" style="background: rgba(0,0,0,0.2); border: 1px dashed rgba(148, 163, 184, 0.2);">
               <h5><span style="color: #94a3b8;">👻 Non répondu</span> <span id="count-noresponse-${nextRace.id}" style="font-weight:bold; color: #94a3b8;">0</span></h5>
-              <ul id="list-noresponse-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge badge-noresp">Aucun</div></li></ul>
+              <ul id="list-noresponse-${nextRace.id}" class="presence-list-scroll"><li>Aucun</li></ul>
             </div>
           </div>
         </div>
@@ -1650,26 +1632,26 @@
         const countNoRespEl = document.getElementById(`count-noresponse-${nextRace.id}`);
         if (countNoRespEl) countNoRespEl.textContent = noResponseListNames.length;
 
-        // Mise à jour des listes avec les BADGES (au lieu de textes bruts)
+        // Mise à jour des listes avec des puces classiques
         const listPresentEl = document.getElementById(`list-present-${nextRace.id}`);
         if (listPresentEl) listPresentEl.innerHTML = presentListNames.length 
-          ? presentListNames.map(n => `<li><div class="pilot-badge badge-present">${n}</div></li>`).join('') 
-          : `<li><div class="pilot-badge badge-noresp">Aucun</div></li>`;
+          ? presentListNames.map(n => `<li>${n}</li>`).join('') 
+          : `<li>Aucun</li>`;
         
         const listAbsentEl = document.getElementById(`list-absent-${nextRace.id}`);
         if (listAbsentEl) listAbsentEl.innerHTML = absentListNames.length 
-          ? absentListNames.map(n => `<li><div class="pilot-badge badge-absent">${n}</div></li>`).join('') 
-          : `<li><div class="pilot-badge badge-noresp">Aucun</div></li>`;
+          ? absentListNames.map(n => `<li>${n}</li>`).join('') 
+          : `<li>Aucun</li>`;
         
         const listTentativeEl = document.getElementById(`list-tentative-${nextRace.id}`);
         if (listTentativeEl) listTentativeEl.innerHTML = tentativeListNames.length 
-          ? tentativeListNames.map(n => `<li><div class="pilot-badge badge-tentative">${n}</div></li>`).join('') 
-          : `<li><div class="pilot-badge badge-noresp">Aucun</div></li>`;
+          ? tentativeListNames.map(n => `<li>${n}</li>`).join('') 
+          : `<li>Aucun</li>`;
 
         const listNoRespEl = document.getElementById(`list-noresponse-${nextRace.id}`);
         if (listNoRespEl) listNoRespEl.innerHTML = noResponseListNames.length 
-          ? noResponseListNames.map(n => `<li><div class="pilot-badge badge-noresp">${n}</div></li>`).join('') 
-          : `<li><div class="pilot-badge badge-noresp">Tous ont répondu ! 🎉</div></li>`;
+          ? noResponseListNames.map(n => `<li style="color: #64748b;">${n}</li>`).join('') 
+          : `<li>Tous ont répondu ! 🎉</li>`;
 
         // Mise à jour des boutons d'action
         const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
@@ -1686,6 +1668,7 @@
       });
     }
 
+    // --- CORRECTION DU TOGGLE (EMPÊCHE DE SUPPRIMER SA PRÉSENCE) ---
     window.togglePresence = async function(raceId, status) {
       if (!currentUser) {
         if(typeof window.showToast === "function") window.showToast("⚠ Vous devez être connecté pour indiquer votre présence.", "warning");
@@ -1708,9 +1691,11 @@
         const docRef = doc(db, `attendances_${raceId}`, currentUser.uid);
         const docSnap = await getDoc(docRef);
 
+        // Si l'utilisateur clique sur le statut qu'il a DÉJÀ, on ne fait rien (on le garde dans la liste)
         if (docSnap.exists() && docSnap.data().status === status) {
-          await deleteDoc(docRef);
+          return; 
         } else {
+          // Sinon, on met à jour son statut avec le nouveau choix
           await setDoc(docRef, {
             userId: currentUser.uid,
             userName: currentUserName,
