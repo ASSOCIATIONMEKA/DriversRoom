@@ -168,6 +168,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 5. Résultats et Classements publiés (Cible la dernière course passée)
+  const btnResultsPublished = document.getElementById("btnDiscordResultsPublished");
+  if (btnResultsPublished) {
+    btnResultsPublished.addEventListener("click", async () => {
+      const race = getLatestOrCurrentRace();
+      await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🏁 **Résultats et classements à jour !**`, {
+        title: `Résultats officiels : ${race.title}`,
+        description: `Les résultats de la **${race.title}** sont désormais officiels et publiés sur le site !\n\nLes différents classements du championnat ont été mis à jour. Vous pouvez consulter les scores dès maintenant sur le site de l'ESTACUP.`,
+        color: 0xf59e0b // Orange / Or pour les podiums et classements
+      });
+    });
+  }
+
 });
 
 function formatMs(ms) {
