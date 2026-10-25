@@ -1352,6 +1352,7 @@
       }
 
       window.showRestrictedFeatures();
+      
       loadNextRacePresence();
 
       onSnapshot(doc(db, "config", "maintenance"), (snap) => {
@@ -1497,14 +1498,13 @@
           </div>`;
       }
 
-      // --- GRILLE SCROLLABLE MAIS AVEC LISTES À PUCES SIMPLES ---
       container.innerHTML = `
         <style>
           .presence-grid-modern {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
-            align-items: start; /* Empêche l'étirement des colonnes vides */
+            align-items: start;
             margin-top: 1.5rem;
           }
           .presence-box-modern {
@@ -1527,8 +1527,8 @@
             list-style-type: disc;
             padding-left: 1.2rem;
             margin: 0;
-            max-height: 250px; /* HAUTEUR MAX FIXÉE */
-            overflow-y: auto;  /* SCROLLBAR SI TROP LONG */
+            max-height: 250px;
+            overflow-y: auto;
             padding-right: 5px;
             color: #94a3b8;
           }
@@ -1536,7 +1536,6 @@
             margin-bottom: 0.3rem;
             font-size: 0.9rem;
           }
-          /* Customisation de la barre de défilement */
           .presence-list-scroll::-webkit-scrollbar { width: 5px; }
           .presence-list-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
           .presence-list-scroll::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 4px; }
@@ -1580,9 +1579,9 @@
       `;
 
       onSnapshot(collection(db, `attendances_${nextRace.id}`), (attendanceSnap) => {
-        const presentListNames = [];
-        const absentListNames = [];
-        const tentativeListNames = [];
+        const presentList = [];
+        const absentList = [];
+        const tentativeList = [];
         const respondedUids = new Set();
         let userStatus = null;
 
@@ -1603,10 +1602,28 @@
             userStatus = status;
           }
 
-          if (status === "present") presentListNames.push(data.userName);
-          else if (status === "absent") absentListNames.push(data.userName);
-          else if (status === "tentative") tentativeListNames.push(data.userName);
+          // Récupération de l'heure du clic pour le tri
+          let ts = 0;
+          if (data.timestamp) {
+            ts = typeof data.timestamp.toMillis === 'function' ? data.timestamp.toMillis() : new Date(data.timestamp).getTime();
+          }
+
+          const entry = { name: data.userName, time: ts };
+
+          if (status === "present") presentList.push(entry);
+          else if (status === "absent") absentList.push(entry);
+          else if (status === "tentative") tentativeList.push(entry);
         });
+
+        // --- TRI CHRONOLOGIQUE (du premier qui a cliqué au dernier) ---
+        presentList.sort((a, b) => a.time - b.time);
+        absentList.sort((a, b) => a.time - b.time);
+        tentativeList.sort((a, b) => a.time - b.time);
+
+        // On extrait juste les noms maintenant qu'ils sont triés
+        const presentListNames = presentList.map(e => e.name);
+        const absentListNames = absentList.map(e => e.name);
+        const tentativeListNames = tentativeList.map(e => e.name);
 
         // Calcul des non-répondus
         const noResponseListNames = [];
@@ -1615,6 +1632,9 @@
             noResponseListNames.push(driver.name);
           }
         });
+
+        // --- TRI ALPHABÉTIQUE pour ceux qui n'ont pas répondu ---
+        noResponseListNames.sort((a, b) => a.localeCompare(b));
 
         // Mise à jour des compteurs
         const countPresentEl = document.getElementById(`count-present-${nextRace.id}`);
@@ -1632,7 +1652,7 @@
         const countNoRespEl = document.getElementById(`count-noresponse-${nextRace.id}`);
         if (countNoRespEl) countNoRespEl.textContent = noResponseListNames.length;
 
-        // Mise à jour des listes avec des puces classiques
+        // Mise à jour des listes
         const listPresentEl = document.getElementById(`list-present-${nextRace.id}`);
         if (listPresentEl) listPresentEl.innerHTML = presentListNames.length 
           ? presentListNames.map(n => `<li>${n}</li>`).join('') 
