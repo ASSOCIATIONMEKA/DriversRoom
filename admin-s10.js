@@ -2196,6 +2196,7 @@ document.addEventListener("click", (e) => {
       trashBtn.style.display = ""; 
     });
   }
+  });
 
 
   /* ---------------- ESTACUP : Listing inscriptions S10 ---------------- */
@@ -2513,5 +2514,4 @@ async function loadEstacupSignups() {
     list.innerHTML = "<p class='impact-bad'>Erreur de chargement de la liste des inscriptions.</p>";
   }
 }
-});
 
