@@ -46,7 +46,7 @@
         <button data-section="incidents">Gestion Incidents</button>
         <button data-section="courses">Liste des Courses</button>
         <button data-section="estacup">Gestion ESTACUP</button>
-        <button data-section="votes">Votes</button>
+        <button data-section="discord">Annonces Discord</button>
         <button data-section="serveur">Statut Serveur</button>
         
         <!-- BOUTON MODE TRAVAUX -->
@@ -206,46 +206,50 @@
         <div id="estacupList"></div>
       </section>
 
-      <section id="section-votes" class="admin-section hidden">
-        <h3>Votes — Résultats</h3>
-        <div class="course-box">
-          <h4 style="margin:0 0 10px">Round 2</h4>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px">
-            <div>🇯🇵 Fuji Speedway</div>
-            <div><strong id="q2_a_cnt">0</strong> (<span id="q2_a_pct">0%</span>)</div>
-          </div>
-          <div class="bar bar-a" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
-            <span id="q2_a_bar" style="display:block;height:100%;background:#22d3ee;width:0%"></span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:10px 0 8px">
-            <div>🇯🇵 Okayama</div>
-            <div><strong id="q2_b_cnt">0</strong> (<span id="q2_b_pct">0%</span>)</div>
-          </div>
-          <div class="bar bar-b" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
-            <span id="q2_b_bar" style="display:block;height:100%;background:#a78bfa;width:0%"></span>
-          </div>
-          <div class="muted" id="q2_total" style="margin-top:6px">Total : 0</div>
-        </div>
+      <section id="section-discord" class="admin-section hidden">
+  <h3>📢 Gestion des Annonces Discord</h3>
+  <p class="muted-note" style="margin-bottom: 20px;">Clique sur les boutons ci-dessous pour envoyer instantanément les annonces officielles sur le serveur Discord de l'ESTACUP.</p>
 
-        <div class="course-box">
-          <h4 style="margin:0 0 10px">Round 5</h4>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px">
-            <div>🇺🇸 Road America</div>
-            <div><strong id="q5_a_cnt">0</strong> (<span id="q5_a_pct">0%</span>)</div>
-          </div>
-          <div class="bar bar-a" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
-            <span id="q5_a_bar" style="display:block;height:100%;background:#22d3ee;width:0%"></span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:10px 0 8px">
-            <div>🇨🇦 Montréal (Gilles Villeneuve)</div>
-            <div><strong id="q5_b_cnt">0</strong> (<span id="q5_b_pct">0%</span>)</div>
-          </div>
-          <div class="bar bar-b" style="height:10px;background:#0b1220;border:1px solid #334155;border-radius:999px;overflow:hidden">
-            <span id="q5_b_bar" style="display:block;height:100%;background:#a78bfa;width:0%"></span>
-          </div>
-          <div class="muted" id="q5_total" style="margin-top:6px">Total : 0</div>
-        </div>
-      </section>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    
+    <!-- Annonce Présence Ouverte -->
+    <div class="course-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="color: #10b981; margin-top:0;">🟢 Ouverture des Présences</h4>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Annonce l'ouverture du formulaire de présence pour la prochaine manche avec les détails.</p>
+      </div>
+      <button id="btnDiscordPresOpen" class="btn-validate" style="background: linear-gradient(135deg, #10b981, #059669); margin-top: 15px;">Envoyer l'annonce</button>
+    </div>
+
+    <!-- Annonce Présence Fermée (Grille) -->
+    <div class="course-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="color: #ef4444; margin-top:0;">🔒 Clôture des Présences</h4>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Ferme le formulaire, récupère automatiquement la liste de tous les pilotes acceptés et publie la grille.</p>
+      </div>
+      <button id="btnDiscordPresClose" class="btn-validate" style="background: linear-gradient(135deg, #ef4444, #dc2626); margin-top: 15px;">Publier la grille officielle</button>
+    </div>
+
+    <!-- Annonce Réclamations Ouvertes -->
+    <div class="course-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="color: #38bdf8; margin-top:0;">⚖️ Ouverture des Réclamations</h4>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Informe les pilotes que le dépôt des réclamations post-course est ouvert.</p>
+      </div>
+      <button id="btnDiscordReclamOpen" class="btn-validate" style="background: linear-gradient(135deg, #38bdf8, #2563eb); margin-top: 15px;">Ouvrir les réclamations</button>
+    </div>
+
+    <!-- Annonce Réclamations Fermées -->
+    <div class="course-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="color: #64748b; margin-top:0;">🔒 Clôture des Réclamations</h4>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Annonce la fermeture du formulaire et le début de l'étude par les commissaires.</p>
+      </div>
+      <button id="btnDiscordReclamClose" class="btn-validate" style="background: linear-gradient(135deg, #64748b, #475569); margin-top: 15px;">Fermer les réclamations</button>
+    </div>
+
+  </div>
+</section>
 
       <section id="section-serveur" class="admin-section hidden">
         <h3>Statut du Serveur (Live)</h3>
