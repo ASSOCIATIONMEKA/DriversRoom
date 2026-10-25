@@ -46,6 +46,9 @@ const escapeHtml = s => (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<":
 const firstInt = str => { const m = String(str || "").match(/-?\d+/); return m ? parseInt(m[0], 10) : NaN; };
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1563937942009938020/C-F_miSFZr7bu61hCzhRGrGWcIy3tMKvuI48I0aEjgK6hY0FcPO-39S91pY2gHhO5wKL";
 
+// Remplace ceci par l'ID de ton rôle Discord (ex: "112233445566778899")
+const ROLE_ID_TO_TAG = "1546455896958435339"; 
+
 // Liste des courses (identique à ton site)
 const adminRacesList = [
   { id: "prologue", title: "Prologue - Silverstone", dateStr: "22/09/2026", time: "20h00", dateObj: new Date("2026-09-22T20:00:00") },
@@ -94,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnPresOpen) {
     btnPresOpen.addEventListener("click", async () => {
       const race = getNextOrActiveRace();
-      await sendToDiscord("@everyone 🟢 **Ouverture des présences !**", {
+      await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🟢 **Ouverture des présences !**`, {
         title: `Formulaire ouvert : ${race.title}`,
         description: `Le formulaire de présence pour la course du **${race.dateStr} à ${race.time}** est désormais ouvert sur le site.\n\nVous avez jusqu'au **mardi à 16h00** pour valider votre place (34 places disponibles).`,
         color: 0x10b981
@@ -108,7 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnPresClose.addEventListener("click", async () => {
       const race = getNextOrActiveRace();
       
-      // Récupération des pilotes acceptés depuis Firestore
       const attendancesSnap = await getDocs(collection(db, `attendances_${race.id}`));
       let presentPilots = [];
       
@@ -121,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const pilotsText = presentPilots.length > 0 ? presentPilots.join("\n") : "Aucun pilote inscrit.";
 
-      await sendToDiscord("🔒 **Fermeture des inscriptions !**", {
+      await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🔒 **Fermeture des inscriptions !**`, {
         title: `Grille officielle : ${race.title}`,
         description: `Les inscriptions sont closes. Voici la liste des **${presentPilots.length} pilotes validés** pour la course de ce soir :\n\n${pilotsText}`,
         color: 0xef4444
@@ -134,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnReclamOpen) {
     btnReclamOpen.addEventListener("click", async () => {
       const race = getNextOrActiveRace();
-      await sendToDiscord("@everyone ⚖️ **Ouverture des réclamations !**", {
+      await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> ⚖️ **Ouverture des réclamations !**`, {
         title: `Dépôt ouvert : ${race.title}`,
         description: "Le formulaire de réclamation est désormais ouvert sur le site.\n\nVous avez jusqu'à **samedi 16h00** strict pour déposer vos demandes d'incidents avec le lien YouTube obligatoire.",
         color: 0x38bdf8
@@ -147,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnReclamClose) {
     btnReclamClose.addEventListener("click", async () => {
       const race = getNextOrActiveRace();
-      await sendToDiscord("🔒 **Clôture des réclamations**", {
+      await sendToDiscord(`🔒 **Clôture des réclamations**`, {
         title: `Fin des dépôts : ${race.title}`,
         description: "Le formulaire de réclamation est maintenant fermé. Les commissaires de course vont procéder à l'étude des dossiers.",
         color: 0x64748b
