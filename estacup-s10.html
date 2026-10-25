@@ -1497,38 +1497,101 @@
           </div>`;
       }
 
-      // --- NOUVEAU : Ajout de la 4ème colonne "Non répondu" (avec style inline pour forcer 4 colonnes) ---
+      // --- NOUVEAU DESIGN ERGONOMIQUE (CSS INJECTÉ DIRECTEMENT) ---
       container.innerHTML = `
+        <style>
+          .presence-grid-modern {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: start; /* Empêche l'étirement des colonnes vides */
+            margin-top: 1.5rem;
+          }
+          .presence-box-modern {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+          }
+          .presence-box-modern h5 {
+            margin-top: 0; margin-bottom: 0.8rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex; justify-content: space-between;
+            font-size: 0.95rem;
+          }
+          .presence-list-scroll {
+            list-style: none;
+            padding: 0; margin: 0;
+            max-height: 250px; /* HAUTEUR MAX FIXÉE */
+            overflow-y: auto;  /* SCROLLBAR SI TROP LONG */
+            padding-right: 5px;
+          }
+          /* Customisation de la barre de défilement */
+          .presence-list-scroll::-webkit-scrollbar { width: 5px; }
+          .presence-list-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+          .presence-list-scroll::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 4px; }
+          .presence-list-scroll::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.8); }
+
+          /* Design des badges pilotes */
+          .pilot-badge {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.2s;
+          }
+          .pilot-badge:hover { background: rgba(51, 65, 85, 0.8); border-color: rgba(255,255,255,0.1); }
+          .badge-noresp {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed rgba(148, 163, 184, 0.3);
+            color: #64748b;
+          }
+          .badge-present { border-left: 3px solid #10b981; }
+          .badge-absent { border-left: 3px solid #ef4444; }
+          .badge-tentative { border-left: 3px solid #f59e0b; }
+        </style>
+
         ${adminWarningHtml}
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
-          <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.8rem;">Présence ${mancheNom} S10 — ${circuitNom.toUpperCase()} — ${nextRace.dateStr} ${nextRace.time}</h4>
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <h4 style="color: #38bdf8; margin-top:0; margin-bottom: 0.8rem; font-size: 1.3rem;">🏎️ ${mancheNom} S10 — ${circuitNom.toUpperCase()} — ${nextRace.dateStr} ${nextRace.time}</h4>
           
           <p style="color: #cbd5e1; line-height: 1.6; margin-bottom: 1rem; font-size: 0.95rem;">
-            Bonjour à tous, nous vous invitons à participer à la <strong>${mancheNom.toLowerCase()}</strong> de cette <strong>ESTACUP Saison 10</strong> à <strong>${circuitNom.toUpperCase()}</strong> ce mardi ${nextRace.dateStr} à <strong>${nextRace.time}</strong> (début du briefing).<br>
-            Veuillez noter que seuls les pilotes inscrits seront pris en compte.<br>
-            Réagissez avec <strong>✅</strong> pour valider votre présence, <strong>❌</strong> si vous êtes absent et <strong>❓</strong> si votre présence est incertaine.<br>
-            Il y a un total de <strong>34 places disponibles</strong> pour cette course (Split unique). Au-delà, vous serez placé sur liste d'attente (waitlist). Si vous ne faites pas partie des 34 premiers confirmés, vous ne pourrez malheureusement pas rouler sur cette manche.<br>
-            <strong style="color: #f59e0b;">⚠️ Fermeture des inscriptions le mardi à 16h00.</strong>
+            Bonjour à tous, nous vous invitons à participer à la <strong>${mancheNom.toLowerCase()}</strong> de cette <strong>ESTACUP Saison 10</strong> ce mardi ${nextRace.dateStr} à <strong>${nextRace.time}</strong> (début du briefing).<br>
+            Réagissez avec <strong>✅</strong> pour valider, <strong>❌</strong> si absent et <strong>❓</strong> si incertain.<br>
+            <strong style="color: #f59e0b;">⚠️ Fermeture des inscriptions le mardi à 16h00.</strong> (34 places max).
           </p>
 
           ${actionsHtml}
 
-          <div class="presence-lists-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
-            <div class="presence-list-box">
-              <h5><span>✅ Acceptés</span> <span id="count-present-${nextRace.id}">0/34</span></h5>
-              <ul id="list-present-${nextRace.id}"><li>Aucun</li></ul>
+          <div class="presence-grid-modern">
+            <div class="presence-box-modern">
+              <h5><span style="color: #10b981;">✅ Acceptés</span> <span id="count-present-${nextRace.id}" style="font-weight:bold;">0/34</span></h5>
+              <ul id="list-present-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge">Aucun</div></li></ul>
             </div>
-            <div class="presence-list-box">
-              <h5><span>❌ Absents</span> <span id="count-absent-${nextRace.id}">0</span></h5>
-              <ul id="list-absent-${nextRace.id}"><li>Aucun</li></ul>
+            
+            <div class="presence-box-modern">
+              <h5><span style="color: #ef4444;">❌ Absents</span> <span id="count-absent-${nextRace.id}" style="font-weight:bold;">0</span></h5>
+              <ul id="list-absent-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge">Aucun</div></li></ul>
             </div>
-            <div class="presence-list-box">
-              <h5><span>❓ Incertains</span> <span id="count-tentative-${nextRace.id}">0</span></h5>
-              <ul id="list-tentative-${nextRace.id}"><li>Aucun</li></ul>
+            
+            <div class="presence-box-modern">
+              <h5><span style="color: #f59e0b;">❓ Incertains</span> <span id="count-tentative-${nextRace.id}" style="font-weight:bold;">0</span></h5>
+              <ul id="list-tentative-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge">Aucun</div></li></ul>
             </div>
-            <div class="presence-list-box" style="border-color: rgba(148, 163, 184, 0.3);">
-              <h5 style="color: #94a3b8;"><span>👻 Non répondu</span> <span id="count-noresponse-${nextRace.id}">0</span></h5>
-              <ul id="list-noresponse-${nextRace.id}"><li>Aucun</li></ul>
+            
+            <div class="presence-box-modern" style="background: rgba(0,0,0,0.2); border: 1px dashed rgba(148, 163, 184, 0.2);">
+              <h5><span style="color: #94a3b8;">👻 Non répondu</span> <span id="count-noresponse-${nextRace.id}" style="font-weight:bold; color: #94a3b8;">0</span></h5>
+              <ul id="list-noresponse-${nextRace.id}" class="presence-list-scroll"><li><div class="pilot-badge badge-noresp">Aucun</div></li></ul>
             </div>
           </div>
         </div>
@@ -1538,14 +1601,13 @@
         const presentListNames = [];
         const absentListNames = [];
         const tentativeListNames = [];
-        const respondedUids = new Set(); // Pour stocker ceux qui ont déjà voté
+        const respondedUids = new Set();
         let userStatus = null;
 
         attendanceSnap.forEach(docSnap => {
           const data = docSnap.data();
           let status = data.status;
 
-          // On mémorise l'ID du pilote qui a répondu
           respondedUids.add(docSnap.id);
 
           if (isLocked && status === "tentative") {
@@ -1559,28 +1621,24 @@
             userStatus = status;
           }
 
-          if (status === "present") {
-            presentListNames.push(data.userName);
-          } else if (status === "absent") {
-            absentListNames.push(data.userName);
-          } else if (status === "tentative") {
-            tentativeListNames.push(data.userName);
-          }
+          if (status === "present") presentListNames.push(data.userName);
+          else if (status === "absent") absentListNames.push(data.userName);
+          else if (status === "tentative") tentativeListNames.push(data.userName);
         });
 
-        // --- NOUVEAU : Calcul des pilotes n'ayant pas répondu ---
+        // Calcul des non-répondus
         const noResponseListNames = [];
         allRegisteredDrivers.forEach(driver => {
           if (!respondedUids.has(driver.uid)) {
-            noResponseListNames.push(driver.name); // S'il n'est pas dans les votes, il va dans "Non répondu"
+            noResponseListNames.push(driver.name);
           }
         });
 
-        // Mise à jour de l'affichage des compteurs
+        // Mise à jour des compteurs
         const countPresentEl = document.getElementById(`count-present-${nextRace.id}`);
         if (countPresentEl) {
           countPresentEl.textContent = `${presentListNames.length}/34`;
-          countPresentEl.style.color = presentListNames.length > 34 ? "#f87171" : "";
+          countPresentEl.style.color = presentListNames.length > 34 ? "#f87171" : "#10b981";
         }
         
         const countAbsentEl = document.getElementById(`count-absent-${nextRace.id}`);
@@ -1592,20 +1650,28 @@
         const countNoRespEl = document.getElementById(`count-noresponse-${nextRace.id}`);
         if (countNoRespEl) countNoRespEl.textContent = noResponseListNames.length;
 
-        // Mise à jour de l'affichage des listes
+        // Mise à jour des listes avec les BADGES (au lieu de textes bruts)
         const listPresentEl = document.getElementById(`list-present-${nextRace.id}`);
-        if (listPresentEl) listPresentEl.innerHTML = presentListNames.length ? presentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        if (listPresentEl) listPresentEl.innerHTML = presentListNames.length 
+          ? presentListNames.map(n => `<li><div class="pilot-badge badge-present">${n}</div></li>`).join('') 
+          : `<li><div class="pilot-badge badge-noresp">Aucun</div></li>`;
         
         const listAbsentEl = document.getElementById(`list-absent-${nextRace.id}`);
-        if (listAbsentEl) listAbsentEl.innerHTML = absentListNames.length ? absentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        if (listAbsentEl) listAbsentEl.innerHTML = absentListNames.length 
+          ? absentListNames.map(n => `<li><div class="pilot-badge badge-absent">${n}</div></li>`).join('') 
+          : `<li><div class="pilot-badge badge-noresp">Aucun</div></li>`;
         
         const listTentativeEl = document.getElementById(`list-tentative-${nextRace.id}`);
-        if (listTentativeEl) listTentativeEl.innerHTML = tentativeListNames.length ? tentativeListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        if (listTentativeEl) listTentativeEl.innerHTML = tentativeListNames.length 
+          ? tentativeListNames.map(n => `<li><div class="pilot-badge badge-tentative">${n}</div></li>`).join('') 
+          : `<li><div class="pilot-badge badge-noresp">Aucun</div></li>`;
 
         const listNoRespEl = document.getElementById(`list-noresponse-${nextRace.id}`);
-        if (listNoRespEl) listNoRespEl.innerHTML = noResponseListNames.length ? noResponseListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+        if (listNoRespEl) listNoRespEl.innerHTML = noResponseListNames.length 
+          ? noResponseListNames.map(n => `<li><div class="pilot-badge badge-noresp">${n}</div></li>`).join('') 
+          : `<li><div class="pilot-badge badge-noresp">Tous ont répondu ! 🎉</div></li>`;
 
-        // Mise à jour de l'état visuel des boutons pour l'utilisateur actuel
+        // Mise à jour des boutons d'action
         const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
         if (actionBox) {
           actionBox.querySelectorAll('.btn-presence').forEach(btn => {
