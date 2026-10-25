@@ -44,6 +44,118 @@ const normLower = s => stripAccents(s).toLowerCase().trim();
 const buildKey = (lastName, firstName) => `${normLower(lastName)} ${normLower(firstName)}`.trim();
 const escapeHtml = s => (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
 const firstInt = str => { const m = String(str || "").match(/-?\d+/); return m ? parseInt(m[0], 10) : NaN; };
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1563937942009938020/C-F_miSFZr7bu61hCzhRGrGWcIy3tMKvuI48I0aEjgK6hY0FcPO-39S91pY2gHhO5wKL";
+
+// Liste des courses (identique à ton site)
+const adminRacesList = [
+  { id: "prologue", title: "Prologue - Silverstone", dateStr: "22/09/2026", time: "20h00", dateObj: new Date("2026-09-22T20:00:00") },
+  { id: "manche1", title: "Manche 1 - Brno", dateStr: "06/10/2026", time: "20h00", dateObj: new Date("2026-10-06T20:00:00") },
+  { id: "manche2", title: "Manche 2 - Fuji / Okayama", dateStr: "20/10/2026", time: "20h00", dateObj: new Date("2026-10-20T20:00:00") },
+  { id: "manche3", title: "Manche 3 - Valence", dateStr: "24/11/2026", time: "20h00", dateObj: new Date("2026-11-24T20:00:00") },
+  { id: "manche4", title: "Manche 4 - Sydney", dateStr: "08/12/2026", time: "20h00", dateObj: new Date("2026-12-08T20:00:00") },
+  { id: "manche5", title: "Manche 5 - Road America / Montréal", dateStr: "19/01/2027", time: "20h00", dateObj: new Date("2027-01-19T20:00:00") },
+  { id: "manche6", title: "Manche 6 - Interlagos", dateStr: "02/02/2027", time: "20h00", dateObj: new Date("2027-02-02T20:00:00") }
+];
+
+async function sendToDiscord(content, embed = null) {
+  const payload = { content: content };
+  if (embed) payload.embeds = [embed];
+
+  try {
+    const response = await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (response.ok) {
+      if (window.showToast) window.showToast("✅ Annonce envoyée sur Discord !", "success");
+      else alert("Annonce envoyée avec succès !");
+    } else {
+      throw new Error("Erreur HTTP");
+    }
+  } catch (err) {
+    console.error("Erreur webhook Discord :", err);
+    if (window.showToast) window.showToast("❌ Erreur lors de l'envoi Discord", "error");
+    else alert("Erreur lors de l'envoi.");
+  }
+}
+
+// Trouve la prochaine course active
+function getNextOrActiveRace() {
+  const now = new Date();
+  return adminRacesList.find(r => r.dateObj >= now) || adminRacesList[adminRacesList.length - 1];
+}
+
+// --- ÉCOUTEURS DE BOUTONS ---
+document.addEventListener("DOMContentLoaded", () => {
+
+  // 1. Ouverture des présences
+  const btnPresOpen = document.getElementById("btnDiscordPresOpen");
+  if (btnPresOpen) {
+    btnPresOpen.addEventListener("click", async () => {
+      const race = getNextOrActiveRace();
+      await sendToDiscord("@everyone 🟢 **Ouverture des présences !**", {
+        title: `Formulaire ouvert : ${race.title}`,
+        description: `Le formulaire de présence pour la course du **${race.dateStr} à ${race.time}** est désormais ouvert sur le site.\n\nVous avez jusqu'au **mardi à 16h00** pour valider votre place (34 places disponibles).`,
+        color: 0x10b981
+      });
+    });
+  }
+
+  // 2. Fermeture des présences & Liste des inscrits
+  const btnPresClose = document.getElementById("btnDiscordPresClose");
+  if (btnPresClose) {
+    btnPresClose.addEventListener("click", async () => {
+      const race = getNextOrActiveRace();
+      
+      // Récupération des pilotes acceptés depuis Firestore
+      const attendancesSnap = await getDocs(collection(db, `attendances_${race.id}`));
+      let presentPilots = [];
+      
+      attendancesSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.status === "present") {
+          presentPilots.push(`• ${data.userName}`);
+        }
+      });
+
+      const pilotsText = presentPilots.length > 0 ? presentPilots.join("\n") : "Aucun pilote inscrit.";
+
+      await sendToDiscord("🔒 **Fermeture des inscriptions !**", {
+        title: `Grille officielle : ${race.title}`,
+        description: `Les inscriptions sont closes. Voici la liste des **${presentPilots.length} pilotes validés** pour la course de ce soir :\n\n${pilotsText}`,
+        color: 0xef4444
+      });
+    });
+  }
+
+  // 3. Ouverture des réclamations
+  const btnReclamOpen = document.getElementById("btnDiscordReclamOpen");
+  if (btnReclamOpen) {
+    btnReclamOpen.addEventListener("click", async () => {
+      const race = getNextOrActiveRace();
+      await sendToDiscord("@everyone ⚖️ **Ouverture des réclamations !**", {
+        title: `Dépôt ouvert : ${race.title}`,
+        description: "Le formulaire de réclamation est désormais ouvert sur le site.\n\nVous avez jusqu'à **samedi 16h00** strict pour déposer vos demandes d'incidents avec le lien YouTube obligatoire.",
+        color: 0x38bdf8
+      });
+    });
+  }
+
+  // 4. Fermeture des réclamations
+  const btnReclamClose = document.getElementById("btnDiscordReclamClose");
+  if (btnReclamClose) {
+    btnReclamClose.addEventListener("click", async () => {
+      const race = getNextOrActiveRace();
+      await sendToDiscord("🔒 **Clôture des réclamations**", {
+        title: `Fin des dépôts : ${race.title}`,
+        description: "Le formulaire de réclamation est maintenant fermé. Les commissaires de course vont procéder à l'étude des dossiers.",
+        color: 0x64748b
+      });
+    });
+  }
+
+});
 
 function formatMs(ms) {
   if (!Number.isFinite(ms) && ms !== 0) return "—";
