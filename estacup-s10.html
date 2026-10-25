@@ -1410,13 +1410,13 @@
       }
     });
 
-    function loadNextRacePresence() {
+    async function loadNextRacePresence() {
       const container = document.getElementById("presenceRacesContainer");
       if (!container) return;
 
       const now = new Date();
       
-      // 🕒 MODIFICATION ICI : On repousse la disparition de la course à 23h59 le jour J
+      // On repousse la disparition de la course à 23h59 le jour J
       let nextRace = racesList.find(r => {
         let endOfDay = new Date(r.dateObj.getTime());
         endOfDay.setHours(23, 59, 59, 999);
@@ -1431,7 +1431,7 @@
       const diffTime = nextRace.dateObj - now;
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-      // 🕒 CALCUL DE LA DEADLINE (Mardi de la course à 16h00)
+      // CALCUL DE LA DEADLINE (Mardi de la course à 16h00)
       const deadline = new Date(nextRace.dateObj.getTime());
       deadline.setHours(16, 0, 0, 0);
       const isLocked = now >= deadline;
@@ -1448,6 +1448,19 @@
           </div>
         `;
         return;
+      }
+
+      // --- NOUVEAU : Récupération de TOUS les pilotes validés pour la liste "Non répondu" ---
+      let allRegisteredDrivers = [];
+      try {
+        const signupsSnap = await getDocs(query(collection(db, "estacup_s10_signups"), where("isValidated", "==", true)));
+        signupsSnap.forEach(doc => {
+          const d = doc.data();
+          let pName = d.name || (d.firstName && d.lastName ? `${d.firstName} ${d.lastName}` : null) || d.pseudo || "Pilote Inconnu";
+          allRegisteredDrivers.push({ uid: doc.id, name: pName });
+        });
+      } catch (err) {
+        console.error("Erreur lors de la récupération des inscrits :", err);
       }
 
       // Avertissement visuel pour l'admin
@@ -1484,6 +1497,7 @@
           </div>`;
       }
 
+      // --- NOUVEAU : Ajout de la 4ème colonne "Non répondu" (avec style inline pour forcer 4 colonnes) ---
       container.innerHTML = `
         ${adminWarningHtml}
         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 10px;">
@@ -1499,18 +1513,22 @@
 
           ${actionsHtml}
 
-          <div class="presence-lists-grid">
+          <div class="presence-lists-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
             <div class="presence-list-box">
               <h5><span>✅ Acceptés</span> <span id="count-present-${nextRace.id}">0/34</span></h5>
               <ul id="list-present-${nextRace.id}"><li>Aucun</li></ul>
             </div>
             <div class="presence-list-box">
-              <h5><span>❌ Absents / Refusés</span> <span id="count-absent-${nextRace.id}">0</span></h5>
+              <h5><span>❌ Absents</span> <span id="count-absent-${nextRace.id}">0</span></h5>
               <ul id="list-absent-${nextRace.id}"><li>Aucun</li></ul>
             </div>
             <div class="presence-list-box">
               <h5><span>❓ Incertains</span> <span id="count-tentative-${nextRace.id}">0</span></h5>
               <ul id="list-tentative-${nextRace.id}"><li>Aucun</li></ul>
+            </div>
+            <div class="presence-list-box" style="border-color: rgba(148, 163, 184, 0.3);">
+              <h5 style="color: #94a3b8;"><span>👻 Non répondu</span> <span id="count-noresponse-${nextRace.id}">0</span></h5>
+              <ul id="list-noresponse-${nextRace.id}"><li>Aucun</li></ul>
             </div>
           </div>
         </div>
@@ -1520,11 +1538,15 @@
         const presentListNames = [];
         const absentListNames = [];
         const tentativeListNames = [];
+        const respondedUids = new Set(); // Pour stocker ceux qui ont déjà voté
         let userStatus = null;
 
         attendanceSnap.forEach(docSnap => {
           const data = docSnap.data();
           let status = data.status;
+
+          // On mémorise l'ID du pilote qui a répondu
+          respondedUids.add(docSnap.id);
 
           if (isLocked && status === "tentative") {
             status = "absent";
@@ -1546,6 +1568,15 @@
           }
         });
 
+        // --- NOUVEAU : Calcul des pilotes n'ayant pas répondu ---
+        const noResponseListNames = [];
+        allRegisteredDrivers.forEach(driver => {
+          if (!respondedUids.has(driver.uid)) {
+            noResponseListNames.push(driver.name); // S'il n'est pas dans les votes, il va dans "Non répondu"
+          }
+        });
+
+        // Mise à jour de l'affichage des compteurs
         const countPresentEl = document.getElementById(`count-present-${nextRace.id}`);
         if (countPresentEl) {
           countPresentEl.textContent = `${presentListNames.length}/34`;
@@ -1558,6 +1589,10 @@
         const countTentativeEl = document.getElementById(`count-tentative-${nextRace.id}`);
         if (countTentativeEl) countTentativeEl.textContent = tentativeListNames.length;
 
+        const countNoRespEl = document.getElementById(`count-noresponse-${nextRace.id}`);
+        if (countNoRespEl) countNoRespEl.textContent = noResponseListNames.length;
+
+        // Mise à jour de l'affichage des listes
         const listPresentEl = document.getElementById(`list-present-${nextRace.id}`);
         if (listPresentEl) listPresentEl.innerHTML = presentListNames.length ? presentListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
         
@@ -1567,6 +1602,10 @@
         const listTentativeEl = document.getElementById(`list-tentative-${nextRace.id}`);
         if (listTentativeEl) listTentativeEl.innerHTML = tentativeListNames.length ? tentativeListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
 
+        const listNoRespEl = document.getElementById(`list-noresponse-${nextRace.id}`);
+        if (listNoRespEl) listNoRespEl.innerHTML = noResponseListNames.length ? noResponseListNames.map(n => `<li>${n}</li>`).join('') : "<li>Aucun</li>";
+
+        // Mise à jour de l'état visuel des boutons pour l'utilisateur actuel
         const actionBox = container.querySelector(`.presence-actions[data-race="${nextRace.id}"]`);
         if (actionBox) {
           actionBox.querySelectorAll('.btn-presence').forEach(btn => {
