@@ -46,10 +46,10 @@ const escapeHtml = s => (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<":
 const firstInt = str => { const m = String(str || "").match(/-?\d+/); return m ? parseInt(m[0], 10) : NaN; };
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1563937942009938020/C-F_miSFZr7bu61hCzhRGrGWcIy3tMKvuI48I0aEjgK6hY0FcPO-39S91pY2gHhO5wKL";
 
-// Remplace ceci par l'ID de ton rôle Discord (ex: "112233445566778899")
+// ID de ton rôle ESTACUP S10
 const ROLE_ID_TO_TAG = "1546455896958435339"; 
 
-// Liste des courses (identique à ton site)
+// Liste des courses
 const adminRacesList = [
   { id: "prologue", title: "Prologue - Silverstone", dateStr: "22/09/2026", time: "20h00", dateObj: new Date("2026-09-22T20:00:00") },
   { id: "manche1", title: "Manche 1 - Brno", dateStr: "06/10/2026", time: "20h00", dateObj: new Date("2026-10-06T20:00:00") },
@@ -83,20 +83,31 @@ async function sendToDiscord(content, embed = null) {
   }
 }
 
-// Trouve la prochaine course active
-function getNextOrActiveRace() {
+// 1. Pour les OUVERTURES (Regarde la PROCHAINE course à venir)
+function getNextRace() {
   const now = new Date();
   return adminRacesList.find(r => r.dateObj >= now) || adminRacesList[adminRacesList.length - 1];
+}
+
+// 2. Pour les FERMETURES / RÉCLAMATIONS (Regarde la course du jour J ou la DERNIÈRE course passée)
+function getLatestOrCurrentRace() {
+  const now = new Date();
+  // Cherche la course la plus proche dans le passé ou aujourd'hui
+  let pastRaces = adminRacesList.filter(r => r.dateObj <= now);
+  if (pastRaces.length > 0) {
+    return pastRaces[pastRaces.length - 1]; // La dernière course passée
+  }
+  return adminRacesList[0];
 }
 
 // --- ÉCOUTEURS DE BOUTONS ---
 document.addEventListener("DOMContentLoaded", () => {
 
-  // 1. Ouverture des présences
+  // 1. Ouverture des présences (Cible la PROCHAINE course)
   const btnPresOpen = document.getElementById("btnDiscordPresOpen");
   if (btnPresOpen) {
     btnPresOpen.addEventListener("click", async () => {
-      const race = getNextOrActiveRace();
+      const race = getNextRace();
       await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🟢 **Ouverture des présences !**`, {
         title: `Formulaire ouvert : ${race.title}`,
         description: `Le formulaire de présence pour la course du **${race.dateStr} à ${race.time}** est désormais ouvert sur le site.\n\nVous avez jusqu'au **mardi à 16h00** pour valider votre place (34 places disponibles).`,
@@ -105,11 +116,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 2. Fermeture des présences & Liste des inscrits
+  // 2. Fermeture des présences & Grille (Cible la COURSE DU JOUR / LA PLUS RÉCENTE)
   const btnPresClose = document.getElementById("btnDiscordPresClose");
   if (btnPresClose) {
     btnPresClose.addEventListener("click", async () => {
-      const race = getNextOrActiveRace();
+      const race = getLatestOrCurrentRace();
       
       const attendancesSnap = await getDocs(collection(db, `attendances_${race.id}`));
       let presentPilots = [];
@@ -125,17 +136,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🔒 **Fermeture des inscriptions !**`, {
         title: `Grille officielle : ${race.title}`,
-        description: `Les inscriptions sont closes. Voici la liste des **${presentPilots.length} pilotes validés** pour la course de ce soir :\n\n${pilotsText}`,
+        description: `Les inscriptions sont closes pour cette manche. Voici la liste des **${presentPilots.length} pilotes validés** :\n\n${pilotsText}`,
         color: 0xef4444
       });
     });
   }
 
-  // 3. Ouverture des réclamations
+  // 3. Ouverture des réclamations (Cible la COURSE DU JOUR qui vient d'avoir lieu)
   const btnReclamOpen = document.getElementById("btnDiscordReclamOpen");
   if (btnReclamOpen) {
     btnReclamOpen.addEventListener("click", async () => {
-      const race = getNextOrActiveRace();
+      const race = getLatestOrCurrentRace();
       await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> ⚖️ **Ouverture des réclamations !**`, {
         title: `Dépôt ouvert : ${race.title}`,
         description: "Le formulaire de réclamation est désormais ouvert sur le site.\n\nVous avez jusqu'à **samedi 16h00** strict pour déposer vos demandes d'incidents avec le lien YouTube obligatoire.",
@@ -144,11 +155,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 4. Fermeture des réclamations
+  // 4. Fermeture des réclamations (Cible également la course concernée)
   const btnReclamClose = document.getElementById("btnDiscordReclamClose");
   if (btnReclamClose) {
     btnReclamClose.addEventListener("click", async () => {
-      const race = getNextOrActiveRace();
+      const race = getLatestOrCurrentRace();
       await sendToDiscord(`🔒 **Clôture des réclamations**`, {
         title: `Fin des dépôts : ${race.title}`,
         description: "Le formulaire de réclamation est maintenant fermé. Les commissaires de course vont procéder à l'étude des dossiers.",
