@@ -465,6 +465,10 @@ async function loadResults() {
     const rows = []; 
     snap.forEach(d => {
       const c = d.data();
+
+      // AJOUT : On ignore la course si elle est masquée
+      if (c.isPublished === false) return; 
+
       // On s'assure de ne prendre que les courses S10 (date >= août 2026)
       const raceDate = toDate(c.date) || new Date(0);
       if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
@@ -2640,6 +2644,10 @@ async function loadEstacupPilotStandings() {
     const races = [];
     coursesSnap.forEach(d => {
       const c = d.data();
+
+      // AJOUT : On ignore la course si elle est masquée
+      if (c.isPublished === false) return;
+
       const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
       
       // On ne prend que les courses S10
