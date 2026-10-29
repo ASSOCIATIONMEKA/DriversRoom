@@ -2892,6 +2892,10 @@ async function loadEstacupTeamStandings() {
 
     coursesSnap.forEach(d => {
       const c = d.data();
+
+      // AJOUT : On ignore la course si elle est masquée
+      if (c.isPublished === false) return;
+
       const raceDate = c.date?.seconds ? new Date(c.date.seconds * 1000) : (c.date?.toDate ? c.date.toDate() : new Date(c.date || 0));
       
       if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
