@@ -657,11 +657,13 @@ async function saveImportedResults() {
       await setDoc(doc(db, "users", p.uid, "raceHistory_s10", raceId), { name: displayName, date: raceDate, position: p.position, team: p.team || null, car: p.car || null, bestLapMs: p.bestLapMs, totalMs: p.totalMs, penaltyMs: p.penaltyMs, laps: p.laps, status: "OK", points: p.points, hasPole: p.hasPole, track: ImportState.circuit || null, split: 1, isSprint: race.key.includes("sprint"), estacup: true });
     }
 
-    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date() });
+    // AJOUT : isPublished: false pour cacher la course par défaut
+    await setDoc(doc(db, "courses", raceId), { id: raceId, name: displayName, date: raceDate, estacup: true, split: 1, round: ImportState.roundText || null, track: ImportState.circuit || null, isSprint: race.key.includes("sprint"), participants: withUid, createdAt: new Date(), isPublished: false });
   }
   if(window.showToast) window.showToast("✅ Importation terminée !", "success"); 
   await loadCourses();
 }
+
 
 async function loadCourses() {
   const s10List = document.getElementById("courseListS10");
@@ -691,27 +693,36 @@ async function loadCourses() {
     const box = document.createElement("div"); 
     box.className = "course-box";
     box.style.display = "flex";
-    box.style.flexDirection = "column"; // Changement pour empiler le titre et l'éditeur
+    box.style.flexDirection = "column"; 
     box.style.padding = "1.2rem";
     box.style.marginBottom = "1rem";
     
-    // --- L'EN-TÊTE DE LA COURSE ---
     const header = document.createElement("div");
     header.style.display = "flex";
     header.style.justifyContent = "space-between";
     header.style.alignItems = "center";
     header.style.width = "100%";
     
+    // AJOUT : Détermination de l'état de publication et des couleurs du badge
+    const isPublished = c.isPublished !== false; 
+    const badgeText = isPublished ? "👁️ Publié" : "🙈 Brouillon (Caché)";
+    const badgeColor = isPublished ? "#10b981" : "#f59e0b";
+
+    // AJOUT : Badge d'état dans le titre et bouton Publier/Cacher dans la div des actions
     header.innerHTML = `
         <h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0; cursor:pointer; flex: 1; display: flex; align-items: center; gap: 10px;" class="course-title">
-            ${escapeHtml(c.name)} <span style="font-size:0.8rem; color:#38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">✏️ Éditer / Voir résultats</span>
+            ${escapeHtml(c.name)} 
+            <span style="font-size:0.8rem; color:#38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">✏️ Éditer / Voir résultats</span>
+            <span style="font-size:0.8rem; color:${badgeColor}; background: ${badgeColor}22; padding: 4px 8px; border-radius: 6px; border: 1px solid ${badgeColor};">${badgeText}</span>
         </h4>
-        <div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="toggle-publish-course" data-id="${c.id}" data-state="${isPublished}" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                ${isPublished ? "🙈 Cacher" : "👁️ Publier"}
+            </button>
             <button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>
         </div>
     `;
     
-    // --- LA ZONE DÉROULANTE DE L'ÉDITEUR ---
     const details = document.createElement("div");
     details.style.display = "none";
     details.style.marginTop = "15px";
@@ -719,10 +730,9 @@ async function loadCourses() {
     details.style.borderTop = "1px solid rgba(255,255,255,0.05)";
     details.style.paddingTop = "15px";
     
-    // Action au clic sur le titre
     header.querySelector('.course-title').addEventListener('click', () => {
         if (details.style.display === "none") {
-            renderCourseEditTable(c, details); // Charge le tableau interactif
+            renderCourseEditTable(c, details); 
             details.style.display = "block";
         } else {
             details.style.display = "none";
@@ -752,7 +762,28 @@ async function loadCourses() {
   if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
   if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
 
-  // Écouteurs suppression
+  // AJOUT : Écouteurs pour le bouton Publier / Cacher
+  document.querySelectorAll(".toggle-publish-course").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation(); // Évite tout conflit
+      const courseId = btn.dataset.id;
+      const currentState = btn.dataset.state === "true";
+      
+      btn.disabled = true;
+      btn.textContent = "Mise à jour...";
+      
+      try {
+        await updateDoc(doc(db, "courses", courseId), { isPublished: !currentState });
+        if(window.showToast) window.showToast(`✅ Course ${!currentState ? 'publiée' : 'masquée'} avec succès.`, "success");
+        loadCourses(); // Recharge la liste pour appliquer les changements visuels
+      } catch(err) {
+        console.error("Erreur de modification du statut:", err);
+        if(window.showToast) window.showToast("❌ Erreur lors de la mise à jour.", "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
   document.querySelectorAll(".delete-course").forEach(btn => {
     btn.addEventListener("click", async () => {
       if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?\n(Cela nettoiera également l'historique de tous les pilotes participants)"))) return;
