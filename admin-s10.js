@@ -2051,6 +2051,19 @@ async function loadReclamations() {
           if (typeof window.showToast === "function") window.showToast("⚙️ Réclamation en cours de traitement.", "info");
           
           currentProcessingReclamId = id;
+          const btnDate = e.target.getAttribute("data-date");
+const btnSplit = e.target.getAttribute("data-split");
+const selectBox = document.getElementById("incidentRaceSelect");
+
+if (selectBox && btnDate && btnSplit) {
+  for (let i = 0; i < selectBox.options.length; i++) {
+    const opt = selectBox.options[i];
+    if (opt.dataset.date === btnDate && opt.dataset.split === btnSplit) {
+      selectBox.selectedIndex = i;
+      break;
+    }
+  }
+}
           const alertEl = document.getElementById("linkedReclamAlert");
           if (alertEl) alertEl.style.display = "block";
           
@@ -2107,6 +2120,19 @@ async function loadReclamations() {
         const involvedPilots = JSON.parse(e.target.getAttribute("data-pilots") || "[]");
         
         currentProcessingReclamId = id;
+        const btnDate = e.target.getAttribute("data-date");
+const btnSplit = e.target.getAttribute("data-split");
+const selectBox = document.getElementById("incidentRaceSelect");
+
+if (selectBox && btnDate && btnSplit) {
+  for (let i = 0; i < selectBox.options.length; i++) {
+    const opt = selectBox.options[i];
+    if (opt.dataset.date === btnDate && opt.dataset.split === btnSplit) {
+      selectBox.selectedIndex = i;
+      break;
+    }
+  }
+}
         const alertEl = document.getElementById("linkedReclamAlert");
         if (alertEl) alertEl.style.display = "block";
         
