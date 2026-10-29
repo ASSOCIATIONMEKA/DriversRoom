@@ -1118,12 +1118,15 @@ document.getElementById("submitIncident")?.addEventListener("click", async () =>
     document.getElementById("incidentDescription").value = "";
     if (typeof window.showToast === "function") window.showToast("✅ Incident enregistré et pénalités appliquées.", "success");
     await loadIncidentHistory();
+    
+    // 🔄 C'est ici qu'il faut ajouter cette ligne :
     if (typeof loadReclamations === "function") {
       await loadReclamations();
+    }
+
   } catch (err) {
     console.error("Erreur enregistrement incident:", err);
     if (typeof window.showToast === "function") window.showToast("❌ Erreur lors de l'enregistrement.", "error");
-  }
   } finally {
     btn.disabled = false;
     btn.textContent = "✅ Enregistrer l'incident";
