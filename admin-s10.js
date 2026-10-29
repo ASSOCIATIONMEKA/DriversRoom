@@ -703,125 +703,6 @@ async function loadCourses() {
     header.style.alignItems = "center";
     header.style.width = "100%";
     
-    // AJOUT : Détermination de l'état de publication et des couleurs du badge
-    const isPublished = c.isPublished !== false; 
-    const badgeText = isPublished ? "👁️ Publié" : "🙈 Brouillon (Caché)";
-    const badgeColor = isPublished ? "#10b981" : "#f59e0b";
-
-    // AJOUT : Badge d'état dans le titre et bouton Publier/Cacher dans la div des actions
-    header.innerHTML = `
-        <h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0; cursor:pointer; flex: 1; display: flex; align-items: center; gap: 10px;" class="course-title">
-            ${escapeHtml(c.name)} 
-            <span style="font-size:0.8rem; color:#38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">✏️ Éditer / Voir résultats</span>
-            <span style="font-size:0.8rem; color:${badgeColor}; background: ${badgeColor}22; padding: 4px 8px; border-radius: 6px; border: 1px solid ${badgeColor};">${badgeText}</span>
-        </h4>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <button class="toggle-publish-course" data-id="${c.id}" data-state="${isPublished}" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
-                ${isPublished ? "🙈 Cacher" : "👁️ Publier"}
-            </button>
-            <button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>
-        </div>
-    `;
-    
-    const details = document.createElement("div");
-    details.style.display = "none";
-    details.style.marginTop = "15px";
-    details.style.width = "100%";
-    details.style.borderTop = "1px solid rgba(255,255,255,0.05)";
-    details.style.paddingTop = "15px";
-    
-    header.querySelector('.course-title').addEventListener('click', () => {
-        if (details.style.display === "none") {
-            renderCourseEditTable(c, details); 
-            details.style.display = "block";
-        } else {
-            details.style.display = "none";
-        }
-    });
-
-    box.appendChild(header);
-    box.appendChild(details);
-    
-    const raceDate = toDateVal(c.date) || new Date(0);
-    
-    if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
-      s10List.appendChild(box);
-      countS10++;
-      if (incidentRaceSelect) {
-          const opt = document.createElement("option");
-          opt.value = c.id;
-          opt.textContent = c.name;
-          incidentRaceSelect.appendChild(opt);
-      }
-    } else {
-      s9List.appendChild(box);
-      countS9++;
-    }
-  });
-  
-  if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
-  if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
-
-  // AJOUT : Écouteurs pour le bouton Publier / Cacher
-  document.querySelectorAll(".toggle-publish-course").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation(); // Évite tout conflit
-      const courseId = btn.dataset.id;
-      const currentState = btn.dataset.state === "true";
-      
-      btn.disabled = true;
-      btn.textContent = "Mise à jour...";
-      
-      try {
-        await updateDoc(doc(db, "courses", courseId), { isPublished: !currentState });
-        if(window.showToast) window.showToast(`✅ Course ${!currentState ? 'publiée' : 'masquée'} avec succès.`, "success");
-        loadCourses(); // Recharge la liste pour appliquer les changements visuels
-      } catch(err) {
-        console.error("Erreur de modification du statut:", err);
-        if(window.showToast) window.showToast("❌ Erreur lors de la mise à jour.", "error");
-        btn.disabled = false;
-      }
-    });
-  });
-
-  async function loadCourses() {
-  const s10List = document.getElementById("courseListS10");
-  const s9List = document.getElementById("courseListS9");
-  const incidentRaceSelect = document.getElementById("incidentRaceSelect");
-  
-  if (!s10List || !s9List) return;
-
-  s10List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
-  s9List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
-
-  const snap = await getDocs(collection(db, "courses"));
-  s10List.innerHTML = "";
-  s9List.innerHTML = "";
-  
-  if (incidentRaceSelect) {
-      incidentRaceSelect.innerHTML = `<option value="">-- Sélectionner une course --</option>`;
-  }
-
-  const courses = [];
-  snap.forEach(d => courses.push({ id: d.id, ...d.data() }));
-  courses.sort((a, b) => (toDateVal(b.date) || 0) - (toDateVal(a.date) || 0));
-
-  let countS10 = 0, countS9 = 0;
-
-  courses.forEach(c => {
-    const box = document.createElement("div"); 
-    box.className = "course-box";
-    box.style.display = "flex";
-    box.style.flexDirection = "column"; 
-    box.style.padding = "1.2rem";
-    box.style.marginBottom = "1rem";
-    
-    const header = document.createElement("div");
-    header.style.display = "flex";
-    header.style.justifyContent = "space-between";
-    header.style.alignItems = "center";
-    header.style.width = "100%";
-    
     const isPublished = c.isPublished !== false; 
     const badgeText = isPublished ? "👁️ Publié" : "🙈 Brouillon (Caché)";
     const badgeColor = isPublished ? "#10b981" : "#f59e0b";
@@ -869,7 +750,6 @@ async function loadCourses() {
           opt.value = c.id;
           opt.textContent = c.name;
           
-          // NOUVEAU : Injection des attributs pour l'auto-sélection
           opt.dataset.date = c.date || ''; 
           opt.dataset.split = c.split || (c.isSprint ? "Sprint" : "Principale");
           
@@ -1914,7 +1794,6 @@ async function loadReclamations() {
     const reclamations = [];
     snap.forEach(docSnap => reclamations.push({ id: docSnap.id, ...docSnap.data() }));
 
-    // Grouper les réclamations par Course (Date + Split)
     const groupedReclamations = {};
     reclamations.forEach(r => {
       const dCourse = r.dateCourse ? new Date(r.dateCourse).toLocaleDateString("fr-FR") : "Date inconnue";
@@ -1925,16 +1804,12 @@ async function loadReclamations() {
       groupedReclamations[folderKey].push(r);
     });
 
-    // Trier les dossiers (clés) pour avoir les courses les plus récentes en haut
-    const sortedFolders = Object.keys(groupedReclamations).sort((a, b) => {
-      return b.localeCompare(a); // Tri alphabétique inverse
-    });
+    const sortedFolders = Object.keys(groupedReclamations).sort((a, b) => b.localeCompare(a));
 
     let html = `<div style="display: flex; flex-direction: column; gap: 15px;">`;
 
     sortedFolders.forEach(folderName => {
       const recs = groupedReclamations[folderName];
-      
       const untreatedCount = recs.filter(r => r.status !== "traité" && !r.isTreated).length;
       const isOpen = untreatedCount > 0 ? "open" : ""; 
       
@@ -2039,7 +1914,7 @@ async function loadReclamations() {
     html += `</div>`;
     box.innerHTML = html;
 
-    // Événement : Commencer à traiter une réclamation
+    // Événement : Commencer à traiter
     document.querySelectorAll(".btn-start-reclam").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const id = e.target.getAttribute("data-id");
@@ -2051,23 +1926,9 @@ async function loadReclamations() {
           if (typeof window.showToast === "function") window.showToast("⚙️ Réclamation en cours de traitement.", "info");
           
           currentProcessingReclamId = id;
-          const btnDate = e.target.getAttribute("data-date");
-const btnSplit = e.target.getAttribute("data-split");
-const selectBox = document.getElementById("incidentRaceSelect");
-
-if (selectBox && btnDate && btnSplit) {
-  for (let i = 0; i < selectBox.options.length; i++) {
-    const opt = selectBox.options[i];
-    if (opt.dataset.date === btnDate && opt.dataset.split === btnSplit) {
-      selectBox.selectedIndex = i;
-      break;
-    }
-  }
-}
           const alertEl = document.getElementById("linkedReclamAlert");
           if (alertEl) alertEl.style.display = "block";
           
-          // NOUVEAU : Auto-sélection de la course dans le formulaire
           const btnDate = e.target.getAttribute("data-date");
           const btnSplit = e.target.getAttribute("data-split");
           const selectBox = document.getElementById("incidentRaceSelect");
@@ -2081,7 +1942,6 @@ if (selectBox && btnDate && btnSplit) {
             }
           }
           
-          // Ajout automatique des pilotes impliqués dans l'incident
           selectedPilots = [];
           for (const pName of involvedPilots) {
              const lowerName = pName.toLowerCase().replace('👤 ', '').trim();
@@ -2101,7 +1961,6 @@ if (selectBox && btnDate && btnSplit) {
           const addPilotBtn = document.getElementById("addIncidentPilot");
           if (addPilotBtn) addPilotBtn.scrollIntoView({ behavior: "smooth", block: "center" });
           
-          // Ouvrir le modal manuellement si nécessaire selon votre UI
           const modal = document.getElementById("incidentModal");
           if (modal) modal.style.display = "flex";
           
@@ -2112,6 +1971,98 @@ if (selectBox && btnDate && btnSplit) {
         }
       });
     });
+
+    // Événement : Reprendre la liaison
+    document.querySelectorAll(".btn-resume-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        const involvedPilots = JSON.parse(e.target.getAttribute("data-pilots") || "[]");
+        
+        currentProcessingReclamId = id;
+        const alertEl = document.getElementById("linkedReclamAlert");
+        if (alertEl) alertEl.style.display = "block";
+        
+        const btnDate = e.target.getAttribute("data-date");
+        const btnSplit = e.target.getAttribute("data-split");
+        const selectBox = document.getElementById("incidentRaceSelect");
+        if (selectBox && btnDate && btnSplit) {
+          for (let i = 0; i < selectBox.options.length; i++) {
+            const opt = selectBox.options[i];
+            if (opt.dataset.date === btnDate && opt.dataset.split === btnSplit) {
+              selectBox.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        
+        selectedPilots = [];
+        for (const pName of involvedPilots) {
+           const lowerName = pName.toLowerCase().replace('👤 ', '').trim();
+           const found = ImportState.usersCache.find(u => lowerName.includes(u.lastName.toLowerCase()));
+           if (found) {
+              const snap = await getDoc(doc(db, "users", found.id));
+              if (snap.exists()) {
+                 const d = snap.data();
+                 if(!selectedPilots.some(sp => sp.uid === found.id)) {
+                     selectedPilots.push({ uid: found.id, name: found.name, before: d.licensePoints ?? 10, after: (d.licensePoints ?? 10) - 1 });
+                 }
+              }
+           }
+        }
+        if (typeof updateIncidentList === "function") updateIncidentList();
+
+        const addPilotBtn = document.getElementById("addIncidentPilot");
+        if (addPilotBtn) addPilotBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        const modal = document.getElementById("incidentModal");
+        if (modal) modal.style.display = "flex";
+      });
+    });
+
+    // Événement : Supprimer
+    document.querySelectorAll(".btn-delete-reclam").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const targetBtn = e.target.closest(".btn-delete-reclam");
+        if (!targetBtn) return;
+        const id = targetBtn.getAttribute("data-id");
+        
+        targetBtn.style.display = "none";
+        
+        const confirmBox = document.createElement("div");
+        confirmBox.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 4px 10px; border-radius: 6px; margin-left: 5px;";
+        confirmBox.innerHTML = `
+          <span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">Supprimer ?</span>
+          <button class="btn-yes" style="background: #ef4444; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Oui</button>
+          <button class="btn-no" style="background: #64748b; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#64748b'">Non</button>
+        `;
+        
+        targetBtn.parentNode.insertBefore(confirmBox, targetBtn.nextSibling);
+        
+        confirmBox.querySelector(".btn-yes").addEventListener("click", async () => {
+          confirmBox.innerHTML = `<span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">Suppression...</span>`;
+          try {
+            await deleteDoc(doc(db, "estacup_s10_reclamations", id));
+            if (typeof window.showToast === "function") window.showToast("🗑️ Réclamation supprimée.", "success");
+            loadReclamations(); 
+          } catch (error) {
+            if (typeof window.showToast === "function") window.showToast("❌ Erreur.", "error");
+            confirmBox.remove();
+            targetBtn.style.display = ""; 
+          }
+        });
+        
+        confirmBox.querySelector(".btn-no").addEventListener("click", () => {
+          confirmBox.remove();
+          targetBtn.style.display = ""; 
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error("Erreur chargement:", error);
+    box.innerHTML = `<p class='muted-note'>Erreur de chargement des réclamations.</p>`;
+  }
+}
 
     // Événement : Reprendre la liaison (NOUVEAU)
     document.querySelectorAll(".btn-resume-reclam").forEach(btn => {
