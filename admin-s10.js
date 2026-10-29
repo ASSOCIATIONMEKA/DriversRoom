@@ -784,6 +784,127 @@ async function loadCourses() {
     });
   });
 
+  async function loadCourses() {
+  const s10List = document.getElementById("courseListS10");
+  const s9List = document.getElementById("courseListS9");
+  const incidentRaceSelect = document.getElementById("incidentRaceSelect");
+  
+  if (!s10List || !s9List) return;
+
+  s10List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
+  s9List.innerHTML = `<div class="loading-inline"><div class="spinner"></div></div>`;
+
+  const snap = await getDocs(collection(db, "courses"));
+  s10List.innerHTML = "";
+  s9List.innerHTML = "";
+  
+  if (incidentRaceSelect) {
+      incidentRaceSelect.innerHTML = `<option value="">-- Sélectionner une course --</option>`;
+  }
+
+  const courses = [];
+  snap.forEach(d => courses.push({ id: d.id, ...d.data() }));
+  courses.sort((a, b) => (toDateVal(b.date) || 0) - (toDateVal(a.date) || 0));
+
+  let countS10 = 0, countS9 = 0;
+
+  courses.forEach(c => {
+    const box = document.createElement("div"); 
+    box.className = "course-box";
+    box.style.display = "flex";
+    box.style.flexDirection = "column"; 
+    box.style.padding = "1.2rem";
+    box.style.marginBottom = "1rem";
+    
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.width = "100%";
+    
+    const isPublished = c.isPublished !== false; 
+    const badgeText = isPublished ? "👁️ Publié" : "🙈 Brouillon (Caché)";
+    const badgeColor = isPublished ? "#10b981" : "#f59e0b";
+
+    header.innerHTML = `
+        <h4 style="margin:0; font-size: 1.1rem; color: #e2e8f0; cursor:pointer; flex: 1; display: flex; align-items: center; gap: 10px;" class="course-title">
+            ${escapeHtml(c.name)} 
+            <span style="font-size:0.8rem; color:#38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">✏️ Éditer / Voir résultats</span>
+            <span style="font-size:0.8rem; color:${badgeColor}; background: ${badgeColor}22; padding: 4px 8px; border-radius: 6px; border: 1px solid ${badgeColor};">${badgeText}</span>
+        </h4>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="toggle-publish-course" data-id="${c.id}" data-state="${isPublished}" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                ${isPublished ? "🙈 Cacher" : "👁️ Publier"}
+            </button>
+            <button class="delete-course" data-id="${c.id}" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Supprimer</button>
+        </div>
+    `;
+    
+    const details = document.createElement("div");
+    details.style.display = "none";
+    details.style.marginTop = "15px";
+    details.style.width = "100%";
+    details.style.borderTop = "1px solid rgba(255,255,255,0.05)";
+    details.style.paddingTop = "15px";
+    
+    header.querySelector('.course-title').addEventListener('click', () => {
+        if (details.style.display === "none") {
+            renderCourseEditTable(c, details); 
+            details.style.display = "block";
+        } else {
+            details.style.display = "none";
+        }
+    });
+
+    box.appendChild(header);
+    box.appendChild(details);
+    
+    const raceDate = toDateVal(c.date) || new Date(0);
+    
+    if (raceDate.getTime() >= new Date("2026-08-01").getTime()) {
+      s10List.appendChild(box);
+      countS10++;
+      if (incidentRaceSelect) {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          
+          // NOUVEAU : Injection des attributs pour l'auto-sélection
+          opt.dataset.date = c.date || ''; 
+          opt.dataset.split = c.split || (c.isSprint ? "Sprint" : "Principale");
+          
+          incidentRaceSelect.appendChild(opt);
+      }
+    } else {
+      s9List.appendChild(box);
+      countS9++;
+    }
+  });
+  
+  if (countS10 === 0) s10List.innerHTML = "<p class='muted-note'>Aucune course S10 enregistrée.</p>";
+  if (countS9 === 0) s9List.innerHTML = "<p class='muted-note'>Aucune archive trouvée.</p>";
+
+  document.querySelectorAll(".toggle-publish-course").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const courseId = btn.dataset.id;
+      const currentState = btn.dataset.state === "true";
+      
+      btn.disabled = true;
+      btn.textContent = "Mise à jour...";
+      
+      try {
+        await updateDoc(doc(db, "courses", courseId), { isPublished: !currentState });
+        if(window.showToast) window.showToast(`✅ Course ${!currentState ? 'publiée' : 'masquée'} avec succès.`, "success");
+        loadCourses(); 
+      } catch(err) {
+        console.error("Erreur de modification du statut:", err);
+        if(window.showToast) window.showToast("❌ Erreur lors de la mise à jour.", "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
   document.querySelectorAll(".delete-course").forEach(btn => {
     btn.addEventListener("click", async () => {
       if (!(await showConfirm("Voulez-vous vraiment supprimer cette course ?\n(Cela nettoiera également l'historique de tous les pilotes participants)"))) return;
@@ -1806,7 +1927,7 @@ async function loadReclamations() {
 
     // Trier les dossiers (clés) pour avoir les courses les plus récentes en haut
     const sortedFolders = Object.keys(groupedReclamations).sort((a, b) => {
-      return b.localeCompare(a); // Tri alphabétique inverse (suffisant vu le format "Course du JJ/MM/AAAA")
+      return b.localeCompare(a); // Tri alphabétique inverse
     });
 
     let html = `<div style="display: flex; flex-direction: column; gap: 15px;">`;
@@ -1814,9 +1935,8 @@ async function loadReclamations() {
     sortedFolders.forEach(folderName => {
       const recs = groupedReclamations[folderName];
       
-      // Compter combien sont en attente dans ce dossier
       const untreatedCount = recs.filter(r => r.status !== "traité" && !r.isTreated).length;
-      const isOpen = untreatedCount > 0 ? "open" : ""; // Ouvre automatiquement le dossier s'il y a du boulot
+      const isOpen = untreatedCount > 0 ? "open" : ""; 
       
       const badgeHtml = untreatedCount > 0 
         ? `<span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 10px;">${untreatedCount} en attente</span>` 
@@ -1830,7 +1950,6 @@ async function loadReclamations() {
           <div style="padding: 15px 20px 20px 20px; display: flex; flex-direction: column; gap: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
       `;
 
-      // Trier à l'intérieur du dossier : non traitées en haut, puis par date d'envoi
       recs.sort((a, b) => {
         const aTreated = a.status === "traité" || a.isTreated;
         const bTreated = b.status === "traité" || b.isTreated;
@@ -1847,11 +1966,9 @@ async function loadReclamations() {
         const borderColor = isTreated ? "#10b981" : "#f59e0b";
         const bgColor = isTreated ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)";
 
-        // Gérer les nouvelles données (avec sécurité pour les anciennes réclamations)
         const incidentType = r.incidentType || "Non spécifié";
         const lap = r.lap ? `Tour ${r.lap}` : "Non spécifié";
         
-        // Affichage des pilotes impliqués sous forme de tags
         let involvedHtml = "";
         if (r.involvedPilots && r.involvedPilots.length > 0) {
           involvedHtml = r.involvedPilots.map(p => `<span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">👤 ${escapeHtml(p)}</span>`).join(" ");
@@ -1874,8 +1991,6 @@ async function loadReclamations() {
             </div>
             
             <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-              
-              <!-- NOUVELLES INFORMATIONS -->
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
                 <div>
                   <span style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 4px;">Type d'incident :</span>
@@ -1903,12 +2018,12 @@ async function loadReclamations() {
               <div style="display: flex; align-items: center; gap: 15px;">
                 <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">Soumise le ${dateSoumission}</span>
                 ${(!r.isTreated && r.status !== 'En cours de traitement') ? `
-                  <button class="btn-start-reclam" data-id="${r.id}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
+                  <button class="btn-start-reclam" data-id="${r.id}" data-date="${r.dateCourse || ''}" data-split="${escapeHtml(r.split || '')}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
                     ⚙️ Ouvrir pour traiter
                   </button>
                 ` : ''}
                 ${r.status === 'En cours de traitement' ? `
-                  <button class="" data-id="${r.id}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
+                  <button class="btn-resume-reclam" data-id="${r.id}" data-date="${r.dateCourse || ''}" data-split="${escapeHtml(r.split || '')}" data-pilots="${escapeHtml(JSON.stringify(r.involvedPilots || []))}" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#38bdf8'; this.style.color='#fff';" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'; this.style.color='#38bdf8';">
                     🔄 Reprendre la liaison
                   </button>
                 ` : ''}
@@ -1936,7 +2051,22 @@ async function loadReclamations() {
           if (typeof window.showToast === "function") window.showToast("⚙️ Réclamation en cours de traitement.", "info");
           
           currentProcessingReclamId = id;
-          document.getElementById("linkedReclamAlert").style.display = "block";
+          const alertEl = document.getElementById("linkedReclamAlert");
+          if (alertEl) alertEl.style.display = "block";
+          
+          // NOUVEAU : Auto-sélection de la course dans le formulaire
+          const btnDate = e.target.getAttribute("data-date");
+          const btnSplit = e.target.getAttribute("data-split");
+          const selectBox = document.getElementById("incidentRaceSelect");
+          if (selectBox && btnDate && btnSplit) {
+            for (let i = 0; i < selectBox.options.length; i++) {
+              const opt = selectBox.options[i];
+              if (opt.dataset.date === btnDate && opt.dataset.split === btnSplit) {
+                selectBox.selectedIndex = i;
+                break;
+              }
+            }
+          }
           
           // Ajout automatique des pilotes impliqués dans l'incident
           selectedPilots = [];
@@ -1953,8 +2083,14 @@ async function loadReclamations() {
                 }
              }
           }
-          updateIncidentList();
-          document.getElementById("addIncidentPilot").scrollIntoView({ behavior: "smooth", block: "center" });
+          if (typeof updateIncidentList === "function") updateIncidentList();
+          
+          const addPilotBtn = document.getElementById("addIncidentPilot");
+          if (addPilotBtn) addPilotBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+          
+          // Ouvrir le modal manuellement si nécessaire selon votre UI
+          const modal = document.getElementById("incidentModal");
+          if (modal) modal.style.display = "flex";
           
           loadReclamations(); 
         } catch (error) {
@@ -1963,6 +2099,61 @@ async function loadReclamations() {
         }
       });
     });
+
+    // Événement : Reprendre la liaison (NOUVEAU)
+    document.querySelectorAll(".btn-resume-reclam").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        const involvedPilots = JSON.parse(e.target.getAttribute("data-pilots") || "[]");
+        
+        currentProcessingReclamId = id;
+        const alertEl = document.getElementById("linkedReclamAlert");
+        if (alertEl) alertEl.style.display = "block";
+        
+        // Auto-sélection de la course
+        const btnDate = e.target.getAttribute("data-date");
+        const btnSplit = e.target.getAttribute("data-split");
+        const selectBox = document.getElementById("incidentRaceSelect");
+        if (selectBox && btnDate && btnSplit) {
+          for (let i = 0; i < selectBox.options.length; i++) {
+            const opt = selectBox.options[i];
+            if (opt.dataset.date === btnDate && opt.dataset.split === btnSplit) {
+              selectBox.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        
+        // Récupérer les pilotes pour éviter que le formulaire soit vide au moment de la sauvegarde
+        selectedPilots = [];
+        for (const pName of involvedPilots) {
+           const lowerName = pName.toLowerCase().replace('👤 ', '').trim();
+           const found = ImportState.usersCache.find(u => lowerName.includes(u.lastName.toLowerCase()));
+           if (found) {
+              const snap = await getDoc(doc(db, "users", found.id));
+              if (snap.exists()) {
+                 const d = snap.data();
+                 if(!selectedPilots.some(sp => sp.uid === found.id)) {
+                     selectedPilots.push({ uid: found.id, name: found.name, before: d.licensePoints ?? 10, after: (d.licensePoints ?? 10) - 1 });
+                 }
+              }
+           }
+        }
+        if (typeof updateIncidentList === "function") updateIncidentList();
+
+        const addPilotBtn = document.getElementById("addIncidentPilot");
+        if (addPilotBtn) addPilotBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        const modal = document.getElementById("incidentModal");
+        if (modal) modal.style.display = "flex";
+      });
+    });
+
+  } catch (error) {
+    console.error("Erreur lors du chargement des réclamations:", error);
+    box.innerHTML = `<p class='muted-note'>Erreur de chargement des réclamations.</p>`;
+  }
+}
 
     // Événement : Reprendre une réclamation après rafraîchissement de la page
     document.querySelectorAll(".btn-resume-reclam").forEach(btn => {
