@@ -83,19 +83,26 @@ async function sendToDiscord(content, embed = null) {
   }
 }
 
-// 1. Pour les OUVERTURES (Regarde la PROCHAINE course à venir)
+// 1. Pour les OUVERTURES (Cible la PROCHAINE course, en ignorant celles déjà passées aujourd'hui)
 function getNextRace() {
   const now = new Date();
-  return adminRacesList.find(r => r.dateObj >= now) || adminRacesList[adminRacesList.length - 1];
+  return adminRacesList.find(r => {
+    const endOfDay = new Date(r.dateObj);
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay >= now;
+  }) || adminRacesList[adminRacesList.length - 1];
 }
 
-// 2. Pour les FERMETURES / RÉCLAMATIONS (Regarde la course du jour J ou la DERNIÈRE course passée)
+// 2. Pour les FERMETURES / RÉCLAMATIONS (Cible la course du jour J jusqu'à 23h59, ou la dernière course passée)
 function getLatestOrCurrentRace() {
   const now = new Date();
-  // Cherche la course la plus proche dans le passé ou aujourd'hui
-  let pastRaces = adminRacesList.filter(r => r.dateObj <= now);
-  if (pastRaces.length > 0) {
-    return pastRaces[pastRaces.length - 1]; // La dernière course passée
+  let pastOrTodayRaces = adminRacesList.filter(r => {
+    const startOfDay = new Date(r.dateObj);
+    startOfDay.setHours(0, 0, 0, 0);
+    return startOfDay <= now;
+  });
+  if (pastOrTodayRaces.length > 0) {
+    return pastOrTodayRaces[pastOrTodayRaces.length - 1];
   }
   return adminRacesList[0];
 }
@@ -123,20 +130,35 @@ document.addEventListener("DOMContentLoaded", () => {
       const race = getLatestOrCurrentRace();
       
       const attendancesSnap = await getDocs(collection(db, `attendances_${race.id}`));
-      let presentPilots = [];
+      let validEntries = [];
       
       attendancesSnap.forEach(docSnap => {
         const data = docSnap.data();
         if (data.status === "present") {
-          presentPilots.push(`• ${data.userName}`);
+          const ts = data.timestamp?.toMillis ? data.timestamp.toMillis() : new Date(data.timestamp || 0).getTime();
+          validEntries.push({ name: data.userName, time: ts });
         }
       });
 
-      const pilotsText = presentPilots.length > 0 ? presentPilots.join("\n") : "Aucun pilote inscrit.";
+      // Tri chronologique (du 1er inscrit au dernier)
+      validEntries.sort((a, b) => a.time - b.time);
+
+      // Séparation Titulaires (1 à 34) et Réservistes (35+)
+      const starters = validEntries.slice(0, 34);
+      const reserves = validEntries.slice(34);
+
+      let pilotsText = starters.length > 0 
+        ? starters.map((p, i) => `**#${i + 1}** • ${p.name}`).join("\n") 
+        : "Aucun pilote inscrit.";
+
+      if (reserves.length > 0) {
+        pilotsText += `\n\n**⏳ Liste d'attente / Réservistes (${reserves.length}) :**\n` + 
+          reserves.map((p, i) => `**#${i + 35}** • ${p.name}`).join("\n");
+      }
 
       await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🔒 **Fermeture des inscriptions !**`, {
         title: `Grille officielle : ${race.title}`,
-        description: `Les inscriptions sont closes pour cette manche. Voici la liste des **${presentPilots.length} pilotes validés** :\n\n${pilotsText}`,
+        description: `Les inscriptions sont closes pour cette manche. Voici la liste des **${starters.length}/34 pilotes validés** :\n\n${pilotsText}`,
         color: 0xef4444
       });
     });
