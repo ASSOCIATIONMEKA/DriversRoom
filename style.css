@@ -604,3 +604,12 @@ div:has(> #adminViewToggle),
   background: rgba(30, 27, 75, 0.95) !important; /* Fond violet très sombre */
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 0 15px rgba(168, 85, 247, 0.4) !important;
 }
+
+/* Suppression du scroll sur les listes de présence */
+#list-accepted, #list-absent, #list-uncertain, #list-no-response,
+#presentList, #absentList, #uncertainList, #noResponseList,
+.attendance-list, .presence-list {
+  max-height: none !important;
+  height: auto !important;
+  overflow-y: visible !important;
+}
