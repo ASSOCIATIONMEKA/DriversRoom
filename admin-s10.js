@@ -148,12 +148,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const reserves = validEntries.slice(34);
 
       let pilotsText = starters.length > 0 
-        ? starters.map((p, i) => `**#${i + 1}** • ${p.name}`).join("\n") 
+        ? starters.map(p => `• ${p.name}`).join("\n") 
         : "Aucun pilote inscrit.";
 
       if (reserves.length > 0) {
         pilotsText += `\n\n**⏳ Liste d'attente / Réservistes (${reserves.length}) :**\n` + 
-          reserves.map((p, i) => `**#${i + 35}** • ${p.name}`).join("\n");
+          reserves.map(p => `• ${p.name}`).join("\n");
       }
 
       await sendToDiscord(`<@&${ROLE_ID_TO_TAG}> 🔒 **Fermeture des inscriptions !**`, {
