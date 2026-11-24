@@ -1524,17 +1524,18 @@
             font-size: 0.95rem;
           }
           .presence-list-scroll {
-            list-style-type: disc;
-            padding-left: 1.2rem;
+            list-style-type: none;
+            padding-left: 0;
             margin: 0;
-            max-height: 250px;
-            overflow-y: auto;
-            padding-right: 5px;
             color: #94a3b8;
           }
           .presence-list-scroll li {
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.45rem;
             font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
           }
           .presence-list-scroll::-webkit-scrollbar { width: 5px; }
           .presence-list-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
@@ -1620,10 +1621,36 @@
         absentList.sort((a, b) => a.time - b.time);
         tentativeList.sort((a, b) => a.time - b.time);
 
-        // On extrait juste les noms maintenant qu'ils sont triés
-        const presentListNames = presentList.map(e => e.name);
-        const absentListNames = absentList.map(e => e.name);
-        const tentativeListNames = tentativeList.map(e => e.name);
+        // --- FORMATAGE DE LA DATE ET HEURE (ex: 24/11 14:32) ---
+        const formatTime = (ms) => {
+          if (!ms || ms <= 0) return "";
+          const d = new Date(ms);
+          const day = String(d.getDate()).padStart(2, "0");
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const hours = String(d.getHours()).padStart(2, "0");
+          const mins = String(d.getMinutes()).padStart(2, "0");
+          return `${day}/${month} ${hours}:${mins}`;
+        };
+
+        // --- GÉNÉRATION DES LIGNES AVEC RANG + HEURE ---
+        const renderEntriesWithTime = (entries, checkGridLimit = false) => {
+          if (!entries.length) return `<li>Aucun</li>`;
+          return entries.map((e, idx) => {
+            const timeStr = formatTime(e.time);
+            const isReserve = checkGridLimit && idx >= 34; // Au-delà des 34 places
+            const rankColor = isReserve ? "#f59e0b" : "#38bdf8";
+            const nameColor = isReserve ? "#fde68a" : "#e2e8f0";
+
+            return `
+              <li style="${isReserve ? 'background: rgba(245, 158, 11, 0.1); padding: 3px 6px; border-radius: 4px;' : ''}">
+                <span style="color: ${nameColor};">
+                  <strong style="color: ${rankColor}; font-size: 0.8rem; margin-right: 4px;">#${idx + 1}</strong>${e.name}
+                </span>
+                ${timeStr ? `<span style="font-size: 0.75rem; color: #64748b; white-space: nowrap;">🕒 ${timeStr}</span>` : ""}
+              </li>
+            `;
+          }).join('');
+        };
 
         // Calcul des non-répondus
         const noResponseListNames = [];
@@ -1639,34 +1666,28 @@
         // Mise à jour des compteurs
         const countPresentEl = document.getElementById(`count-present-${nextRace.id}`);
         if (countPresentEl) {
-          countPresentEl.textContent = `${presentListNames.length}/34`;
-          countPresentEl.style.color = presentListNames.length > 34 ? "#f87171" : "#10b981";
+          countPresentEl.textContent = `${presentList.length}/34`;
+          countPresentEl.style.color = presentList.length > 34 ? "#f87171" : "#10b981";
         }
         
         const countAbsentEl = document.getElementById(`count-absent-${nextRace.id}`);
-        if (countAbsentEl) countAbsentEl.textContent = absentListNames.length;
+        if (countAbsentEl) countAbsentEl.textContent = absentList.length;
         
         const countTentativeEl = document.getElementById(`count-tentative-${nextRace.id}`);
-        if (countTentativeEl) countTentativeEl.textContent = tentativeListNames.length;
+        if (countTentativeEl) countTentativeEl.textContent = tentativeList.length;
 
         const countNoRespEl = document.getElementById(`count-noresponse-${nextRace.id}`);
         if (countNoRespEl) countNoRespEl.textContent = noResponseListNames.length;
 
         // Mise à jour des listes
         const listPresentEl = document.getElementById(`list-present-${nextRace.id}`);
-        if (listPresentEl) listPresentEl.innerHTML = presentListNames.length 
-          ? presentListNames.map(n => `<li>${n}</li>`).join('') 
-          : `<li>Aucun</li>`;
+        if (listPresentEl) listPresentEl.innerHTML = renderEntriesWithTime(presentList, true);
         
         const listAbsentEl = document.getElementById(`list-absent-${nextRace.id}`);
-        if (listAbsentEl) listAbsentEl.innerHTML = absentListNames.length 
-          ? absentListNames.map(n => `<li>${n}</li>`).join('') 
-          : `<li>Aucun</li>`;
+        if (listAbsentEl) listAbsentEl.innerHTML = renderEntriesWithTime(absentList, false);
         
         const listTentativeEl = document.getElementById(`list-tentative-${nextRace.id}`);
-        if (listTentativeEl) listTentativeEl.innerHTML = tentativeListNames.length 
-          ? tentativeListNames.map(n => `<li>${n}</li>`).join('') 
-          : `<li>Aucun</li>`;
+        if (listTentativeEl) listTentativeEl.innerHTML = renderEntriesWithTime(tentativeList, false);
 
         const listNoRespEl = document.getElementById(`list-noresponse-${nextRace.id}`);
         if (listNoRespEl) listNoRespEl.innerHTML = noResponseListNames.length 
