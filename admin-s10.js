@@ -1747,18 +1747,31 @@ function recomputePositions(rows) {
 function smartSplitName(full) {
   const s = String(full || "").trim().replace(/_/g, " ").replace(/\s+/g, " ");
   if (!s) return { firstName: "", lastName: "" };
-  if (s.includes(",")) { const [ln, fn] = s.split(",").map(x => x.trim()); return { firstName: fn || "", lastName: ln || "" }; }
+  if (s.includes(",")) {
+    const [ln, fn] = s.split(",").map(x => x.trim());
+    return { firstName: fn || "", lastName: ln || "" };
+  }
   const t = s.split(" ");
   if (t.length === 1) return { firstName: "", lastName: t[0] };
-  const isUpperLike = w => { const letters = (w.match(/[A-Z À-ÖØ-Ý]/gi) || []).join(""); return letters && letters === letters.toUpperCase(); };
-  if (t.length === 2) {
-    const [a, b] = t;
-    if (isUpperLike(a) && !isUpperLike(b)) return { firstName: b, lastName: a };
-    if (isUpperLike(b) && !isUpperLike(a)) return { firstName: a, lastName: b };
-    return { firstName: a, lastName: b };
+
+  const isUpperWord = w => {
+    const letters = (w.match(/[A-Za-zÀ-ÖØ-öø-ÿ]/g) || []).join("");
+    return letters.length > 0 && letters === letters.toUpperCase();
+  };
+
+  // Sépare les mots entièrement en MAJUSCULES (nom de famille) des mots en casse mixte (prénom)
+  const upperWords = t.filter(w => isUpperWord(w));
+  const mixedWords = t.filter(w => !isUpperWord(w));
+
+  if (upperWords.length > 0 && mixedWords.length > 0) {
+    return {
+      firstName: mixedWords.join(" "),
+      lastName: upperWords.join(" ")
+    };
   }
-  const lastName = t[t.length - 1]; const firstName = t.slice(0, -1).join(" ");
-  return { firstName, lastName };
+
+  // Fallback si tout est en minuscules ou tout en majuscules
+  return { firstName: t[0], lastName: t.slice(1).join(" ") };
 }
 const CAR_NAME_MAP = {
   "estacup_acura_nsx_gt3_evo2": "Acura NSX GT3 EVO 2",
