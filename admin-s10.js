@@ -603,21 +603,32 @@ async function handleAnalyzeJson() {
 
 function suggestUserFor(lastName, firstName) {
   const ln = normLower(lastName);
-  return ImportState.usersCache.find(u => normLower(u.lastName) === ln || normLower(u.lastName).includes(ln));
-}
+  const fn = normLower(firstName);
+  if (!ln) return null;
 
-function renderMatchingUI() {
-  const block = document.getElementById("matchBlock"); 
-  const list = document.getElementById("matchList"); 
-  if (!block || !list) return;
-  if (!ImportState.unmatched.length) { block.style.display = "none"; return; }
-  block.style.display = "block"; list.innerHTML = "";
-  
-  ImportState.unmatched.forEach(u => {
-    const div = document.createElement("div"); div.style.marginBottom = "8px";
-    div.innerHTML = `<label><strong>${escapeHtml(u.lastName)} ${escapeHtml(u.firstName)}</strong> : </label><select class="match-select" data-key="${u.key}"><option value="">-- Non assigné --</option>${ImportState.usersCache.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("")}</select>`;
-    list.appendChild(div);
-  });
+  // 1. Correspondance exacte Nom + Prénom
+  const exactMatch = ImportState.usersCache.find(
+    u => normLower(u.lastName) === ln && normLower(u.firstName) === fn
+  );
+  if (exactMatch) return exactMatch;
+
+  // 2. Correspondance Nom exact + Prénom partiel (ex: prénom composé)
+  if (fn) {
+    const partialFnMatch = ImportState.usersCache.find(
+      u => normLower(u.lastName) === ln && (normLower(u.firstName).includes(fn) || fn.includes(normLower(u.firstName)))
+    );
+    if (partialFnMatch) return partialFnMatch;
+  }
+
+  // 3. Fallback sur le nom de famille UNIQUEMENT s'il n'y a qu'un seul pilote avec ce nom
+  const sameLastName = ImportState.usersCache.filter(u => normLower(u.lastName) === ln);
+  if (sameLastName.length === 1) {
+    return sameLastName[0];
+  }
+
+  // S'il y a plusieurs pilotes avec le même nom et que le prénom ne match pas,
+  // on renvoie null pour forcer l'affichage du menu d'assignation manuelle.
+  return null;
 }
 
 function applyMatchingSelections() {
