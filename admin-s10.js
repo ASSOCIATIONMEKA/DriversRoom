@@ -631,6 +631,32 @@ function suggestUserFor(lastName, firstName) {
   return null;
 }
 
+function renderMatchingUI() {
+  const box = document.getElementById("matchingBox");
+  const list = document.getElementById("matchingList");
+  if (!box || !list) return;
+
+  if (!ImportState.unmatched.length) {
+    box.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+
+  const optionsHtml = `<option value="">-- Ignorer ce pilote --</option>` +
+    ImportState.usersCache.map(u => `<option value="${u.id}">${escapeHtml(u.lastName)} ${escapeHtml(u.firstName)}</option>`).join("");
+
+  list.innerHTML = ImportState.unmatched.map(u => `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+      <span><strong>${escapeHtml(u.firstName)} ${escapeHtml(u.lastName)}</strong> <small style="color:#94a3b8;">(non associé automatiquement)</small></span>
+      <select class="match-select" data-key="${escapeHtml(u.key)}" style="max-width:260px; margin-bottom:0;">
+        ${optionsHtml}
+      </select>
+    </div>
+  `).join("");
+
+  box.style.display = "block";
+}
+
 function applyMatchingSelections() {
   document.querySelectorAll(".match-select").forEach(sel => { if(sel.value) ImportState.nameMap.set(sel.dataset.key, { uid: sel.value }); });
   renderPreviewTables(); if(window.showToast) window.showToast("✅ Assignations appliquées.", "success");
